@@ -8,7 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ackermann_msgs REQUIRED)
-find_package(planning_interfaces REQUIRED)
+find_package(trajectory_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 
 # add_executable(${PROJECT_NAME}_node src/TrajectoryControlNode.cpp src/PID.cpp)
