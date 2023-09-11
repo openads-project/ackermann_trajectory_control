@@ -2,6 +2,10 @@
 # https://github.com/dirk-thomas/vcstool
 #
 repositories:
+  perception_interfaces:
+    type: git
+    url: https://gitlab.ika.rwth-aachen.de/fb-fi/definitions/perception_interfaces.git
+    version: main
   planning_interfaces:
     type: git
     url: https://gitlab.ika.rwth-aachen.de/fb-fi/definitions/planning_interfaces.git

@@ -8,8 +8,10 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ackermann_msgs REQUIRED)
+find_package(perception_interfaces REQUIRED)
 find_package(trajectory_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rosgraph_msgs REQUIRED)
 
 # add_executable(${PROJECT_NAME}_node src/TrajectoryControlNode.cpp src/PID.cpp)
 
