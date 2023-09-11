@@ -1,0 +1,9 @@
+include:
+  - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
+
+variables:
+  BASE_IMAGE: rwthika/ros2:humble
+  COMMAND: echo "ToDo"
+  PLATFORM: amd64
+  TARGET: dev,run
+  ENABLE_INDUSTRIAL_CI: 'true'

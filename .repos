@@ -1,0 +1,8 @@
+# List of other repositories that are required to build the package(s) in this repository
+# https://github.com/dirk-thomas/vcstool
+#
+repositories:
+  planning_interfaces:
+    type: git
+    url: https://gitlab.ika.rwth-aachen.de/fb-fi/definitions/planning_interfaces.git
+    version: main

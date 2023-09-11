@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>trajectory_control</name>
+  <version>0.0.0</version>
+  <description>The trajectory_control package receives an planning_interfaces-Trajectory and generates the specific ackermann controls!</description>
+
+  <maintainer email="guido.kueppers@rwth-aachen.de">Guido Küppers</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <depend>ackermann_msgs</depend>
+  <depend>planning_interfaces</depend>
+  <depend>rclcpp</depend>
+    
+</package>
