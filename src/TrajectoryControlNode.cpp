@@ -27,7 +27,6 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 
     vehicle_state_sub_ = create_subscription<perception_interfaces::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
     trajectory_sub_ = create_subscription<trajectory_interfaces::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
-    clock_sub_ = create_subscription<rosgraph_msgs::msg::Clock>("/clock", 1, std::bind(&TrajectoryControl::ClockCallback, this, std::placeholders::_1));
 
     vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("~/ctrl_cmds",1);
 
@@ -52,6 +51,7 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
     this->ResetOdometry();
 
     //Initialization of the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called every 0.01s e.g. with 100Hz.
+    last_time_=now();
     vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(control_frequency_), std::bind(&TrajectoryControl::VehicleCtrlCycle, this));
 }
 
@@ -110,17 +110,6 @@ void TrajectoryControl::TrajectoryCallback(const trajectory_interfaces::msg::Tra
     this->ResetOdometry();
 }
 
-//Clock Callback
-void TrajectoryControl::ClockCallback(const rosgraph_msgs::msg::Clock::ConstPtr &msg)
-{
-    if((last_clock_.clock - msg->clock).seconds()>0)
-    {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Resetting controller because of Jump-Back in time!");
-        this->ResetController();
-    }
-    last_clock_=*msg;
-}
-
 void TrajectoryControl::ResetController()
 {
     a_tgt_=0.0;
@@ -150,6 +139,12 @@ void TrajectoryControl::ResetController()
 //perform the vehicle control cycle
 void TrajectoryControl::VehicleCtrlCycle()
 {
+    if(last_time_ > now())
+    {
+        RCLCPP_WARN_STREAM(this->get_logger(), "Resetting controller because of Jump-Back in time!");
+        this->ResetController();
+    }
+    last_time_=now();
     if (!this->InputSanityCheck()) //some inputs are not ok
     {
         //don't do anything

@@ -17,8 +17,6 @@
 
 #include <perception_interfaces/msg/ego_data.hpp>
 
-#include <rosgraph_msgs/msg/clock.hpp>
-
 // Output Messages
 #include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
 
@@ -32,7 +30,6 @@ private:
     void loadParameters();
     void VehicleStateCallback(const perception_interfaces::msg::EgoData::ConstPtr &msg);
     void TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg);
-    void ClockCallback(const rosgraph_msgs::msg::Clock::ConstPtr &msg);
     void VehicleCtrlCycle();
     bool InputSanityCheck();
     bool TrjDataProc();
@@ -45,7 +42,6 @@ private:
 
     rclcpp::Subscription<perception_interfaces::msg::EgoData>::SharedPtr vehicle_state_sub_;
     rclcpp::Subscription<trajectory_interfaces::msg::Trajectory>::SharedPtr trajectory_sub_;
-    rclcpp::Subscription<rosgraph_msgs::msg::Clock>::SharedPtr clock_sub_;
 
     rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr vehicle_ctrl_pub_;
 
@@ -95,7 +91,7 @@ private:
     //Control Output
     ackermann_msgs::msg::AckermannDriveStamped vhcl_ctrl_output_;
 
-    rosgraph_msgs::msg::Clock last_clock_;
+    rclcpp::Time last_time_;
 
     //Odometry
     double odom_dy_ = 0.0;

@@ -13,6 +13,5 @@
   <depend>perception_interfaces</depend>
   <depend>trajectory_interfaces</depend>
   <depend>rclcpp</depend>
-  <depend>rosgraph_msgs</depend>
     
 </package>
