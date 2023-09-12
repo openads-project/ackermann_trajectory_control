@@ -33,7 +33,7 @@ private:
     void VehicleCtrlCycle();
     bool InputSanityCheck();
     bool TrjDataProc();
-    double InterpolateTgtValue(std::vector<double> time_array, std::vector<double> val_array, double desired_time, unsigned int num_elements);
+    bool LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y);
     void CalcOdometry(double dt);
     void ResetOdometry();
     double LateralControl();

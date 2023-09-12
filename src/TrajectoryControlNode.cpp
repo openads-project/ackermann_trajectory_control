@@ -237,15 +237,15 @@ bool TrajectoryControl::TrjDataProc()
     //calculate desired interpolation time for longitudinal values
     double des_time = (now() - cur_trajectory_.header.stamp).seconds() + lon_t_lookahead_;
     //interpolate longitudinal target values
-    v_tgt_ = this->InterpolateTgtValue(TIME, V, des_time, n_samples);
-    a_tgt_ = this->InterpolateTgtValue(TIME, A, des_time, n_samples);
+    if(!LinearInterpolation(TIME, V, des_time, v_tgt_)) return false;
+    if(!LinearInterpolation(TIME, A, des_time, a_tgt_)) return false;
 
     //switch to desired interpolation time for lateral values
     des_time = des_time - lon_t_lookahead_ + lat_t_lookahead_;
     //interpolate lateral target values
-    y_tgt_ = this->InterpolateTgtValue(TIME, Y, des_time, n_samples);
-    psi_tgt_ = this->InterpolateTgtValue(TIME, THETA, des_time, n_samples);
-    kappa_tgt_ = this->InterpolateTgtValue(TIME, KAPPA, des_time, n_samples);
+    if(!LinearInterpolation(TIME, Y, des_time, y_tgt_)) return false;
+    if(!LinearInterpolation(TIME, THETA, des_time, psi_tgt_)) return false;
+    if(!LinearInterpolation(TIME, KAPPA, des_time, kappa_tgt_)) return false;
 
     //CalcOdometry
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
@@ -256,44 +256,39 @@ bool TrajectoryControl::TrjDataProc()
     return true;
 }
 
-double TrajectoryControl::InterpolateTgtValue(std::vector<double> time_array, std::vector<double> val_array, double desired_time, unsigned int num_elements)
+bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y)
 {
-    if (desired_time < 0.0)
+    if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end()))
     {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Desired Time for Trajectory Interpolation is negative!");
-        return 0.0;
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
+        return false;
     }
-    if(num_elements <=1)
+    if(X.size() != Y.size())
     {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Num Elements for Trajectory Interpolation is 1!");
-        return 0.0;
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Input vectors don't have the same length!");
+        return false;
     }
 
     //go through array and search for sampling points
     int i;
-    for(i = 0; i < num_elements; i++)
+    for(i = 0; i < X.size(); i++)
     {
-        if (time_array[i] < desired_time)
+        if (X[i] < desired_x)
         {
             continue;
         }
-        else if (time_array[i] == desired_time)
+        else if (X[i] == desired_x)
         {
-            return val_array[i];
+            output_y = Y[i];
+            return true;
         }
         else
         {
             break;
         }
     }
-    if (i < num_elements - 1)
-    {
-        return val_array[i - 1] + ((val_array[i] - val_array[i - 1]) / (time_array[i] - time_array[i - 1])) * (desired_time - time_array[i - 1]);
-    }
-    else
-    {
-        return val_array[i] + ((val_array[i] - val_array[i - 1]) / (time_array[i] - time_array[i - 1])) * (desired_time - time_array[i]);
-    }
+    output_y = Y[i - 1] + ((Y[i] - Y[i - 1]) / (X[i] - X[i - 1])) * (desired_x - X[i - 1]);
+    return true;
 }
 
 void TrajectoryControl::CalcOdometry(double dt)
