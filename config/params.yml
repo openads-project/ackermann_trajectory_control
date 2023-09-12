@@ -1,0 +1,32 @@
+trajectory_control_node:
+  ros__parameters:
+    # General controller parameters
+    control_frequency: 100.0 # [Hz]
+    lateral_lookahed_time: 0.1 # [s]
+    longitudinal_lookahed_time: 0.1 # [s]
+
+    # Inverse single track parameters
+    wheelbase: 2.711 # [m]
+    selfsteergradient: 0.002917853041365
+
+    # Control value constraints
+    max_longitudinal_acceleration: 3.5 # [m/s^2]
+    min_longitudinal_acceleration: -5.0 # [m/s^2]
+    max_longitudinal_jerk: 5.0 # [m/s^3]
+    max_steering_angle: 28.0 # [deg]
+    max_steering_angle_rate: 56.0 # [deg/s]
+
+    # Gain scheduling Look-Up-Tables
+    velocity_lookup:                [-30.0, -0.1, 0.0, 30.0] # [m/s]
+    feed_forward_acceleration_gain: [0.0, 0.0, 1.0, 1.0]
+    feed_forward_steering_angle:    [0.0, 0.0, 1.0, 1.0]
+    dv_p:                           [0.0, 0.0, 0.35, 0.35]
+    dv_i:                           [0.0, 0.0, 0.05, 0.05]
+    dv_d:                           [0.0, 0.0, 0.0, 0.0]
+    dy_p:                           [0.0, 0.0, 0.1, 0.1]
+    dy_i:                           [0.0, 0.0, 0.002, 0.002]
+    dy_d:                           [0.0, 0.0, 0.04, 0.04]
+    dpsi_p:                         [0.0, 0.0, 0.0, 0.0]
+    dpsi_i:                         [0.0, 0.0, 0.3, 0.3]
+    dpsi_d:                         [0.0, 0.0, 0.0, 0.0]
+

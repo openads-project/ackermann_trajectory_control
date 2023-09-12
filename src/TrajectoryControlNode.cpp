@@ -51,7 +51,7 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 
     //Initialization of the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called every 0.01s e.g. with 100Hz.
     last_time_=now();
-    vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(control_frequency_), std::bind(&TrajectoryControl::VehicleCtrlCycle, this));
+    vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0/control_frequency_), std::bind(&TrajectoryControl::VehicleCtrlCycle, this));
 }
 
 TrajectoryControl::~TrajectoryControl()
@@ -95,23 +95,214 @@ void TrajectoryControl::loadParameters() {
         RCLCPP_WARN_STREAM(get_logger(), "Parameter \'selfsteergradient\' is not set, using default value: " << self_st_gradient_);
     }
 
-    initializeGainSchedulingLUTs();
-}
+    // Longitudinal Lookahead Time
+    declare_parameter("longitudinal_lookahed_time", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lon_t_lookahead_ = get_parameter("longitudinal_lookahed_time").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'longitudinal_lookahed_time\' set to: " << lon_t_lookahead_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'longitudinal_lookahed_time\' is not set correctly, using default value: " << lon_t_lookahead_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'longitudinal_lookahed_time\' is not set, using default value: " << lon_t_lookahead_);
+    }
 
-void TrajectoryControl::initializeGainSchedulingLUTs()
-{
-    gain_scheduling_velocity_lookup_= {-30, -0.1, 0, 30};
-    vec_feed_forward_gain_acceleration_ = {0, 0, 1, 1};
-    vec_feed_forward_gain_steering_angle_ = {0, 0, 1, 1};
-    dv_p_ = {0, 0, 0, 0};
-    dv_i_ = {0, 0, 0, 0};
-    dv_d_ = {0, 0, 0, 0};
-    dy_p_ = {0, 0, 0, 0};
-    dy_i_ = {0, 0, 0, 0};
-    dy_d_ = {0, 0, 0, 0};
-    dpsi_p_ = {0, 0, 0, 0};
-    dpsi_i_ = {0, 0, 0, 0};
-    dpsi_d_ = {0, 0, 0, 0};
+    // Lateral Lookahead Time
+    declare_parameter("lateral_lookahed_time", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lat_t_lookahead_ = get_parameter("lateral_lookahed_time").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'lateral_lookahed_time\' set to: " << lat_t_lookahead_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'lateral_lookahed_time\' is not set correctly, using default value: " << lat_t_lookahead_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'lateral_lookahed_time\' is not set, using default value: " << lat_t_lookahead_);
+    }
+
+    // Maximum Longitudinal Acceleration
+    declare_parameter("max_longitudinal_acceleration", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lon_max_acc_ = get_parameter("max_longitudinal_acceleration").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_longitudinal_acceleration\' set to: " << lon_max_acc_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_acceleration\' is not set correctly, using default value: " << lon_max_acc_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_acceleration\' is not set, using default value: " << lon_max_acc_);
+    }
+
+    // Minimum Longitudinal Acceleration
+    declare_parameter("min_longitudinal_acceleration", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lon_min_acc_ = get_parameter("min_longitudinal_acceleration").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'min_longitudinal_acceleration\' set to: " << lon_min_acc_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'min_longitudinal_acceleration\' is not set correctly, using default value: " << lon_min_acc_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'min_longitudinal_acceleration\' is not set, using default value: " << lon_min_acc_);
+    }
+
+    // Maximum Longitudinal Jerk
+    declare_parameter("max_longitudinal_jerk", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lon_max_jerk_ = get_parameter("max_longitudinal_jerk").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_longitudinal_jerk\' set to: " << lon_max_jerk_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_jerk\' is not set correctly, using default value: " << lon_max_jerk_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_jerk\' is not set, using default value: " << lon_max_jerk_);
+    }
+
+    // Maximum Steering Angle
+    declare_parameter("max_steering_angle", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lat_max_st_ang_ = get_parameter("max_steering_angle").as_double()*M_PI/180.0;
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_steering_angle\' set to: " << lat_max_st_ang_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set correctly, using default value: " << lat_max_st_ang_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set, using default value: " << lat_max_st_ang_);
+    }
+
+    // Maximum Steering Angle Rate
+    declare_parameter("max_steering_angle_rate", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    try {
+        lat_max_st_rate_ = get_parameter("max_steering_angle").as_double()*M_PI/180.0;
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_steering_angle\' set to: " << lat_max_st_rate_);
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set correctly, using default value: " << lat_max_st_rate_);
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set, using default value: " << lat_max_st_rate_);
+    }
+
+    // Velocity Lookup Values
+    declare_parameter("velocity_lookup", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        gain_scheduling_velocity_lookup_ = get_parameter("velocity_lookup").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'velocity_lookup\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'velocity_lookup\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'velocity_lookup\' is not set, using default values.");
+    }
+
+    // Feed Forward Acceleration Gain
+    declare_parameter("feed_forward_acceleration_gain", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        vec_feed_forward_gain_acceleration_ = get_parameter("feed_forward_acceleration_gain").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'feed_forward_acceleration_gain\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_acceleration_gain\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_acceleration_gain\' is not set, using default values.");
+    }
+
+    // Feed Forward Steering Angle Gain
+    declare_parameter("feed_forward_steering_angle", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        vec_feed_forward_gain_steering_angle_ = get_parameter("feed_forward_steering_angle").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'feed_forward_steering_angle\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_steering_angle\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_steering_angle\' is not set, using default values.");
+    }
+
+    // dv P Gain
+    declare_parameter("dv_p", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dv_p_ = get_parameter("dv_p").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dv_p\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_p\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_p\' is not set, using default values.");
+    }
+
+    // dv I Gain
+    declare_parameter("dv_i", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dv_i_ = get_parameter("dv_i").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dv_i\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_i\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_i\' is not set, using default values.");
+    }
+
+    // dv D Gain
+    declare_parameter("dv_d", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dv_d_ = get_parameter("dv_d").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dv_d\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_d\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_d\' is not set, using default values.");
+    }
+
+    // dy P Gain
+    declare_parameter("dy_p", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dy_p_ = get_parameter("dy_p").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dy_p\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_p\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_p\' is not set, using default values.");
+    }
+
+    // dy I Gain
+    declare_parameter("dy_i", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dy_i_ = get_parameter("dy_i").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dy_i\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_i\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_i\' is not set, using default values.");
+    }
+
+    // dy D Gain
+    declare_parameter("dy_d", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dy_d_ = get_parameter("dy_d").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(),  "Parameter-Vector \'dy_d\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_d\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_d\' is not set, using default values.");
+    }
+
+    // dpsi P Gain
+    declare_parameter("dpsi_p", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dpsi_p_ = get_parameter("dpsi_p").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dpsi_p\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_p\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_p\' is not set, using default values.");
+    }
+
+    // dpsi I Gain
+    declare_parameter("dpsi_i", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dpsi_i_ = get_parameter("dpsi_i").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dpsi_i\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_i\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_i\' is not set, using default values.");
+    }
+
+    // dpsi D Gain
+    declare_parameter("dpsi_d", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
+    try {
+        dpsi_d_ = get_parameter("dpsi_d").as_double_array();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dpsi_d\' set succesfully.");
+    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_d\' is not set correctly, using default values.");
+    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_d\' is not set, using default values.");
+    }
 }
 
 //update the actual vehicle state

@@ -28,7 +28,6 @@ public:
 
 private:
     void loadParameters();
-    void initializeGainSchedulingLUTs();
     void setControllerGains();
     void VehicleStateCallback(const perception_interfaces::msg::EgoData::ConstPtr &msg);
     void TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg);
@@ -55,7 +54,7 @@ private:
     rclcpp::Time last_time_;
 
     // TrajectoryControl Parameters
-    double control_frequency_ = 0.01;
+    double control_frequency_ = 100.0;
 
     double lat_t_lookahead_ = 0.1;
     double lon_t_lookahead_ = 0.1;
@@ -89,13 +88,19 @@ private:
     PID *dy_pid_;
     PID *dpsi_pid_;
 
-    std::vector<double> dv_p_, dv_i_, dv_d_;
-    std::vector<double> dy_p_, dy_i_, dy_d_;
-    std::vector<double> dpsi_p_, dpsi_i_, dpsi_d_;
-    std::vector<double> gain_scheduling_velocity_lookup_; // velocity in m/s
+    std::vector<double> dv_p_ = {0.0, 0.0};
+    std::vector<double> dv_i_ = {0.0, 0.0};
+    std::vector<double> dv_d_ = {0.0, 0.0};
+    std::vector<double> dy_p_ = {0.0, 0.0};
+    std::vector<double> dy_i_ = {0.0, 0.0};
+    std::vector<double> dy_d_ = {0.0, 0.0};
+    std::vector<double> dpsi_p_ = {0.0, 0.0};
+    std::vector<double> dpsi_i_ = {0.0, 0.0};
+    std::vector<double> dpsi_d_ = {0.0, 0.0};
+    std::vector<double> gain_scheduling_velocity_lookup_ = {-30.0, 30.0}; // velocity in m/s
 
-    std::vector<double> vec_feed_forward_gain_steering_angle_;
-    std::vector<double> vec_feed_forward_gain_acceleration_;
+    std::vector<double> vec_feed_forward_gain_steering_angle_ = {0.0, 0.0};
+    std::vector<double> vec_feed_forward_gain_acceleration_ = {0.0, 0.0};
 
     double feed_forward_gain_steering_angle_;
     double feed_forward_gain_acceleration_;    
