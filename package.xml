@@ -13,5 +13,8 @@
   <depend>perception_interfaces</depend>
   <depend>trajectory_interfaces</depend>
   <depend>rclcpp</depend>
-    
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
