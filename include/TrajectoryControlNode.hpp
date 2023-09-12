@@ -28,6 +28,8 @@ public:
 
 private:
     void loadParameters();
+    void initializeGainSchedulingLUTs();
+    void setControllerGains();
     void VehicleStateCallback(const perception_interfaces::msg::EgoData::ConstPtr &msg);
     void TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg);
     void VehicleCtrlCycle();
@@ -50,7 +52,9 @@ private:
     perception_interfaces::msg::EgoData cur_vehicle_state_;
     trajectory_interfaces::msg::Trajectory cur_trajectory_;
 
-    //TrajectoryControl Parameters
+    rclcpp::Time last_time_;
+
+    // TrajectoryControl Parameters
     double control_frequency_ = 0.01;
 
     double lat_t_lookahead_ = 0.1;
@@ -63,14 +67,11 @@ private:
     double lat_max_st_ang_ = 28.0*M_PI/180.0;
     double lat_max_st_rate_ = 56.0*M_PI/180.0;
 
-    double feed_forward_gain_steering_angle_ = 1.0;
-    double feed_forward_gain_acceleration_ = 1.0;
-
-    //Vehicle Parameters
+    // Vehicle Parameters
     double wheelbase_ = 2.711;
     double self_st_gradient_ = 0.002917853041365;
 
-    //TrajectoryControl Variables
+    // TrajectoryControl Variables
     double a_tgt_;
     double a_tgt_dv_;
     double v_tgt_;
@@ -78,23 +79,32 @@ private:
     double psi_tgt_;
     double kappa_tgt_;
 
-    //Control Deviations
+    // Control Deviations
     double dpsi_;
     double dy_;
     double dv_;
 
-    //Controller
-    PID *dv_pid;
-    PID *dy_pid;
-    PID *dpsi_pid;
+    // Controller
+    PID *dv_pid_;
+    PID *dy_pid_;
+    PID *dpsi_pid_;
 
-    //Control Output
+    std::vector<double> dv_p_, dv_i_, dv_d_;
+    std::vector<double> dy_p_, dy_i_, dy_d_;
+    std::vector<double> dpsi_p_, dpsi_i_, dpsi_d_;
+    std::vector<double> gain_scheduling_velocity_lookup_; // velocity in m/s
+
+    std::vector<double> vec_feed_forward_gain_steering_angle_;
+    std::vector<double> vec_feed_forward_gain_acceleration_;
+
+    double feed_forward_gain_steering_angle_;
+    double feed_forward_gain_acceleration_;    
+
+    // Control Output
     ackermann_msgs::msg::AckermannDriveStamped vhcl_ctrl_output_;
 
-    rclcpp::Time last_time_;
-
-    //Odometry
+    // Odometry
     double odom_dy_ = 0.0;
     double odom_dpsi_ = 0.0;
 
-}; //class TrajectoryControl
+}; // Class TrajectoryControl

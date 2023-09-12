@@ -32,13 +32,13 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
     loadParameters();
 
     //Initialize dv-PID
-    this->dv_pid = new PID(0.0, 0.0, 0.0);
+    dv_pid_ = new PID(0.0, 0.0, 0.0);
 
     //Initialize dy-PID
-    this->dy_pid = new PID(0.0, 0.0, 0.0);
+    dy_pid_ = new PID(0.0, 0.0, 0.0);
 
     //Initialize dpsi-PID
-    this->dpsi_pid = new PID(0.0, 0.0, 0.0);
+    dpsi_pid_ = new PID(0.0, 0.0, 0.0);
 
     //Set Initial output values
     vhcl_ctrl_output_.drive.steering_angle = 0.0;
@@ -47,7 +47,7 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
     vhcl_ctrl_output_.drive.acceleration = 0.0;
     vhcl_ctrl_output_.drive.jerk = 0.0;
 
-    this->ResetOdometry();
+    ResetOdometry();
 
     //Initialization of the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called every 0.01s e.g. with 100Hz.
     last_time_=now();
@@ -62,38 +62,56 @@ void TrajectoryControl::loadParameters() {
 
     // General parameters
     // Control cycle frequency
-    this->declare_parameter("control_frequency", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    declare_parameter("control_frequency", rclcpp::ParameterType::PARAMETER_DOUBLE);
     try {
-        control_frequency_ = this->get_parameter("control_frequency").as_double();
-        RCLCPP_INFO_STREAM(this->get_logger(), "Parameter \'control_frequency\' set to: " << control_frequency_);
+        control_frequency_ = get_parameter("control_frequency").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'control_frequency\' set to: " << control_frequency_);
     } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Parameter \'control_frequency\' is not set correctly, using default value: " << control_frequency_);
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'control_frequency\' is not set correctly, using default value: " << control_frequency_);
     } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Parameter \'control_frequency\' is not set, using default value: " << control_frequency_);
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'control_frequency\' is not set, using default value: " << control_frequency_);
     }
 
     // Constant vehicle parameters
     // Wheelbase
-    this->declare_parameter("wheelbase", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    declare_parameter("wheelbase", rclcpp::ParameterType::PARAMETER_DOUBLE);
     try {
-        wheelbase_ = this->get_parameter("wheelbase").as_double();
-        RCLCPP_INFO_STREAM(this->get_logger(), "Parameter \'wheelbase\' set to: " << wheelbase_);
+        wheelbase_ = get_parameter("wheelbase").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'wheelbase\' set to: " << wheelbase_);
     } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Parameter \'wheelbase\' is not set correctly, using default value: " << wheelbase_);
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'wheelbase\' is not set correctly, using default value: " << wheelbase_);
     } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Parameter \'wheelbase\' is not set, using default value: " << wheelbase_);
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'wheelbase\' is not set, using default value: " << wheelbase_);
     }
 
     // Self-Steer-Gradient
-    this->declare_parameter("selfsteergradient", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    declare_parameter("selfsteergradient", rclcpp::ParameterType::PARAMETER_DOUBLE);
     try {
-        self_st_gradient_ = this->get_parameter("selfsteergradient").as_double();
-        RCLCPP_INFO_STREAM(this->get_logger(), "Parameter \'selfsteergradient\' set to: " << self_st_gradient_);
+        self_st_gradient_ = get_parameter("selfsteergradient").as_double();
+        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'selfsteergradient\' set to: " << self_st_gradient_);
     } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Parameter \'selfsteergradient\' is not set correctly, using default value: " << self_st_gradient_);
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'selfsteergradient\' is not set correctly, using default value: " << self_st_gradient_);
     } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Parameter \'selfsteergradient\' is not set, using default value: " << self_st_gradient_);
+        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'selfsteergradient\' is not set, using default value: " << self_st_gradient_);
     }
+
+    initializeGainSchedulingLUTs();
+}
+
+void TrajectoryControl::initializeGainSchedulingLUTs()
+{
+    gain_scheduling_velocity_lookup_= {-30, -0.1, 0, 30};
+    vec_feed_forward_gain_acceleration_ = {0, 0, 1, 1};
+    vec_feed_forward_gain_steering_angle_ = {0, 0, 1, 1};
+    dv_p_ = {0, 0, 0, 0};
+    dv_i_ = {0, 0, 0, 0};
+    dv_d_ = {0, 0, 0, 0};
+    dy_p_ = {0, 0, 0, 0};
+    dy_i_ = {0, 0, 0, 0};
+    dy_d_ = {0, 0, 0, 0};
+    dpsi_p_ = {0, 0, 0, 0};
+    dpsi_i_ = {0, 0, 0, 0};
+    dpsi_d_ = {0, 0, 0, 0};
 }
 
 //update the actual vehicle state
@@ -106,7 +124,7 @@ void TrajectoryControl::VehicleStateCallback(const perception_interfaces::msg::E
 void TrajectoryControl::TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg)
 {
     cur_trajectory_ = *msg;
-    this->ResetOdometry();
+    ResetOdometry();
 }
 
 void TrajectoryControl::ResetController()
@@ -120,9 +138,9 @@ void TrajectoryControl::ResetController()
     dpsi_=0.0;
     dy_=0.0;
     dv_=0.0;
-    dy_pid->Reset();
-    dpsi_pid->Reset();
-    dv_pid->Reset();
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+    dv_pid_->Reset();
     vhcl_ctrl_output_.drive.steering_angle = 0.0;
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
@@ -132,19 +150,47 @@ void TrajectoryControl::ResetController()
     cur_trajectory_=dummy_trj;
     perception_interfaces::msg::EgoData dummy_state;
     cur_vehicle_state_=dummy_state;
-    this->ResetOdometry();
+    ResetOdometry();
 }
+
+void TrajectoryControl::setControllerGains()
+{
+    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    // Feed-Forward Gains
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_acceleration_, velocity, feed_forward_gain_acceleration_)) feed_forward_gain_acceleration_=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_steering_angle_, velocity, feed_forward_gain_steering_angle_)) feed_forward_gain_steering_angle_=0.0;
+    
+    double p, i, d;
+    // dv Controller
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_p_, velocity, p)) p=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_i_, velocity, i)) i=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_d_, velocity, d)) d=0.0;
+    dv_pid_->SetParameters(p, i, d);
+
+    // dy Controller
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dy_p_, velocity, p)) p=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dy_i_, velocity, i)) i=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dy_d_, velocity, d)) d=0.0;
+    dy_pid_->SetParameters(p, i, d);
+
+    // dpsi Controller
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dpsi_p_, velocity, p)) p=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dpsi_i_, velocity, i)) i=0.0;
+    if(!LinearInterpolation(gain_scheduling_velocity_lookup_, dpsi_d_, velocity, d)) d=0.0;
+    dpsi_pid_->SetParameters(p, i, d);
+}
+
 
 //perform the vehicle control cycle
 void TrajectoryControl::VehicleCtrlCycle()
 {
     if(last_time_ > now())
     {
-        RCLCPP_WARN_STREAM(this->get_logger(), "Resetting controller because of Jump-Back in time!");
-        this->ResetController();
+        RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
+        ResetController();
     }
     last_time_=now();
-    if (!this->InputSanityCheck()) //some inputs are not ok
+    if (!InputSanityCheck()) //some inputs are not ok
     {
         //don't do anything
         return;
@@ -153,38 +199,39 @@ void TrajectoryControl::VehicleCtrlCycle()
     // Standstill signal?
     if(cur_trajectory_.standstill)
     {
-        RCLCPP_DEBUG_STREAM(this->get_logger(), "Standstill.");
+        RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
         vhcl_ctrl_output_.drive.steering_angle = 0.0;
         vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
         vhcl_ctrl_output_.drive.speed = 0.0;
         vhcl_ctrl_output_.drive.acceleration = 0.0;
         vhcl_ctrl_output_.drive.jerk = 0.0;
-        dy_pid->Reset();
-        dpsi_pid->Reset();
-        dv_pid->Reset();
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
+        dv_pid_->Reset();
     }
     else
     {
         if(!TrjDataProc())
         {
-            RCLCPP_ERROR_STREAM(this->get_logger(), "Processing of input Trajectory failed!");
+            RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
             return;
         }
-        vhcl_ctrl_output_.drive.steering_angle = this->LateralControl();
-        vhcl_ctrl_output_.drive.acceleration = this->LongitudinalControl();
+        setControllerGains();
+        vhcl_ctrl_output_.drive.steering_angle = LateralControl();
+        vhcl_ctrl_output_.drive.acceleration = LongitudinalControl();
         if(std::isnan(vhcl_ctrl_output_.drive.steering_angle))
         {
-            RCLCPP_ERROR_STREAM(this->get_logger(), "Steering Angle Output Value isNaN!");
+            RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
             vhcl_ctrl_output_.drive.steering_angle=0.0;
-            dy_pid->Reset();
-            dpsi_pid->Reset();
+            dy_pid_->Reset();
+            dpsi_pid_->Reset();
             return;
         }
         if(std::isnan(vhcl_ctrl_output_.drive.acceleration))
         {
-            RCLCPP_ERROR_STREAM(this->get_logger(), "Target Acceleration Output Value isNaN!");
+            RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
             vhcl_ctrl_output_.drive.acceleration=0.0;
-            dv_pid->Reset();
+            dv_pid_->Reset();
             return;
         }
     }
@@ -198,12 +245,12 @@ bool TrajectoryControl::InputSanityCheck()
     age = (now() - cur_vehicle_state_.header.stamp).seconds();
     if (age > 0.2 || age < 0.0) //current vehicle state data older than 0.2s
     {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "EgoState-Data outdated!");
+        RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;
     }
     if (trajectory_interfaces::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
     {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Input Trajctory is empty!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
     }
 
@@ -228,7 +275,7 @@ bool TrajectoryControl::TrjDataProc()
         else
         {
             // To-Do Fill A, THETA and KAPPA with finite-differences
-            RCLCPP_ERROR_STREAM(this->get_logger(), "trajectory_interfaces::DRIVABLE-Type is currently not supported!");
+            RCLCPP_ERROR_STREAM(get_logger(), "trajectory_interfaces::DRIVABLE-Type is currently not supported!");
             return false;
         }
     }
@@ -248,7 +295,7 @@ bool TrajectoryControl::TrjDataProc()
 
     //CalcOdometry
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-    this->CalcOdometry(dt); //Cyclic Control
+    CalcOdometry(dt); //Cyclic Control
 
     dy_ = odom_dy_ - y_tgt_;
     dpsi_ = odom_dpsi_ - psi_tgt_;
@@ -259,12 +306,12 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
 {
     if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end()))
     {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
         return false;
     }
     if(X.size() != Y.size())
     {
-        RCLCPP_ERROR_STREAM(this->get_logger(), "Input vectors don't have the same length!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Input vectors don't have the same length!");
         return false;
     }
 
@@ -310,9 +357,9 @@ double TrajectoryControl::LateralControl()
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     double w_y = 0.0;
     double e_y = w_y - dy_;
-    double w_psi = dy_pid->Calc(e_y, dt);
+    double w_psi = dy_pid_->Calc(e_y, dt);
     double e_psi = w_psi - dpsi_;
-    double psi_dot_des = dpsi_pid->Calc(e_psi, dt);
+    double psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
 
     double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
     //be sure v!=0 (to avoid division by zero)
@@ -337,8 +384,8 @@ double TrajectoryControl::LateralControl()
 
     if (perception_interfaces::object_access::getStandstill(cur_vehicle_state_)) //Standstill-Situation
     {
-        dy_pid->Reset();
-        dpsi_pid->Reset();
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
     }
 
     //Limit desired steering angle
@@ -352,9 +399,9 @@ double TrajectoryControl::LateralControl()
         {
             st_ang = -lat_max_st_ang_;
         }
-        dy_pid->Reset();
-        dpsi_pid->Reset();
-        RCLCPP_DEBUG_STREAM(this->get_logger(), "Steering-Angle limited!");
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
+        RCLCPP_DEBUG_STREAM(get_logger(), "Steering-Angle limited!");
     }
     //calculate steering rate with respect to last steering angle
     double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
@@ -368,9 +415,9 @@ double TrajectoryControl::LateralControl()
         {
             st_ang = vhcl_ctrl_output_.drive.steering_angle - lat_max_st_rate_ * dt;
         }
-        dy_pid->Reset();
-        dpsi_pid->Reset();
-        RCLCPP_DEBUG_STREAM(this->get_logger(), "Steering-rate limited!");
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
+        RCLCPP_DEBUG_STREAM(get_logger(), "Steering-rate limited!");
     }
 
     return st_ang;
@@ -382,7 +429,7 @@ double TrajectoryControl::LongitudinalControl()
     double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
     double w_v = v_tgt_;
     double e_v = w_v - velocity;
-    double a_fb_v = dv_pid->Calc(e_v, dt);
+    double a_fb_v = dv_pid_->Calc(e_v, dt);
 
     double a_ctrl = a_fb_v + a_tgt_ * feed_forward_gain_acceleration_;
 
@@ -390,14 +437,14 @@ double TrajectoryControl::LongitudinalControl()
     if (a_ctrl > lon_max_acc_)
     {
         a_ctrl = lon_max_acc_;
-        dv_pid->Reset();
-        RCLCPP_DEBUG_STREAM(this->get_logger(), "Longitudinal acceleration limited!");
+        dv_pid_->Reset();
+        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal acceleration limited!");
     }
     else if (a_ctrl < lon_min_acc_)
     {
         a_ctrl = lon_min_acc_;
-        dv_pid->Reset();
-        RCLCPP_DEBUG_STREAM(this->get_logger(), "Longitudinal acceleration limited!");
+        dv_pid_->Reset();
+        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal acceleration limited!");
     }
 
     //calculate jerk with respect to last desired acceleration
@@ -412,8 +459,8 @@ double TrajectoryControl::LongitudinalControl()
         {
             a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
         }
-        //dv_pid->Reset();
-        RCLCPP_DEBUG_STREAM(this->get_logger(), "Longitudinal jerk limited!");
+        //dv_pid_->Reset();
+        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal jerk limited!");
     }
     vhcl_ctrl_output_.drive.speed = v_tgt_;
     return a_ctrl;

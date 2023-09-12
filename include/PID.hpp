@@ -3,6 +3,7 @@
  * @author Guido Küppers
  * @brief  Discrete PID-Controller Class.
  */
+#pragma once
 
 #include <cmath>
 
