@@ -3,7 +3,6 @@
  * @author Guido Küppers
  * @brief  ROS-Node for trajectory control.
  */
-#pragma once
 
 #include "TrajectoryControlNode.hpp"
 
