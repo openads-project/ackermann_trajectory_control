@@ -3,7 +3,7 @@ include:
 
 variables:
   BASE_IMAGE: rwthika/ros2:humble
-  COMMAND: echo "ToDo"
+  COMMAND: ros2 launch trajectory_control_node.launch.py
   PLATFORM: amd64
   TARGET: dev,run
   ENABLE_INDUSTRIAL_CI: 'true'
