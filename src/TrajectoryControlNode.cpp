@@ -27,7 +27,7 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
     vehicle_state_sub_ = create_subscription<perception_interfaces::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
     trajectory_sub_ = create_subscription<trajectory_interfaces::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
-    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("~/ctrl_cmds",1);
+    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>("~/ctrl_cmds",1);
 
     loadParameters();
 
@@ -427,7 +427,8 @@ void TrajectoryControl::VehicleCtrlCycle()
         }
     }
     vhcl_ctrl_output_.header.stamp = now();
-    vehicle_ctrl_pub_->publish(vhcl_ctrl_output_);
+    // Publish unstamped message
+    vehicle_ctrl_pub_->publish(vhcl_ctrl_output_.drive);
 }
 
 bool TrajectoryControl::InputSanityCheck()
