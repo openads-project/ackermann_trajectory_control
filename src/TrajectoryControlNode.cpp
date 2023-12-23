@@ -7,7 +7,7 @@
 #include "TrajectoryControlNode.hpp"
 
 #include <perception_msgs_utils/object_access.hpp>
-#include <trajectory_interfaces/trajectory_access.hpp>
+#include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
 
 //Main of Trajectory Control Node
@@ -25,7 +25,7 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 {
 
     vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
-    trajectory_sub_ = create_subscription<trajectory_interfaces::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
     vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>("~/ctrl_cmds",1);
 
@@ -312,7 +312,7 @@ void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData
 }
 
 //update the current trajectory
-void TrajectoryControl::TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg)
+void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg)
 {
     cur_trajectory_ = *msg;
     ResetOdometry();
@@ -337,7 +337,7 @@ void TrajectoryControl::ResetController()
     vhcl_ctrl_output_.drive.speed = 0.0;
     vhcl_ctrl_output_.drive.acceleration = 0.0;
     vhcl_ctrl_output_.drive.jerk = 0.0;
-    trajectory_interfaces::msg::Trajectory dummy_trj;
+    trajectory_planning_msgs::msg::Trajectory dummy_trj;
     cur_trajectory_=dummy_trj;
     perception_msgs::msg::EgoData dummy_state;
     cur_vehicle_state_=dummy_state;
@@ -440,7 +440,7 @@ bool TrajectoryControl::InputSanityCheck()
         RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;
     }
-    if (trajectory_interfaces::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
     {
         RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
@@ -453,21 +453,21 @@ bool TrajectoryControl::TrjDataProc()
 {
     // Derive State Vectors
     std::vector<double> TIME, V, A, Y, THETA, KAPPA;
-    int n_samples = trajectory_interfaces::trajectory_access::getSamplePointSize(cur_trajectory_);
+    int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_);
     for(int i=0; i<n_samples; i++){
-        TIME.push_back(trajectory_interfaces::trajectory_access::getT(cur_trajectory_, i));
-        V.push_back(trajectory_interfaces::trajectory_access::getV(cur_trajectory_, i));
-        Y.push_back(trajectory_interfaces::trajectory_access::getY(cur_trajectory_, i));
-        if(cur_trajectory_.type_id==trajectory_interfaces::DRIVABLE::TYPE_ID)
+        TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(cur_trajectory_, i));
+        V.push_back(trajectory_planning_msgs::trajectory_access::getV(cur_trajectory_, i));
+        Y.push_back(trajectory_planning_msgs::trajectory_access::getY(cur_trajectory_, i));
+        if(cur_trajectory_.type_id==trajectory_planning_msgs::DRIVABLE::TYPE_ID)
         {
-            A.push_back(trajectory_interfaces::trajectory_access::getA(cur_trajectory_, i));
-            THETA.push_back(trajectory_interfaces::trajectory_access::getTheta(cur_trajectory_, i));
-            KAPPA.push_back(trajectory_interfaces::trajectory_access::getKappa(cur_trajectory_, i));
+            A.push_back(trajectory_planning_msgs::trajectory_access::getA(cur_trajectory_, i));
+            THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(cur_trajectory_, i));
+            KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(cur_trajectory_, i));
         }
         else
         {
             // To-Do Fill A, THETA and KAPPA with finite-differences
-            RCLCPP_ERROR_STREAM(get_logger(), "trajectory_interfaces::DRIVABLE-Type is currently not supported!");
+            RCLCPP_ERROR_STREAM(get_logger(), "trajectory_planning_msgs::DRIVABLE-Type is currently not supported!");
             return false;
         }
     }

@@ -11,9 +11,9 @@
 #include <PID.hpp>
 
 // Input Messages
-#include <trajectory_interfaces/msg/trajectory.hpp>
-#include <trajectory_interfaces/msg/drivable.hpp>
-#include <trajectory_interfaces/msg/reference.hpp>
+#include <trajectory_planning_msgs/msg/trajectory.hpp>
+#include <trajectory_planning_msgs/msg/drivable.hpp>
+#include <trajectory_planning_msgs/msg/reference.hpp>
 
 #include <perception_msgs/msg/ego_data.hpp>
 
@@ -30,7 +30,7 @@ private:
     void loadParameters();
     void setControllerGains();
     void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg);
-    void TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg);
+    void TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg);
     void VehicleCtrlCycle();
     bool InputSanityCheck();
     bool TrjDataProc();
@@ -42,14 +42,14 @@ private:
     void ResetController();
 
     rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;
-    rclcpp::Subscription<trajectory_interfaces::msg::Trajectory>::SharedPtr trajectory_sub_;
+    rclcpp::Subscription<trajectory_planning_msgs::msg::Trajectory>::SharedPtr trajectory_sub_;
 
     rclcpp::Publisher<ackermann_msgs::msg::AckermannDrive>::SharedPtr vehicle_ctrl_pub_;
 
     rclcpp::TimerBase::SharedPtr vhcl_ctrl_timer_;
 
     perception_msgs::msg::EgoData cur_vehicle_state_;
-    trajectory_interfaces::msg::Trajectory cur_trajectory_;
+    trajectory_planning_msgs::msg::Trajectory cur_trajectory_;
 
     rclcpp::Time last_time_;
 

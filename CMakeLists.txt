@@ -11,7 +11,8 @@ find_package(ackermann_msgs REQUIRED)
 find_package(perception_msgs REQUIRED)
 find_package(perception_msgs_utils REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(trajectory_interfaces REQUIRED)
+find_package(trajectory_planning_msgs REQUIRED)
+find_package(trajectory_planning_msgs_utils REQUIRED)
 
 add_executable(${PROJECT_NAME}_node src/TrajectoryControlNode.cpp src/PID.cpp)
 
@@ -20,7 +21,8 @@ ament_target_dependencies(${PROJECT_NAME}_node
   perception_msgs
   perception_msgs_utils
   rclcpp
-  trajectory_interfaces
+  trajectory_planning_msgs
+  trajectory_planning_msgs_utils
 )
 
 target_include_directories(${PROJECT_NAME}_node PUBLIC
@@ -32,7 +34,8 @@ ament_export_dependencies(
   ackermann_msgs
   perception_msgs
   perception_msgs_utils
-  trajectory_interfaces
+  trajectory_planning_msgs
+  trajectory_planning_msgs_utils
 )
 
 install(TARGETS ${PROJECT_NAME}_node
