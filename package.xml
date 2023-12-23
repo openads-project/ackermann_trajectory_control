@@ -10,9 +10,10 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   
   <depend>ackermann_msgs</depend>
-  <depend>perception_interfaces</depend>
-  <depend>trajectory_interfaces</depend>
+  <depend>perception_msgs</depend>
+  <depend>perception_msgs_utils</depend>
   <depend>rclcpp</depend>
+  <depend>trajectory_interfaces</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

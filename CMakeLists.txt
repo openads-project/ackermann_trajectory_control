@@ -8,17 +8,19 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ackermann_msgs REQUIRED)
-find_package(perception_interfaces REQUIRED)
-find_package(trajectory_interfaces REQUIRED)
+find_package(perception_msgs REQUIRED)
+find_package(perception_msgs_utils REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(trajectory_interfaces REQUIRED)
 
 add_executable(${PROJECT_NAME}_node src/TrajectoryControlNode.cpp src/PID.cpp)
 
 ament_target_dependencies(${PROJECT_NAME}_node
   ackermann_msgs
-  perception_interfaces
-  trajectory_interfaces
+  perception_msgs
+  perception_msgs_utils
   rclcpp
+  trajectory_interfaces
 )
 
 target_include_directories(${PROJECT_NAME}_node PUBLIC
@@ -28,7 +30,8 @@ target_compile_features(${PROJECT_NAME}_node PUBLIC c_std_99 cxx_std_17)  # Requ
 
 ament_export_dependencies(
   ackermann_msgs
-  perception_interfaces
+  perception_msgs
+  perception_msgs_utils
   trajectory_interfaces
 )
 

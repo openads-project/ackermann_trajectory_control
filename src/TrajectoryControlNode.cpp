@@ -6,7 +6,7 @@
 
 #include "TrajectoryControlNode.hpp"
 
-#include <perception_interfaces/object_access.hpp>
+#include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_interfaces/trajectory_access.hpp>
 
 
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 {
 
-    vehicle_state_sub_ = create_subscription<perception_interfaces::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
     trajectory_sub_ = create_subscription<trajectory_interfaces::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
     vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>("~/ctrl_cmds",1);
@@ -306,7 +306,7 @@ void TrajectoryControl::loadParameters() {
 }
 
 //update the actual vehicle state
-void TrajectoryControl::VehicleStateCallback(const perception_interfaces::msg::EgoData::ConstPtr &msg)
+void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg)
 {
     cur_vehicle_state_ = *msg;
 }
@@ -339,14 +339,14 @@ void TrajectoryControl::ResetController()
     vhcl_ctrl_output_.drive.jerk = 0.0;
     trajectory_interfaces::msg::Trajectory dummy_trj;
     cur_trajectory_=dummy_trj;
-    perception_interfaces::msg::EgoData dummy_state;
+    perception_msgs::msg::EgoData dummy_state;
     cur_vehicle_state_=dummy_state;
     ResetOdometry();
 }
 
 void TrajectoryControl::setControllerGains()
 {
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     // Feed-Forward Gains
     if(!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_acceleration_, velocity, feed_forward_gain_acceleration_)) feed_forward_gain_acceleration_=0.0;
     if(!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_steering_angle_, velocity, feed_forward_gain_steering_angle_)) feed_forward_gain_steering_angle_=0.0;
@@ -531,8 +531,8 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
 
 void TrajectoryControl::CalcOdometry(double dt)
 {
-    double yawRate = perception_interfaces::object_access::getYawRate(cur_vehicle_state_);
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     odom_dy_ += sin(odom_dpsi_ + yawRate * 0.5 * dt) * velocity * dt;
     odom_dpsi_ += yawRate * dt;
 }
@@ -553,7 +553,7 @@ double TrajectoryControl::LateralControl()
     double e_psi = w_psi - dpsi_;
     double psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
 
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     //be sure v!=0 (to avoid division by zero)
     if (fabs(velocity) < 0.1)
     {
@@ -574,7 +574,7 @@ double TrajectoryControl::LateralControl()
 
     double st_ang = st_ang_pid + st_ang_ack * feed_forward_gain_steering_angle_;
 
-    if (perception_interfaces::object_access::getStandstill(cur_vehicle_state_)) //Standstill-Situation
+    if (perception_msgs::object_access::getStandstill(cur_vehicle_state_)) //Standstill-Situation
     {
         dy_pid_->Reset();
         dpsi_pid_->Reset();
@@ -618,7 +618,7 @@ double TrajectoryControl::LateralControl()
 double TrajectoryControl::LongitudinalControl()
 {
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     double w_v = v_tgt_;
     double e_v = w_v - velocity;
     double a_fb_v = dv_pid_->Calc(e_v, dt);
