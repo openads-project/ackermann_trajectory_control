@@ -6,8 +6,8 @@
 
 #include "TrajectoryControlNode.hpp"
 
-#include <perception_interfaces/object_access.hpp>
-#include <trajectory_interfaces/trajectory_access.hpp>
+#include <perception_msgs_utils/object_access.hpp>
+#include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
 
 //Main of Trajectory Control Node
@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
 TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 {
 
-    vehicle_state_sub_ = create_subscription<perception_interfaces::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
-    trajectory_sub_ = create_subscription<trajectory_interfaces::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
     vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>("~/ctrl_cmds",1);
 
@@ -306,13 +306,13 @@ void TrajectoryControl::loadParameters() {
 }
 
 //update the actual vehicle state
-void TrajectoryControl::VehicleStateCallback(const perception_interfaces::msg::EgoData::ConstPtr &msg)
+void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg)
 {
     cur_vehicle_state_ = *msg;
 }
 
 //update the current trajectory
-void TrajectoryControl::TrajectoryCallback(const trajectory_interfaces::msg::Trajectory::ConstPtr &msg)
+void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg)
 {
     cur_trajectory_ = *msg;
     ResetOdometry();
@@ -337,16 +337,16 @@ void TrajectoryControl::ResetController()
     vhcl_ctrl_output_.drive.speed = 0.0;
     vhcl_ctrl_output_.drive.acceleration = 0.0;
     vhcl_ctrl_output_.drive.jerk = 0.0;
-    trajectory_interfaces::msg::Trajectory dummy_trj;
+    trajectory_planning_msgs::msg::Trajectory dummy_trj;
     cur_trajectory_=dummy_trj;
-    perception_interfaces::msg::EgoData dummy_state;
+    perception_msgs::msg::EgoData dummy_state;
     cur_vehicle_state_=dummy_state;
     ResetOdometry();
 }
 
 void TrajectoryControl::setControllerGains()
 {
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     // Feed-Forward Gains
     if(!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_acceleration_, velocity, feed_forward_gain_acceleration_)) feed_forward_gain_acceleration_=0.0;
     if(!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_steering_angle_, velocity, feed_forward_gain_steering_angle_)) feed_forward_gain_steering_angle_=0.0;
@@ -440,7 +440,7 @@ bool TrajectoryControl::InputSanityCheck()
         RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;
     }
-    if (trajectory_interfaces::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
     {
         RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
@@ -453,21 +453,21 @@ bool TrajectoryControl::TrjDataProc()
 {
     // Derive State Vectors
     std::vector<double> TIME, V, A, Y, THETA, KAPPA;
-    int n_samples = trajectory_interfaces::trajectory_access::getSamplePointSize(cur_trajectory_);
+    int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_);
     for(int i=0; i<n_samples; i++){
-        TIME.push_back(trajectory_interfaces::trajectory_access::getT(cur_trajectory_, i));
-        V.push_back(trajectory_interfaces::trajectory_access::getV(cur_trajectory_, i));
-        Y.push_back(trajectory_interfaces::trajectory_access::getY(cur_trajectory_, i));
-        if(cur_trajectory_.type_id==trajectory_interfaces::DRIVABLE::TYPE_ID)
+        TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(cur_trajectory_, i));
+        V.push_back(trajectory_planning_msgs::trajectory_access::getV(cur_trajectory_, i));
+        Y.push_back(trajectory_planning_msgs::trajectory_access::getY(cur_trajectory_, i));
+        if(cur_trajectory_.type_id==trajectory_planning_msgs::DRIVABLE::TYPE_ID)
         {
-            A.push_back(trajectory_interfaces::trajectory_access::getA(cur_trajectory_, i));
-            THETA.push_back(trajectory_interfaces::trajectory_access::getTheta(cur_trajectory_, i));
-            KAPPA.push_back(trajectory_interfaces::trajectory_access::getKappa(cur_trajectory_, i));
+            A.push_back(trajectory_planning_msgs::trajectory_access::getA(cur_trajectory_, i));
+            THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(cur_trajectory_, i));
+            KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(cur_trajectory_, i));
         }
         else
         {
             // To-Do Fill A, THETA and KAPPA with finite-differences
-            RCLCPP_ERROR_STREAM(get_logger(), "trajectory_interfaces::DRIVABLE-Type is currently not supported!");
+            RCLCPP_ERROR_STREAM(get_logger(), "trajectory_planning_msgs::DRIVABLE-Type is currently not supported!");
             return false;
         }
     }
@@ -531,8 +531,8 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
 
 void TrajectoryControl::CalcOdometry(double dt)
 {
-    double yawRate = perception_interfaces::object_access::getYawRate(cur_vehicle_state_);
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     odom_dy_ += sin(odom_dpsi_ + yawRate * 0.5 * dt) * velocity * dt;
     odom_dpsi_ += yawRate * dt;
 }
@@ -553,7 +553,7 @@ double TrajectoryControl::LateralControl()
     double e_psi = w_psi - dpsi_;
     double psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
 
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     //be sure v!=0 (to avoid division by zero)
     if (fabs(velocity) < 0.1)
     {
@@ -574,7 +574,7 @@ double TrajectoryControl::LateralControl()
 
     double st_ang = st_ang_pid + st_ang_ack * feed_forward_gain_steering_angle_;
 
-    if (perception_interfaces::object_access::getStandstill(cur_vehicle_state_)) //Standstill-Situation
+    if (perception_msgs::object_access::getStandstill(cur_vehicle_state_)) //Standstill-Situation
     {
         dy_pid_->Reset();
         dpsi_pid_->Reset();
@@ -618,7 +618,7 @@ double TrajectoryControl::LateralControl()
 double TrajectoryControl::LongitudinalControl()
 {
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-    double velocity = perception_interfaces::object_access::getVelLon(cur_vehicle_state_);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     double w_v = v_tgt_;
     double e_v = w_v - velocity;
     double a_fb_v = dv_pid_->Calc(e_v, dt);
