@@ -9,6 +9,10 @@
 #include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
+// ROS message parameters
+const std::string TrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
+const std::string TrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
+const std::string TrajectoryControl::kOutputTopic = "~/ctrl_cmds";
 
 //Main of Trajectory Control Node
 int main(int argc, char *argv[])
@@ -23,11 +27,10 @@ int main(int argc, char *argv[])
 //Constructor of Trajectory Control Object
 TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 {
+    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
-    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>("/carla_its_adapter/ego_data", 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
-    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>("/trajectory_supervision_node/output_topic", 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
-
-    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>("~/ctrl_cmds",1);
+    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic,1);
 
     loadParameters();
 

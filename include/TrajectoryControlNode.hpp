@@ -26,6 +26,12 @@ public:
     TrajectoryControl();
     ~TrajectoryControl();
 
+protected:
+    // ROS message parameters
+    static const std::string kInputTopicEgoData;
+    static const std::string kInputTopicTrajectory;
+    static const std::string kOutputTopic;
+
 private:
     void loadParameters();
     void setControllerGains();
