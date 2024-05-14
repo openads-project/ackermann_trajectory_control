@@ -19,8 +19,13 @@ def generate_launch_description():
     node_name_default = 'trajectory_control_node'
     node_name_arg = DeclareLaunchArgument('node_name',
                                           default_value=node_name_default)
-    
-    use_sim_time_arg = DeclareLaunchArgument('use_sim_time_arg', default_value='False')
+    input_trajectory_arg = DeclareLaunchArgument('input_trajectory',
+                                            default_value='~/input_trajectory')
+    input_ego_data_arg = DeclareLaunchArgument('input_ego_data',
+                                             default_value='~/input_ego_data')
+    output_arg = DeclareLaunchArgument('output',
+                                             default_value='~/ctrl_cmds')
+    use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='False')
 
     node = LifecycleNode(
         package="trajectory_control",
@@ -29,19 +34,25 @@ def generate_launch_description():
         namespace="",
         output="screen",
         emulate_tty=True,
-        parameters=[config]
+        parameters=[config],
+        remappings=[('~/input_trajectory', LaunchConfiguration('input_trajectory')),
+                        ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
+                        ('~/ctrl_cmds', LaunchConfiguration('output'))]
     )
 
     node_group = GroupAction(actions=[
         SetParameter(name='use_sim_time',
-                     value=LaunchConfiguration('use_sim_time_arg'),
+                     value=LaunchConfiguration('use_sim_time'),
                      condition=LaunchConfigurationNotEquals(
-                         'use_sim_time_arg', "None")), node
+                         'use_sim_time', "None")), node
     ])
 
     return LaunchDescription([
         params_arg,
         node_name_arg,
+        input_trajectory_arg,
+        input_ego_data_arg,
+        output_arg,
         use_sim_time_arg,
         node_group
     ])
