@@ -445,7 +445,7 @@ bool TrajectoryControl::InputSanityCheck()
     }
     if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
     {
-        RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
+        RCLCPP_DEBUG_STREAM(get_logger(), "Input Trajectory is empty!");
         return false;
     }
 
