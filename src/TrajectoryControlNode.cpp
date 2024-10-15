@@ -83,6 +83,8 @@ void TrajectoryControl::declareAndLoadParameter(
 }
 
 void TrajectoryControl::loadParameters() {
+    this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false, false, false);
+    this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_, "Frame ID of the fixed frame", false, false, false);
     this->declareAndLoadParameter("control_frequency", control_frequency_, "Control cycle frequency", true, false, false);//, 0.0, 200.0, 1.0); @jbusch why is this not working?
     this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle", false, false, false);
     this->declareAndLoadParameter("selfsteergradient", self_st_gradient_, "Self-steer-gradient of the vehicle", false, false, false);
@@ -177,12 +179,22 @@ void TrajectoryControl::setup() {
 void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg)
 {
     cur_vehicle_state_ = *msg;
+    // transform latest trajectory to current vehicle-frame
+    trajectory_planning_msgs::msg::Trajectory tf_trajectory;
+    try {
+      tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                                fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
+      tf_trajectory_ = subscribed_trajectory_;
+    }
 }
 
 //update the current trajectory
 void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg)
 {
-    cur_trajectory_ = *msg;
+    subscribed_trajectory_ = *msg;
     ResetOdometry();
 }
 
@@ -206,7 +218,8 @@ void TrajectoryControl::ResetController()
     vhcl_ctrl_output_.drive.acceleration = 0.0;
     vhcl_ctrl_output_.drive.jerk = 0.0;
     trajectory_planning_msgs::msg::Trajectory dummy_trj;
-    cur_trajectory_=dummy_trj;
+    subscribed_trajectory_=dummy_trj;
+    tf_trajectory_=dummy_trj;
     perception_msgs::msg::EgoData dummy_state;
     cur_vehicle_state_=dummy_state;
     ResetOdometry();
@@ -256,7 +269,7 @@ void TrajectoryControl::VehicleCtrlCycle()
     }
 
     // Standstill signal?
-    if(cur_trajectory_.standstill)
+    if(tf_trajectory_.standstill)
     {
         RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
         vhcl_ctrl_output_.drive.steering_angle = 0.0;
@@ -308,7 +321,7 @@ bool TrajectoryControl::InputSanityCheck()
         RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;
     }
-    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0)
     {
         RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
@@ -321,16 +334,16 @@ bool TrajectoryControl::TrjDataProc()
 {
     // Derive State Vectors
     std::vector<double> TIME, V, A, Y, THETA, KAPPA;
-    int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_);
+    int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_);
     for(int i=0; i<n_samples; i++){
-        TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(cur_trajectory_, i));
-        V.push_back(trajectory_planning_msgs::trajectory_access::getV(cur_trajectory_, i));
-        Y.push_back(trajectory_planning_msgs::trajectory_access::getY(cur_trajectory_, i));
-        if(cur_trajectory_.type_id==trajectory_planning_msgs::DRIVABLE::TYPE_ID)
+        TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(tf_trajectory_, i));
+        V.push_back(trajectory_planning_msgs::trajectory_access::getV(tf_trajectory_, i));
+        Y.push_back(trajectory_planning_msgs::trajectory_access::getY(tf_trajectory_, i));
+        if(tf_trajectory_.type_id==trajectory_planning_msgs::DRIVABLE::TYPE_ID)
         {
-            A.push_back(trajectory_planning_msgs::trajectory_access::getA(cur_trajectory_, i));
-            THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(cur_trajectory_, i));
-            KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(cur_trajectory_, i));
+            A.push_back(trajectory_planning_msgs::trajectory_access::getA(tf_trajectory_, i));
+            THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(tf_trajectory_, i));
+            KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(tf_trajectory_, i));
         }
         else
         {
@@ -341,7 +354,7 @@ bool TrajectoryControl::TrjDataProc()
     }
 
     //calculate desired interpolation time for longitudinal values
-    double des_time = (now() - cur_trajectory_.header.stamp).seconds() + lon_t_lookahead_;
+    double des_time = (now() - tf_trajectory_.header.stamp).seconds() + lon_t_lookahead_;
     //interpolate longitudinal target values
     if(!LinearInterpolation(TIME, V, des_time, v_tgt_)) return false;
     if(!LinearInterpolation(TIME, A, des_time, a_tgt_)) return false;

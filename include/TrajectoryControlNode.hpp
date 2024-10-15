@@ -83,7 +83,8 @@ private:
     std::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
 
     perception_msgs::msg::EgoData cur_vehicle_state_;
-    trajectory_planning_msgs::msg::Trajectory cur_trajectory_;
+    trajectory_planning_msgs::msg::Trajectory subscribed_trajectory_;
+    trajectory_planning_msgs::msg::Trajectory tf_trajectory_;
 
     rclcpp::Time last_time_;
 
