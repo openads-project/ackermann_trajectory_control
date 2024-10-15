@@ -20,6 +20,11 @@
 // Output Messages
 #include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
 
+
+template <typename C> struct is_vector : std::false_type {};    
+template <typename T,typename A> struct is_vector< std::vector<T,A> > : std::true_type {};    
+template <typename C> inline constexpr bool is_vector_v = is_vector<C>::value;
+
 class TrajectoryControl : public rclcpp::Node
 {
 public:
@@ -33,12 +38,25 @@ protected:
     static const std::string kOutputTopic;
 
 private:
+
+    // setup and parameter handling
     void setup();
     void loadParameters();
-    void setControllerGains();
+    template <typename T>
+    void declareAndLoadParameter(const std::string &name, T &member_param, const std::string &description,
+                                const bool add_to_auto_reconfigurable_params = true, const bool is_required = false,
+                                const bool read_only = false, const std::optional<T> &from_value = std::nullopt,
+                                const std::optional<T> &to_value = std::nullopt,
+                                const std::optional<T> &step_value = std::nullopt,
+                                const std::string &additional_constraints = "");
+    rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
+
+    // callbacks
     void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg);
     void TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg);
     void VehicleCtrlCycle();
+
+    void setControllerGains();
     bool InputSanityCheck();
     bool TrjDataProc();
     bool LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y);
@@ -55,19 +73,27 @@ private:
 
     rclcpp::TimerBase::SharedPtr vhcl_ctrl_timer_;
 
+    OnSetParametersCallbackHandle::SharedPtr parameters_callback_;
+
     perception_msgs::msg::EgoData cur_vehicle_state_;
     trajectory_planning_msgs::msg::Trajectory cur_trajectory_;
 
     rclcpp::Time last_time_;
 
+    // parameters
+    std::vector<std::tuple<std::string, std::function<void(const rclcpp::Parameter &)>>>
+    auto_reconfigurable_params_;
+
     // TrajectoryControl Parameters
+    std::string vehicle_frame_id_ = "base_link";
+    std::string fixed_over_time_frame_id_ = "map";
     double control_frequency_ = 100.0;
 
     double lat_t_lookahead_ = 0.1;
     double lon_t_lookahead_ = 0.1;
 
     double lon_max_acc_ = 3.5;
-    double lon_min_acc_ = -5.0; //be sure that this value is negative
+    double lon_min_acc_ = -5.0; // make sure that this value is negative
     double lon_max_jerk_ = 5.0;
 
     double lat_max_st_ang_ = 28.0*M_PI/180.0;
