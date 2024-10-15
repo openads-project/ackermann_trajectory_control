@@ -195,6 +195,29 @@ void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData
 void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg)
 {
     subscribed_trajectory_ = *msg;
+    // check for high-level-initialization
+    // check size of states
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0)
+    {
+        // get x, y and theta of trajectory at first state
+        double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory_, 0);
+        double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
+        double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory_, 0);
+        if(x == 0.0 && y == 0.0 && theta == 0.0) { // high-level-initialization{
+            ResetController();
+        }
+    }
+
+    // transform latest trajectory to current vehicle-frame
+    trajectory_planning_msgs::msg::Trajectory tf_trajectory;
+    try {
+      tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                                fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
+      tf_trajectory_ = subscribed_trajectory_;
+    }
     ResetOdometry();
 }
 
@@ -312,8 +335,7 @@ void TrajectoryControl::VehicleCtrlCycle()
     vehicle_ctrl_pub_->publish(vhcl_ctrl_output_.drive);
 }
 
-bool TrajectoryControl::InputSanityCheck()
-{
+bool TrajectoryControl::InputSanityCheck() {
     double age;
     age = (now() - cur_vehicle_state_.header.stamp).seconds();
     if (age > 0.2 || age < 0.0) //current vehicle state data older than 0.2s
@@ -334,12 +356,10 @@ bool TrajectoryControl::InputSanityCheck()
         return false;
       }
     }
-
     return true;
 }
 
-bool TrajectoryControl::TrjDataProc()
-{
+bool TrajectoryControl::TrjDataProc() {
     // Derive State Vectors
     std::vector<double> TIME, V, A, Y, THETA, KAPPA;
     int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_);
@@ -383,8 +403,7 @@ bool TrajectoryControl::TrjDataProc()
     return true;
 }
 
-bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y)
-{
+bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y) {
     if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end()))
     {
         RCLCPP_ERROR_STREAM(get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
@@ -418,22 +437,19 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
     return true;
 }
 
-void TrajectoryControl::CalcOdometry(double dt)
-{
+void TrajectoryControl::CalcOdometry(double dt) {
     double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
     double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     odom_dy_ += sin(odom_dpsi_ + yawRate * 0.5 * dt) * velocity * dt;
     odom_dpsi_ += yawRate * dt;
 }
 
-void TrajectoryControl::ResetOdometry()
-{
+void TrajectoryControl::ResetOdometry() {
     odom_dpsi_ = 0.0;
     odom_dy_ = 0.0;
 }
 
-double TrajectoryControl::LateralControl()
-{
+double TrajectoryControl::LateralControl() {
     //cascaded control
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     double w_y = 0.0;
@@ -504,8 +520,7 @@ double TrajectoryControl::LateralControl()
     return st_ang;
 }
 
-double TrajectoryControl::LongitudinalControl()
-{
+double TrajectoryControl::LongitudinalControl() {
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     double w_v = v_tgt_;
