@@ -27,13 +27,15 @@ int main(int argc, char *argv[])
 //Constructor of Trajectory Control Object
 TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 {
-    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
-    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
-
-    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic,1);
-
     loadParameters();
+    setup();
+}
 
+TrajectoryControl::~TrajectoryControl()
+{
+}
+
+void TrajectoryControl::setup() {
     //Initialize dv-PID
     dv_pid_ = new PID(0.0, 0.0, 0.0);
 
@@ -52,13 +54,16 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 
     ResetOdometry();
 
-    //Initialization of the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called every 0.01s e.g. with 100Hz.
+    // initialize subscribers
+    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+
+    // initialize publishers
+    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic,1);
+
+    // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
     last_time_=now();
     vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0/control_frequency_), std::bind(&TrajectoryControl::VehicleCtrlCycle, this));
-}
-
-TrajectoryControl::~TrajectoryControl()
-{
 }
 
 void TrajectoryControl::loadParameters() {

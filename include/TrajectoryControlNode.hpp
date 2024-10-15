@@ -33,6 +33,7 @@ protected:
     static const std::string kOutputTopic;
 
 private:
+    void setup();
     void loadParameters();
     void setControllerGains();
     void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg);
