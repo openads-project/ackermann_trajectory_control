@@ -325,6 +325,14 @@ bool TrajectoryControl::InputSanityCheck()
     {
         RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
+    } else {
+      // get last state of trajectory
+      double last_time = trajectory_planning_msgs::trajectory_access::getT(tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
+      double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
+      if (last_time < 2 * lookahead) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Trajectory is too short!");
+        return false;
+      }
     }
 
     return true;
