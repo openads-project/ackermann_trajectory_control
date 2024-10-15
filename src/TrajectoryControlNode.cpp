@@ -14,14 +14,6 @@ const std::string TrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
 const std::string TrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
 const std::string TrajectoryControl::kOutputTopic = "~/ctrl_cmds";
 
-//Main of Trajectory Control Node
-int main(int argc, char *argv[]) {
-    rclcpp::init(argc, argv);
-    auto controller = std::make_shared<TrajectoryControl>();
-    rclcpp::spin(controller);
-    rclcpp::shutdown();
-    return 0;
-}
 
 //Constructor of Trajectory Control Object
 TrajectoryControl::TrajectoryControl() : Node("trajectory_controller") {
@@ -145,8 +137,6 @@ rcl_interfaces::msg::SetParametersResult TrajectoryControl::parametersCallback(
 
   return result;
 }
-
-
 
 void TrajectoryControl::setup() {
     //Initialize dv-PID
@@ -530,4 +520,13 @@ double TrajectoryControl::LongitudinalControl()
     }
     vhcl_ctrl_output_.drive.speed = v_tgt_;
     return a_ctrl;
+}
+
+// Main of Trajectory Control Node
+int main(int argc, char *argv[]) {
+    rclcpp::init(argc, argv);
+    auto controller = std::make_shared<TrajectoryControl>();
+    rclcpp::spin(controller);
+    rclcpp::shutdown();
+    return 0;
 }
