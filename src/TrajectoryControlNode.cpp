@@ -99,7 +99,7 @@ void TrajectoryControl::loadParameters() {
     lat_max_st_rate_*=M_PI/180.0;
     this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false, false, false);
     this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_, "Feed forward acceleration gain", false, false, false);
-    this->declareAndLoadParameter("feed_forward_steering_angle", vec_feed_forward_gain_steering_angle_, "Feed forward steering angle gain", false, false, false);
+    this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_, "Feed forward steering angle gain", false, false, false);
     this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", false, false, false);
     this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", false, false, false);
     this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", false, false, false);
