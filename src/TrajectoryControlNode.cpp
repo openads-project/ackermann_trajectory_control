@@ -157,6 +157,10 @@ void TrajectoryControl::setup() {
 
     ResetOdometry();
 
+    // initialize tf listener
+    tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf2_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf2_buffer_);
+
     // initialize subscribers
     vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
     trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));

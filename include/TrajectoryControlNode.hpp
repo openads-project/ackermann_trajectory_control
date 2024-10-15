@@ -20,6 +20,10 @@
 // Output Messages
 #include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
 
+// tf2
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_trajectory_planning_msgs/tf2_trajectory_planning_msgs.hpp>
 
 template <typename C> struct is_vector : std::false_type {};    
 template <typename T,typename A> struct is_vector< std::vector<T,A> > : std::true_type {};    
@@ -74,6 +78,9 @@ private:
     rclcpp::TimerBase::SharedPtr vhcl_ctrl_timer_;
 
     OnSetParametersCallbackHandle::SharedPtr parameters_callback_;
+
+    std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
 
     perception_msgs::msg::EgoData cur_vehicle_state_;
     trajectory_planning_msgs::msg::Trajectory cur_trajectory_;

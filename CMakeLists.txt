@@ -6,11 +6,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
 find_package(ackermann_msgs REQUIRED)
+find_package(ament_cmake REQUIRED)
 find_package(perception_msgs REQUIRED)
 find_package(perception_msgs_utils REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_trajectory_planning_msgs REQUIRED)
 find_package(trajectory_planning_msgs REQUIRED)
 find_package(trajectory_planning_msgs_utils REQUIRED)
 
@@ -21,6 +24,9 @@ ament_target_dependencies(${PROJECT_NAME}_node
   perception_msgs
   perception_msgs_utils
   rclcpp
+  tf2_geometry_msgs
+  tf2_ros
+  tf2_trajectory_planning_msgs
   trajectory_planning_msgs
   trajectory_planning_msgs_utils
 )
@@ -34,6 +40,9 @@ ament_export_dependencies(
   ackermann_msgs
   perception_msgs
   perception_msgs_utils
+  tf2_geometry_msgs
+  tf2_ros
+  tf2_trajectory_planning_msgs
   trajectory_planning_msgs
   trajectory_planning_msgs_utils
 )
