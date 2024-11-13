@@ -58,17 +58,17 @@ trajectory_control_node:
       - 1.0 # value for 38.89 m/s
     # Velocity controller parameters
     dv_p:
-      - 0.35 # value for -2.78 m/s
-      - 0.35 # value for -0.2 m/s
-      - 0.35 # value for  0.0 m/s
-      - 0.35 # value for  0.2 m/s
-      - 0.35 # value for  2.78 m/s
-      - 0.35 # value for 11.11 m/s
-      - 0.35 # value for 16.67 m/s
-      - 0.35 # value for 22.22 m/s
-      - 0.35 # value for 27.78 m/s
-      - 0.35 # value for 33.33 m/s
-      - 0.35 # value for 38.89 m/s
+      - 1.0 # value for -2.78 m/s
+      - 1.0 # value for -0.2 m/s
+      - 1.0 # value for  0.0 m/s
+      - 1.0 # value for  0.2 m/s
+      - 1.0 # value for  2.78 m/s
+      - 1.0 # value for 11.11 m/s
+      - 1.0 # value for 16.67 m/s
+      - 1.0 # value for 22.22 m/s
+      - 1.0 # value for 27.78 m/s
+      - 1.0 # value for 33.33 m/s
+      - 1.0 # value for 38.89 m/s
     dv_i:
       - 0.0 # value for -2.78 m/s
       - 0.0 # value for -0.2 m/s
@@ -132,17 +132,17 @@ trajectory_control_node:
       - 0.015 # value for 38.89 m/s
     # heading deviation controller parameters
     dpsi_p:
-      - 0.0 # value for -2.78 m/s
-      - 0.0 # value for -0.2 m/s
-      - 0.0 # value for  0.0 m/s
-      - 0.0 # value for  0.2 m/s
-      - 0.0 # value for  2.78 m/s
-      - 0.0 # value for 11.11 m/s
-      - 0.0 # value for 16.67 m/s
-      - 0.0 # value for 22.22 m/s
-      - 0.0 # value for 27.78 m/s
-      - 0.0 # value for 33.33 m/s
-      - 0.0 # value for 38.89 m/s
+      - 1.0 # value for -2.78 m/s
+      - 1.0 # value for -0.2 m/s
+      - 1.0 # value for  0.0 m/s
+      - 1.0 # value for  0.2 m/s
+      - 1.0 # value for  2.78 m/s
+      - 1.0 # value for 11.11 m/s
+      - 1.0 # value for 16.67 m/s
+      - 1.0 # value for 22.22 m/s
+      - 1.0 # value for 27.78 m/s
+      - 1.0 # value for 33.33 m/s
+      - 1.0 # value for 38.89 m/s
     dpsi_i:
       - 1.2  # value for -2.78 m/s
       - 1.2  # value for -0.2 m/s
