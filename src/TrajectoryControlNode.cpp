@@ -203,7 +203,7 @@ void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::
         double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory_, 0);
         double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
         double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory_, 0);
-        if(x == 0.0 && y == 0.0 && theta == 0.0) { // high-level-initialization{
+        if(x == 0.0 && y == 0.0 && theta == 0.0) { // high-level-initialization
             ResetController();
         }
     }
