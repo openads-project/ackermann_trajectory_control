@@ -553,7 +553,7 @@ double TrajectoryControl::LongitudinalControl() {
         {
             a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
         }
-        //dv_pid_->Reset();
+        dv_pid_->Reset();
         RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal jerk limited!");
     }
     vhcl_ctrl_output_.drive.speed = v_tgt_;
