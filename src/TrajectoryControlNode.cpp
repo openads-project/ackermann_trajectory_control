@@ -203,7 +203,10 @@ void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::
         double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
         double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory_, 0);
         if(x == 0.0 && y == 0.0 && theta == 0.0) { // high-level-initialization
-            ResetController();
+            dy_pid_->Reset();
+            dpsi_pid_->Reset();
+            dv_pid_->Reset();
+            ResetOdometry();
         }
     }
 
