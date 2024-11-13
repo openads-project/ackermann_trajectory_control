@@ -7,7 +7,6 @@ from launch.conditions import LaunchConfigurationNotEquals
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, SetParameter
 
-
 def generate_launch_description():
 
     params_arg = DeclareLaunchArgument('params', default_value='params.yml')

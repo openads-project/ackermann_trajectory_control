@@ -167,4 +167,3 @@ trajectory_control_node:
       - 0.0 # value for 27.78 m/s
       - 0.0 # value for 33.33 m/s
       - 0.0 # value for 38.89 m/s
-
