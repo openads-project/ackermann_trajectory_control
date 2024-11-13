@@ -382,17 +382,15 @@ bool TrajectoryControl::TrjDataProc() {
     }
 
     //calculate desired interpolation time for longitudinal values
-    double des_time = (now() - tf_trajectory_.header.stamp).seconds() + lon_t_lookahead_;
+    double delta_time = (now() - tf_trajectory_.header.stamp).seconds();
     //interpolate longitudinal target values
-    if(!LinearInterpolation(TIME, V, des_time, v_tgt_)) return false;
-    if(!LinearInterpolation(TIME, A, des_time, a_tgt_)) return false;
+    if(!LinearInterpolation(TIME, V, delta_time + lon_t_lookahead_, v_tgt_)) return false;
+    if(!LinearInterpolation(TIME, A, delta_time + lon_t_lookahead_, a_tgt_)) return false;
 
-    //switch to desired interpolation time for lateral values
-    des_time = des_time - lon_t_lookahead_ + lat_t_lookahead_;
     //interpolate lateral target values
     if(!LinearInterpolation(TIME, Y, des_time, y_tgt_)) return false;
-    if(!LinearInterpolation(TIME, THETA, des_time, psi_tgt_)) return false;
-    if(!LinearInterpolation(TIME, KAPPA, des_time, kappa_tgt_)) return false;
+    if(!LinearInterpolation(TIME, THETA, delta_time + lat_t_lookahead_, psi_tgt_)) return false;
+    if(!LinearInterpolation(TIME, KAPPA, delta_time + lat_t_lookahead_, kappa_tgt_)) return false;
 
     //CalcOdometry
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
