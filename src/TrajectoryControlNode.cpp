@@ -83,32 +83,33 @@ void TrajectoryControl::declareAndLoadParameter(
 }
 
 void TrajectoryControl::loadParameters() {
-    this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false, false, false);
-    this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_, "Frame ID of the fixed frame", false, false, false);
-    this->declareAndLoadParameter("control_frequency", control_frequency_, "Control cycle frequency", true, false, false);//, 0.0, 200.0, 1.0); @jbusch why is this not working?
-    this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle", false, false, false);
-    this->declareAndLoadParameter("selfsteergradient", self_st_gradient_, "Self-steer-gradient of the vehicle", false, false, false);
-    this->declareAndLoadParameter("longitudinal_lookahed_time", lon_t_lookahead_, "Longitudinal lookahead time", true, false, false);//, 0.0, 5.0, 0.1); @jbusch why is this not working?
-    this->declareAndLoadParameter("lateral_lookahed_time", lat_t_lookahead_, "Lateral lookahead time", true, false, false);//, 0.0, 5.0, 0.1); @jbusch why is this not working?
-    this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_, "Maximum longitudinal acceleration", true, false, false);//, 0.0, 10.0, 0.1); @jbusch why is this not working?
-    this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_, "Minimum longitudinal acceleration", true, false, false);//, -10.0, 0.0, 0.1); @jbusch why is this not working?
-    this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false);//, 0.0, 20.0, 0.1); @jbusch why is this not working?
-    this->declareAndLoadParameter("max_steering_angle", lat_max_st_ang_, "Maximum steering angle", false, false, false);//, 0.0, 90.0, 1.0); @jbusch why is this not working?
+    this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
+    this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_, "Frame ID of the fixed frame", false);
+    this->declareAndLoadParameter("control_frequency", control_frequency_, "Control cycle frequency", true, false, false, (std::optional<double>)0.0, (std::optional<double>)200.0, (std::optional<double>)1.0);
+    this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_, "Timeout for vehicle-state information", true, false, false, (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)0.05);
+    this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle", false);
+    this->declareAndLoadParameter("selfsteergradient", self_st_gradient_, "Self-steer-gradient of the vehicle", false);
+    this->declareAndLoadParameter("longitudinal_lookahed_time", lon_t_lookahead_, "Longitudinal lookahead time", true, false, false, (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("lateral_lookahed_time", lat_t_lookahead_, "Lateral lookahead time", true, false, false, (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_, "Maximum longitudinal acceleration", true, false, false, (std::optional<double>)0.0, (std::optional<double>)10.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_, "Minimum longitudinal acceleration", true, false, false, (std::optional<double>)-10.0, (std::optional<double>)0.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false, (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("max_steering_angle", lat_max_st_ang_, "Maximum steering angle", false, false, false, (std::optional<double>)0.0, (std::optional<double>)90.0, (std::optional<double>)1.0);
     lat_max_st_ang_*=M_PI/180.0;
-    this->declareAndLoadParameter("max_steering_angle_rate", lat_max_st_rate_, "Maximum steering angle rate", false, false, false);//, 0.0, 270.0, 1.0); @jbusch why is this not working?
+    this->declareAndLoadParameter("max_steering_angle_rate", lat_max_st_rate_, "Maximum steering angle rate", false, false, false, (std::optional<double>)0.0, (std::optional<double>)270.0, (std::optional<double>)1.0);
     lat_max_st_rate_*=M_PI/180.0;
-    this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false, false, false);
-    this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_, "Feed forward acceleration gain", false, false, false);
-    this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_, "Feed forward steering angle gain", false, false, false);
-    this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", false, false, false);
-    this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", false, false, false);
-    this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", false, false, false);
-    this->declareAndLoadParameter("dy_p", dy_p_, "dy P Gain", false, false, false);
-    this->declareAndLoadParameter("dy_i", dy_i_, "dy I Gain", false, false, false);
-    this->declareAndLoadParameter("dy_d", dy_d_, "dy D Gain", false, false, false);
-    this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", false, false, false);
-    this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", false, false, false);
-    this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", false, false, false);
+    this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
+    this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_, "Feed forward acceleration gain", false);
+    this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_, "Feed forward steering angle gain", false);
+    this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", false);
+    this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", false);
+    this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", false);
+    this->declareAndLoadParameter("dy_p", dy_p_, "dy P Gain", false);
+    this->declareAndLoadParameter("dy_i", dy_i_, "dy I Gain", false);
+    this->declareAndLoadParameter("dy_d", dy_d_, "dy D Gain", false);
+    this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", false);
+    this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", false);
+    this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", false);
 }
 
 /**
@@ -195,10 +196,8 @@ void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData
 void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg)
 {
     subscribed_trajectory_ = *msg;
-    // check for high-level-initialization
-    // check size of states
-    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0)
-    {
+    // Check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
         // get x, y and theta of trajectory at first state
         double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory_, 0);
         double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
@@ -338,7 +337,7 @@ void TrajectoryControl::VehicleCtrlCycle()
 bool TrajectoryControl::InputSanityCheck() {
     double age;
     age = (now() - cur_vehicle_state_.header.stamp).seconds();
-    if (age > 0.2 || age < 0.0) //current vehicle state data older than 0.2s
+    if (age > vehicle_state_timeout_ || age < 0.0) // current vehicle state data older than vehicle_state_timeout_
     {
         RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;

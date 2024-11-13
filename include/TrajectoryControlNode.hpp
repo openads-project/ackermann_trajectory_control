@@ -107,6 +107,8 @@ private:
     double lat_max_st_ang_ = 28.0*M_PI/180.0;
     double lat_max_st_rate_ = 56.0*M_PI/180.0;
 
+    double vehicle_state_timeout_ = 0.2;
+
     // Vehicle Parameters
     double wheelbase_ = 2.711;
     double self_st_gradient_ = 0.002917853041365;
