@@ -64,10 +64,10 @@ private:
     bool InputSanityCheck();
     bool TrjDataProc();
     bool LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y);
-    void CalcOdometry(double dt);
+    void CalcOdometry(const double dt);
     void ResetOdometry();
-    double LateralControl();
-    double LongitudinalControl();
+    double LateralControl(const double dt);
+    double LongitudinalControl(const double dt);
     void ResetController();
 
     rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;

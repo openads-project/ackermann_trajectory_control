@@ -314,8 +314,10 @@ void TrajectoryControl::VehicleCtrlCycle()
             return;
         }
         setControllerGains();
-        vhcl_ctrl_output_.drive.steering_angle = LateralControl();
-        vhcl_ctrl_output_.drive.acceleration = LongitudinalControl();
+        double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+        if(dt <= 0.0) return;
+        vhcl_ctrl_output_.drive.steering_angle = LateralControl(dt);
+        vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
         if(std::isnan(vhcl_ctrl_output_.drive.steering_angle))
         {
             RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
@@ -437,7 +439,7 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
     return true;
 }
 
-void TrajectoryControl::CalcOdometry(double dt) {
+void TrajectoryControl::CalcOdometry(const double dt) {
     double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
     double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     odom_dy_ += sin(odom_dpsi_ + yawRate * 0.5 * dt) * velocity * dt;
@@ -449,9 +451,8 @@ void TrajectoryControl::ResetOdometry() {
     odom_dy_ = 0.0;
 }
 
-double TrajectoryControl::LateralControl() {
+double TrajectoryControl::LateralControl(const double dt) {
     //cascaded control
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     double w_y = 0.0;
     double e_y = w_y - dy_;
     double w_psi = dy_pid_->Calc(e_y, dt);
@@ -498,11 +499,11 @@ double TrajectoryControl::LateralControl() {
         }
         dy_pid_->Reset();
         dpsi_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Steering-Angle limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Steering-Angle limited!");
     }
     //calculate steering rate with respect to last steering angle
     double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
-    if (fabs(st_rate) > lat_max_st_rate_)
+    if (fabs(st_rate) > lat_max_st_rate_ && dt > 0.0)
     {
         if (st_rate >= 0)
         {
@@ -514,14 +515,13 @@ double TrajectoryControl::LateralControl() {
         }
         dy_pid_->Reset();
         dpsi_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Steering-rate limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Steering-rate limited!");
     }
 
     return st_ang;
 }
 
-double TrajectoryControl::LongitudinalControl() {
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+double TrajectoryControl::LongitudinalControl(const double dt) {
     double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     double w_v = v_tgt_;
     double e_v = w_v - velocity;
@@ -534,18 +534,18 @@ double TrajectoryControl::LongitudinalControl() {
     {
         a_ctrl = lon_max_acc_;
         dv_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal acceleration limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
     }
     else if (a_ctrl < lon_min_acc_)
     {
         a_ctrl = lon_min_acc_;
         dv_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal acceleration limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
     }
 
     //calculate jerk with respect to last desired acceleration
     double jerk = (a_ctrl - vhcl_ctrl_output_.drive.acceleration) / dt;
-    if (fabs(jerk) > lon_max_jerk_)
+    if (fabs(jerk) > lon_max_jerk_ && dt > 0.0)
     {
         if (jerk >= 0.0)
         {
@@ -556,7 +556,7 @@ double TrajectoryControl::LongitudinalControl() {
             a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
         }
         dv_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal jerk limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Longitudinal jerk limited!");
     }
     vhcl_ctrl_output_.drive.speed = v_tgt_;
     return a_ctrl;
