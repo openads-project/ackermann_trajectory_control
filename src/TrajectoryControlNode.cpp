@@ -340,19 +340,19 @@ bool TrajectoryControl::InputSanityCheck() {
     age = (now() - cur_vehicle_state_.header.stamp).seconds();
     if (age > 0.2 || age < 0.0) //current vehicle state data older than 0.2s
     {
-        RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated!");
+        RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;
     }
     if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0)
     {
-        RCLCPP_ERROR_STREAM(get_logger(), "Input Trajctory is empty!");
+        RCLCPP_DEBUG_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
     } else {
       // get last state of trajectory
       double last_time = trajectory_planning_msgs::trajectory_access::getT(tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
       double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
       if (last_time < 2 * lookahead) {
-        RCLCPP_ERROR_STREAM(get_logger(), "Trajectory is too short!");
+        RCLCPP_DEBUG_STREAM(get_logger(), "Trajectory is too short!");
         return false;
       }
     }
@@ -388,7 +388,7 @@ bool TrajectoryControl::TrjDataProc() {
     if(!LinearInterpolation(TIME, A, delta_time + lon_t_lookahead_, a_tgt_)) return false;
 
     //interpolate lateral target values
-    if(!LinearInterpolation(TIME, Y, des_time, y_tgt_)) return false;
+    if(!LinearInterpolation(TIME, Y, delta_time + lat_t_lookahead_, y_tgt_)) return false;
     if(!LinearInterpolation(TIME, THETA, delta_time + lat_t_lookahead_, psi_tgt_)) return false;
     if(!LinearInterpolation(TIME, KAPPA, delta_time + lat_t_lookahead_, kappa_tgt_)) return false;
 
