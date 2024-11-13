@@ -5,7 +5,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction
 from launch.conditions import LaunchConfigurationNotEquals
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch_ros.actions import LifecycleNode, SetParameter
+from launch_ros.actions import Node, SetParameter
 
 
 def generate_launch_description():
@@ -27,7 +27,7 @@ def generate_launch_description():
                                              default_value='~/ctrl_cmds')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='False')
 
-    node = LifecycleNode(
+    node = Node(
         package="trajectory_control",
         executable="trajectory_control_node",
         name=LaunchConfiguration('node_name'),

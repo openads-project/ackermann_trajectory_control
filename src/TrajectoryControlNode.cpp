@@ -14,26 +14,134 @@ const std::string TrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
 const std::string TrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
 const std::string TrajectoryControl::kOutputTopic = "~/ctrl_cmds";
 
-//Main of Trajectory Control Node
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);
-    auto controller = std::make_shared<TrajectoryControl>();
-    rclcpp::spin(controller);
-    rclcpp::shutdown();
-    return 0;
-}
 
 //Constructor of Trajectory Control Object
-TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
-{
-    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
-    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
-
-    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic,1);
-
+TrajectoryControl::TrajectoryControl() : Node("trajectory_controller") {
     loadParameters();
+    setup();
+}
 
+TrajectoryControl::~TrajectoryControl() {
+}
+
+template <typename T>
+void TrajectoryControl::declareAndLoadParameter(
+    const std::string& name, T& member_param, const std::string& description,
+    const bool add_to_auto_reconfigurable_params, const bool is_required, const bool read_only,
+    const std::optional<T>& from_value, const std::optional<T>& to_value, const std::optional<T>& step_value,
+    const std::string& additional_constraints) {
+  rcl_interfaces::msg::ParameterDescriptor param_desc;
+  param_desc.description = description;
+  param_desc.additional_constraints = additional_constraints;
+  param_desc.read_only = read_only;
+
+  auto param_type = rclcpp::ParameterValue(member_param).get_type();
+
+  if (from_value.has_value() && to_value.has_value()) {
+    if constexpr (std::is_integral_v<T>) {
+      rcl_interfaces::msg::IntegerRange range;
+      T step = step_value.has_value() ? step_value.value() : 0;
+      range.set__from_value(from_value.value()).set__to_value(to_value.value()).set__step(step);
+      param_desc.integer_range = {range};
+    } else if constexpr (std::is_floating_point_v<T>) {
+      rcl_interfaces::msg::FloatingPointRange range;
+      T step = step_value.has_value() ? step_value.value() : 0.0;
+      range.set__from_value(from_value.value()).set__to_value(to_value.value()).set__step(step);
+      param_desc.floating_point_range = {range};
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Parameter type does not support range.");
+    }
+  }
+
+  this->declare_parameter(name, param_type, param_desc);
+
+  try {
+    member_param = this->get_parameter(name).get_value<T>();
+  } catch (rclcpp::exceptions::ParameterUninitializedException&) {
+    if (is_required) {
+      RCLCPP_FATAL_STREAM(this->get_logger(), "Parameter '" << name << "' not set but required. Exiting.");
+      exit(EXIT_FAILURE);
+    } else {
+      std::stringstream ss;
+      ss << "Parameter '" << name << "' not set. Using default value: ";
+      if constexpr (is_vector_v<T>) {
+        ss << "[";
+        for (const auto& element : member_param) ss << element << (&element != &member_param.back() ? ", " : "]");
+      } else {
+        ss << member_param;
+      }
+      RCLCPP_WARN_STREAM(this->get_logger(), ss.str());
+    }
+  }
+
+  if (add_to_auto_reconfigurable_params) {
+    std::function<void(const rclcpp::Parameter&)> setter = [&member_param](const rclcpp::Parameter& param) {
+      member_param = param.get_value<T>();
+    };
+    auto_reconfigurable_params_.push_back(std::make_tuple(name, setter));
+  }
+}
+
+void TrajectoryControl::loadParameters() {
+    this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
+    this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_, "Frame ID of the fixed frame", false);
+    this->declareAndLoadParameter("control_frequency", control_frequency_, "Control cycle frequency", true, false, false, (std::optional<double>)0.0, (std::optional<double>)200.0, (std::optional<double>)1.0);
+    this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_, "Timeout for vehicle-state information", true, false, false, (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)0.05);
+    this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle", false);
+    this->declareAndLoadParameter("selfsteergradient", self_st_gradient_, "Self-steer-gradient of the vehicle", false);
+    this->declareAndLoadParameter("longitudinal_lookahed_time", lon_t_lookahead_, "Longitudinal lookahead time", true, false, false, (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("lateral_lookahed_time", lat_t_lookahead_, "Lateral lookahead time", true, false, false, (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_, "Maximum longitudinal acceleration", true, false, false, (std::optional<double>)0.0, (std::optional<double>)10.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_, "Minimum longitudinal acceleration", true, false, false, (std::optional<double>)-10.0, (std::optional<double>)0.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false, (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
+    this->declareAndLoadParameter("max_steering_angle", lat_max_st_ang_, "Maximum steering angle", false, false, false, (std::optional<double>)0.0, (std::optional<double>)90.0, (std::optional<double>)1.0);
+    lat_max_st_ang_*=M_PI/180.0;
+    this->declareAndLoadParameter("max_steering_angle_rate", lat_max_st_rate_, "Maximum steering angle rate", false, false, false, (std::optional<double>)0.0, (std::optional<double>)270.0, (std::optional<double>)1.0);
+    lat_max_st_rate_*=M_PI/180.0;
+    this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
+    this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_, "Feed forward acceleration gain", false);
+    this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_, "Feed forward steering angle gain", false);
+    this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", false);
+    this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", false);
+    this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", false);
+    this->declareAndLoadParameter("dy_p", dy_p_, "dy P Gain", false);
+    this->declareAndLoadParameter("dy_i", dy_i_, "dy I Gain", false);
+    this->declareAndLoadParameter("dy_d", dy_d_, "dy D Gain", false);
+    this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", false);
+    this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", false);
+    this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", false);
+}
+
+/**
+ * @brief Handles reconfiguration when a parameter value is changed
+ *
+ * @param parameters parameters
+ * @return parameter change result
+ */
+rcl_interfaces::msg::SetParametersResult TrajectoryControl::parametersCallback(
+    const std::vector<rclcpp::Parameter>& parameters) {
+  for (const auto& param : parameters) {
+    for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
+      if (param.get_name() == std::get<0>(auto_reconfigurable_param)) {
+        std::get<1>(auto_reconfigurable_param)(param);
+      }
+    }
+    if(param.get_name() == "max_steering_angle") {
+        lat_max_st_ang_ = param.get_value<double>()*M_PI/180.0;
+    }
+    if(param.get_name() == "max_steering_angle_rate") {
+        lat_max_st_rate_ = param.get_value<double>()*M_PI/180.0;
+    }
+  }
+
+  // mark parameter change successful
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+
+  return result;
+}
+
+void TrajectoryControl::setup() {
     //Initialize dv-PID
     dv_pid_ = new PID(0.0, 0.0, 0.0);
 
@@ -52,272 +160,66 @@ TrajectoryControl::TrajectoryControl() : Node("trajectory_controller")
 
     ResetOdometry();
 
-    //Initialization of the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called every 0.01s e.g. with 100Hz.
+    // initialize tf listener
+    tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf2_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf2_buffer_);
+
+    // initialize subscribers
+    vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+    trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+
+    // initialize publishers
+    vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic,1);
+
+    // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
     last_time_=now();
     vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0/control_frequency_), std::bind(&TrajectoryControl::VehicleCtrlCycle, this));
-}
-
-TrajectoryControl::~TrajectoryControl()
-{
-}
-
-void TrajectoryControl::loadParameters() {
-
-    // General parameters
-    // Control cycle frequency
-    declare_parameter("control_frequency", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        control_frequency_ = get_parameter("control_frequency").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'control_frequency\' set to: " << control_frequency_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'control_frequency\' is not set correctly, using default value: " << control_frequency_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'control_frequency\' is not set, using default value: " << control_frequency_);
-    }
-
-    // Constant vehicle parameters
-    // Wheelbase
-    declare_parameter("wheelbase", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        wheelbase_ = get_parameter("wheelbase").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'wheelbase\' set to: " << wheelbase_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'wheelbase\' is not set correctly, using default value: " << wheelbase_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'wheelbase\' is not set, using default value: " << wheelbase_);
-    }
-
-    // Self-Steer-Gradient
-    declare_parameter("selfsteergradient", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        self_st_gradient_ = get_parameter("selfsteergradient").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'selfsteergradient\' set to: " << self_st_gradient_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'selfsteergradient\' is not set correctly, using default value: " << self_st_gradient_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'selfsteergradient\' is not set, using default value: " << self_st_gradient_);
-    }
-
-    // Longitudinal Lookahead Time
-    declare_parameter("longitudinal_lookahed_time", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lon_t_lookahead_ = get_parameter("longitudinal_lookahed_time").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'longitudinal_lookahed_time\' set to: " << lon_t_lookahead_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'longitudinal_lookahed_time\' is not set correctly, using default value: " << lon_t_lookahead_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'longitudinal_lookahed_time\' is not set, using default value: " << lon_t_lookahead_);
-    }
-
-    // Lateral Lookahead Time
-    declare_parameter("lateral_lookahed_time", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lat_t_lookahead_ = get_parameter("lateral_lookahed_time").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'lateral_lookahed_time\' set to: " << lat_t_lookahead_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'lateral_lookahed_time\' is not set correctly, using default value: " << lat_t_lookahead_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'lateral_lookahed_time\' is not set, using default value: " << lat_t_lookahead_);
-    }
-
-    // Maximum Longitudinal Acceleration
-    declare_parameter("max_longitudinal_acceleration", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lon_max_acc_ = get_parameter("max_longitudinal_acceleration").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_longitudinal_acceleration\' set to: " << lon_max_acc_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_acceleration\' is not set correctly, using default value: " << lon_max_acc_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_acceleration\' is not set, using default value: " << lon_max_acc_);
-    }
-
-    // Minimum Longitudinal Acceleration
-    declare_parameter("min_longitudinal_acceleration", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lon_min_acc_ = get_parameter("min_longitudinal_acceleration").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'min_longitudinal_acceleration\' set to: " << lon_min_acc_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'min_longitudinal_acceleration\' is not set correctly, using default value: " << lon_min_acc_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'min_longitudinal_acceleration\' is not set, using default value: " << lon_min_acc_);
-    }
-
-    // Maximum Longitudinal Jerk
-    declare_parameter("max_longitudinal_jerk", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lon_max_jerk_ = get_parameter("max_longitudinal_jerk").as_double();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_longitudinal_jerk\' set to: " << lon_max_jerk_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_jerk\' is not set correctly, using default value: " << lon_max_jerk_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_longitudinal_jerk\' is not set, using default value: " << lon_max_jerk_);
-    }
-
-    // Maximum Steering Angle
-    declare_parameter("max_steering_angle", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lat_max_st_ang_ = get_parameter("max_steering_angle").as_double()*M_PI/180.0;
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_steering_angle\' set to: " << lat_max_st_ang_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set correctly, using default value: " << lat_max_st_ang_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set, using default value: " << lat_max_st_ang_);
-    }
-
-    // Maximum Steering Angle Rate
-    declare_parameter("max_steering_angle_rate", rclcpp::ParameterType::PARAMETER_DOUBLE);
-    try {
-        lat_max_st_rate_ = get_parameter("max_steering_angle").as_double()*M_PI/180.0;
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter \'max_steering_angle\' set to: " << lat_max_st_rate_);
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set correctly, using default value: " << lat_max_st_rate_);
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter \'max_steering_angle\' is not set, using default value: " << lat_max_st_rate_);
-    }
-
-    // Velocity Lookup Values
-    declare_parameter("velocity_lookup", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        gain_scheduling_velocity_lookup_ = get_parameter("velocity_lookup").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'velocity_lookup\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'velocity_lookup\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'velocity_lookup\' is not set, using default values.");
-    }
-
-    // Feed Forward Acceleration Gain
-    declare_parameter("feed_forward_acceleration_gain", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        vec_feed_forward_gain_acceleration_ = get_parameter("feed_forward_acceleration_gain").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'feed_forward_acceleration_gain\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_acceleration_gain\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_acceleration_gain\' is not set, using default values.");
-    }
-
-    // Feed Forward Steering Angle Gain
-    declare_parameter("feed_forward_steering_angle", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        vec_feed_forward_gain_steering_angle_ = get_parameter("feed_forward_steering_angle").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'feed_forward_steering_angle\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_steering_angle\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'feed_forward_steering_angle\' is not set, using default values.");
-    }
-
-    // dv P Gain
-    declare_parameter("dv_p", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dv_p_ = get_parameter("dv_p").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dv_p\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_p\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_p\' is not set, using default values.");
-    }
-
-    // dv I Gain
-    declare_parameter("dv_i", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dv_i_ = get_parameter("dv_i").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dv_i\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_i\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_i\' is not set, using default values.");
-    }
-
-    // dv D Gain
-    declare_parameter("dv_d", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dv_d_ = get_parameter("dv_d").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dv_d\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_d\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dv_d\' is not set, using default values.");
-    }
-
-    // dy P Gain
-    declare_parameter("dy_p", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dy_p_ = get_parameter("dy_p").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dy_p\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_p\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_p\' is not set, using default values.");
-    }
-
-    // dy I Gain
-    declare_parameter("dy_i", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dy_i_ = get_parameter("dy_i").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dy_i\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_i\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_i\' is not set, using default values.");
-    }
-
-    // dy D Gain
-    declare_parameter("dy_d", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dy_d_ = get_parameter("dy_d").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(),  "Parameter-Vector \'dy_d\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_d\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dy_d\' is not set, using default values.");
-    }
-
-    // dpsi P Gain
-    declare_parameter("dpsi_p", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dpsi_p_ = get_parameter("dpsi_p").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dpsi_p\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_p\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_p\' is not set, using default values.");
-    }
-
-    // dpsi I Gain
-    declare_parameter("dpsi_i", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dpsi_i_ = get_parameter("dpsi_i").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dpsi_i\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_i\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_i\' is not set, using default values.");
-    }
-
-    // dpsi D Gain
-    declare_parameter("dpsi_d", rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY);
-    try {
-        dpsi_d_ = get_parameter("dpsi_d").as_double_array();
-        RCLCPP_INFO_STREAM(get_logger(), "Parameter-Vector \'dpsi_d\' set succesfully.");
-    } catch (rclcpp::exceptions::InvalidParameterTypeException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_d\' is not set correctly, using default values.");
-    } catch (rclcpp::exceptions::ParameterUninitializedException&) {
-        RCLCPP_WARN_STREAM(get_logger(), "Parameter-Vector \'dpsi_d\' is not set, using default values.");
-    }
 }
 
 //update the actual vehicle state
 void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg)
 {
     cur_vehicle_state_ = *msg;
+    // transform latest trajectory to current vehicle-frame
+    trajectory_planning_msgs::msg::Trajectory tf_trajectory;
+    try {
+      tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                                fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
+      tf_trajectory_ = subscribed_trajectory_;
+    }
 }
 
 //update the current trajectory
 void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg)
 {
-    cur_trajectory_ = *msg;
+    subscribed_trajectory_ = *msg;
+    // Check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
+        // get x, y and theta of trajectory at first state
+        double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory_, 0);
+        double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
+        double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory_, 0);
+        if(x == 0.0 && y == 0.0 && theta == 0.0) { // high-level-initialization
+            dy_pid_->Reset();
+            dpsi_pid_->Reset();
+            dv_pid_->Reset();
+            ResetOdometry();
+        }
+    }
+
+    // transform latest trajectory to current vehicle-frame
+    trajectory_planning_msgs::msg::Trajectory tf_trajectory;
+    try {
+      tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                                fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
+      tf_trajectory_ = subscribed_trajectory_;
+    }
     ResetOdometry();
 }
 
@@ -341,7 +243,8 @@ void TrajectoryControl::ResetController()
     vhcl_ctrl_output_.drive.acceleration = 0.0;
     vhcl_ctrl_output_.drive.jerk = 0.0;
     trajectory_planning_msgs::msg::Trajectory dummy_trj;
-    cur_trajectory_=dummy_trj;
+    subscribed_trajectory_=dummy_trj;
+    tf_trajectory_=dummy_trj;
     perception_msgs::msg::EgoData dummy_state;
     cur_vehicle_state_=dummy_state;
     ResetOdometry();
@@ -391,7 +294,7 @@ void TrajectoryControl::VehicleCtrlCycle()
     }
 
     // Standstill signal?
-    if(cur_trajectory_.standstill)
+    if(tf_trajectory_.standstill)
     {
         RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
         vhcl_ctrl_output_.drive.steering_angle = 0.0;
@@ -411,8 +314,10 @@ void TrajectoryControl::VehicleCtrlCycle()
             return;
         }
         setControllerGains();
-        vhcl_ctrl_output_.drive.steering_angle = LateralControl();
-        vhcl_ctrl_output_.drive.acceleration = LongitudinalControl();
+        double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+        if(dt <= 0.0) return;
+        vhcl_ctrl_output_.drive.steering_angle = LateralControl(dt);
+        vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
         if(std::isnan(vhcl_ctrl_output_.drive.steering_angle))
         {
             RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
@@ -434,38 +339,43 @@ void TrajectoryControl::VehicleCtrlCycle()
     vehicle_ctrl_pub_->publish(vhcl_ctrl_output_.drive);
 }
 
-bool TrajectoryControl::InputSanityCheck()
-{
+bool TrajectoryControl::InputSanityCheck() {
     double age;
     age = (now() - cur_vehicle_state_.header.stamp).seconds();
-    if (age > 0.2 || age < 0.0) //current vehicle state data older than 0.2s
+    if (age > vehicle_state_timeout_ || age < 0.0) // current vehicle state data older than vehicle_state_timeout_
     {
-        RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated!");
+        RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
         return false;
     }
-    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_) == 0)
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0)
     {
-        RCLCPP_DEBUG_STREAM(get_logger(), "Input Trajectory is empty!");
+        RCLCPP_DEBUG_STREAM(get_logger(), "Input Trajctory is empty!");
         return false;
+    } else {
+      // get last state of trajectory
+      double last_time = trajectory_planning_msgs::trajectory_access::getT(tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
+      double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
+      if (last_time < 2 * lookahead) {
+        RCLCPP_DEBUG_STREAM(get_logger(), "Trajectory is too short!");
+        return false;
+      }
     }
-
     return true;
 }
 
-bool TrajectoryControl::TrjDataProc()
-{
+bool TrajectoryControl::TrjDataProc() {
     // Derive State Vectors
     std::vector<double> TIME, V, A, Y, THETA, KAPPA;
-    int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(cur_trajectory_);
+    int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_);
     for(int i=0; i<n_samples; i++){
-        TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(cur_trajectory_, i));
-        V.push_back(trajectory_planning_msgs::trajectory_access::getV(cur_trajectory_, i));
-        Y.push_back(trajectory_planning_msgs::trajectory_access::getY(cur_trajectory_, i));
-        if(cur_trajectory_.type_id==trajectory_planning_msgs::DRIVABLE::TYPE_ID)
+        TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(tf_trajectory_, i));
+        V.push_back(trajectory_planning_msgs::trajectory_access::getV(tf_trajectory_, i));
+        Y.push_back(trajectory_planning_msgs::trajectory_access::getY(tf_trajectory_, i));
+        if(tf_trajectory_.type_id==trajectory_planning_msgs::DRIVABLE::TYPE_ID)
         {
-            A.push_back(trajectory_planning_msgs::trajectory_access::getA(cur_trajectory_, i));
-            THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(cur_trajectory_, i));
-            KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(cur_trajectory_, i));
+            A.push_back(trajectory_planning_msgs::trajectory_access::getA(tf_trajectory_, i));
+            THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(tf_trajectory_, i));
+            KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(tf_trajectory_, i));
         }
         else
         {
@@ -476,17 +386,15 @@ bool TrajectoryControl::TrjDataProc()
     }
 
     //calculate desired interpolation time for longitudinal values
-    double des_time = (now() - cur_trajectory_.header.stamp).seconds() + lon_t_lookahead_;
+    double delta_time = (now() - tf_trajectory_.header.stamp).seconds();
     //interpolate longitudinal target values
-    if(!LinearInterpolation(TIME, V, des_time, v_tgt_)) return false;
-    if(!LinearInterpolation(TIME, A, des_time, a_tgt_)) return false;
+    if(!LinearInterpolation(TIME, V, delta_time + lon_t_lookahead_, v_tgt_)) return false;
+    if(!LinearInterpolation(TIME, A, delta_time + lon_t_lookahead_, a_tgt_)) return false;
 
-    //switch to desired interpolation time for lateral values
-    des_time = des_time - lon_t_lookahead_ + lat_t_lookahead_;
     //interpolate lateral target values
-    if(!LinearInterpolation(TIME, Y, des_time, y_tgt_)) return false;
-    if(!LinearInterpolation(TIME, THETA, des_time, psi_tgt_)) return false;
-    if(!LinearInterpolation(TIME, KAPPA, des_time, kappa_tgt_)) return false;
+    if(!LinearInterpolation(TIME, Y, delta_time + lat_t_lookahead_, y_tgt_)) return false;
+    if(!LinearInterpolation(TIME, THETA, delta_time + lat_t_lookahead_, psi_tgt_)) return false;
+    if(!LinearInterpolation(TIME, KAPPA, delta_time + lat_t_lookahead_, kappa_tgt_)) return false;
 
     //CalcOdometry
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
@@ -497,8 +405,7 @@ bool TrajectoryControl::TrjDataProc()
     return true;
 }
 
-bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y)
-{
+bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y) {
     if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end()))
     {
         RCLCPP_ERROR_STREAM(get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
@@ -532,24 +439,20 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
     return true;
 }
 
-void TrajectoryControl::CalcOdometry(double dt)
-{
+void TrajectoryControl::CalcOdometry(const double dt) {
     double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
     double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     odom_dy_ += sin(odom_dpsi_ + yawRate * 0.5 * dt) * velocity * dt;
     odom_dpsi_ += yawRate * dt;
 }
 
-void TrajectoryControl::ResetOdometry()
-{
+void TrajectoryControl::ResetOdometry() {
     odom_dpsi_ = 0.0;
     odom_dy_ = 0.0;
 }
 
-double TrajectoryControl::LateralControl()
-{
+double TrajectoryControl::LateralControl(const double dt) {
     //cascaded control
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     double w_y = 0.0;
     double e_y = w_y - dy_;
     double w_psi = dy_pid_->Calc(e_y, dt);
@@ -596,11 +499,11 @@ double TrajectoryControl::LateralControl()
         }
         dy_pid_->Reset();
         dpsi_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Steering-Angle limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Steering-Angle limited!");
     }
     //calculate steering rate with respect to last steering angle
     double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
-    if (fabs(st_rate) > lat_max_st_rate_)
+    if (fabs(st_rate) > lat_max_st_rate_ && dt > 0.0)
     {
         if (st_rate >= 0)
         {
@@ -612,15 +515,13 @@ double TrajectoryControl::LateralControl()
         }
         dy_pid_->Reset();
         dpsi_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Steering-rate limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Steering-rate limited!");
     }
 
     return st_ang;
 }
 
-double TrajectoryControl::LongitudinalControl()
-{
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+double TrajectoryControl::LongitudinalControl(const double dt) {
     double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     double w_v = v_tgt_;
     double e_v = w_v - velocity;
@@ -633,18 +534,18 @@ double TrajectoryControl::LongitudinalControl()
     {
         a_ctrl = lon_max_acc_;
         dv_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal acceleration limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
     }
     else if (a_ctrl < lon_min_acc_)
     {
         a_ctrl = lon_min_acc_;
         dv_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal acceleration limited!");
+        RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
     }
 
     //calculate jerk with respect to last desired acceleration
     double jerk = (a_ctrl - vhcl_ctrl_output_.drive.acceleration) / dt;
-    if (fabs(jerk) > lon_max_jerk_)
+    if (fabs(jerk) > lon_max_jerk_ && dt > 0.0)
     {
         if (jerk >= 0.0)
         {
@@ -654,9 +555,18 @@ double TrajectoryControl::LongitudinalControl()
         {
             a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
         }
-        //dv_pid_->Reset();
-        RCLCPP_DEBUG_STREAM(get_logger(), "Longitudinal jerk limited!");
+        dv_pid_->Reset();
+        RCLCPP_WARN_STREAM(get_logger(), "Longitudinal jerk limited!");
     }
     vhcl_ctrl_output_.drive.speed = v_tgt_;
     return a_ctrl;
+}
+
+// Main of Trajectory Control Node
+int main(int argc, char *argv[]) {
+    rclcpp::init(argc, argv);
+    auto controller = std::make_shared<TrajectoryControl>();
+    rclcpp::spin(controller);
+    rclcpp::shutdown();
+    return 0;
 }
