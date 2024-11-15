@@ -12,7 +12,7 @@ This package contains a trajectory controller for ackermann steered vehicles. It
 
 | Topic | Type | Description |
 | --- | --- | --- |
-| `~/ctrl_cmds` | `ackermann_msgs/msg/AckermannDrive` | Control commands for the vehicle. Longitudinal information is the acceleration, lateral information is the steering angle |
+| `~/ctrl_cmds` | `ackermann_msgs/msg/AckermannDrive` | Control commands for the vehicle. Longitudinal: acceleration, lateral: steering angle |
 
 ### Parameters
 
