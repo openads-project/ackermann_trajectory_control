@@ -54,8 +54,8 @@ class TrajectoryControl : public rclcpp::Node {
   rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
 
   // callbacks
-  void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr &msg);
-  void TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr &msg);
+  void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg);
+  void TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg);
   void VehicleCtrlCycle();
 
   void setControllerGains();

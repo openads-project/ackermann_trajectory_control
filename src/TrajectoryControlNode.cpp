@@ -196,7 +196,7 @@ void TrajectoryControl::setup() {
 }
 
 // update the actual vehicle state
-void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstPtr& msg) {
+void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
   cur_vehicle_state_ = *msg;
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
@@ -211,7 +211,7 @@ void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData
 }
 
 // update the current trajectory
-void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstPtr& msg) {
+void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
   subscribed_trajectory_ = *msg;
   // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
