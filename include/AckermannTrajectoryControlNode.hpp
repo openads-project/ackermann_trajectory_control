@@ -1,5 +1,5 @@
 /**
- * @file TrajectoryControlNode.hpp
+ * @file AckermannTrajectoryControlNode.hpp
  * @author Guido Küppers
  * @brief  ROS-Node for trajectory control.
  */
@@ -29,10 +29,10 @@ struct is_vector<std::vector<T, A>> : std::true_type {};
 template <typename C>
 inline constexpr bool is_vector_v = is_vector<C>::value;
 
-class TrajectoryControl : public rclcpp::Node {
+class AckermannTrajectoryControl : public rclcpp::Node {
  public:
-  TrajectoryControl();
-  ~TrajectoryControl();
+  AckermannTrajectoryControl();
+  ~AckermannTrajectoryControl();
 
  protected:
   // ROS message parameters
@@ -90,7 +90,7 @@ class TrajectoryControl : public rclcpp::Node {
   // parameters
   std::vector<std::tuple<std::string, std::function<void(const rclcpp::Parameter &)>>> auto_reconfigurable_params_;
 
-  // TrajectoryControl Parameters
+  // AckermannTrajectoryControl Parameters
   std::string vehicle_frame_id_ = "base_link";
   std::string fixed_over_time_frame_id_ = "map";
   double control_frequency_ = 100.0;
@@ -111,7 +111,7 @@ class TrajectoryControl : public rclcpp::Node {
   double wheelbase_ = 2.711;
   double self_st_gradient_ = 0.002917853041365;
 
-  // TrajectoryControl Variables
+  // AckermannTrajectoryControl Variables
   double a_tgt_;
   double a_tgt_dv_;
   double v_tgt_;
@@ -153,4 +153,4 @@ class TrajectoryControl : public rclcpp::Node {
   double odom_dy_ = 0.0;
   double odom_dpsi_ = 0.0;
 
-};  // Class TrajectoryControl
+};  // Class AckermannTrajectoryControl
