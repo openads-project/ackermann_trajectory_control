@@ -15,7 +15,7 @@ const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/input_t
 const std::string AckermannTrajectoryControl::kOutputTopic = "~/ctrl_cmds";
 
 // constructor of Trajectory Control Object
-AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("trajectory_controller") {
+AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
   loadParameters();
   setup();
 }

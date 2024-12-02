@@ -32,8 +32,8 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", LaunchConfiguration("log_level")],
         parameters=[config],
         remappings=[('~/input_trajectory', LaunchConfiguration('input_trajectory')),
-                        ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
-                        ('~/ctrl_cmds', LaunchConfiguration('output'))]
+                    ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
+                    ('~/ctrl_cmds', LaunchConfiguration('output'))]
     )
 
     return LaunchDescription([
