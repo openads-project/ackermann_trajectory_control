@@ -10,11 +10,11 @@ def generate_launch_description():
 
     params_arg = DeclareLaunchArgument('params', default_value='params.yml')
     config = PathJoinSubstitution([
-        get_package_share_directory("trajectory_control"), "config",
+        get_package_share_directory("ackermann_trajectory_control"), "config",
         LaunchConfiguration('params')
     ])
 
-    node_name_default = 'trajectory_control_node'
+    node_name_default = 'ackermann_trajectory_control_node'
     node_name_arg = DeclareLaunchArgument('node_name', default_value=node_name_default)
     input_trajectory_arg = DeclareLaunchArgument('input_trajectory', default_value='~/input_trajectory')
     input_ego_data_arg = DeclareLaunchArgument('input_ego_data', default_value='~/input_ego_data')
@@ -23,8 +23,8 @@ def generate_launch_description():
     log_level_arg = DeclareLaunchArgument("log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)")
 
     node = Node(
-        package="trajectory_control",
-        executable="trajectory_control_node",
+        package="ackermann_trajectory_control",
+        executable="ackermann_trajectory_control_node",
         name=LaunchConfiguration('node_name'),
         namespace="",
         output="screen",
@@ -32,8 +32,8 @@ def generate_launch_description():
         arguments=["--ros-args", "--log-level", LaunchConfiguration("log_level")],
         parameters=[config],
         remappings=[('~/input_trajectory', LaunchConfiguration('input_trajectory')),
-                        ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
-                        ('~/ctrl_cmds', LaunchConfiguration('output'))]
+                    ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
+                    ('~/ctrl_cmds', LaunchConfiguration('output'))]
     )
 
     return LaunchDescription([

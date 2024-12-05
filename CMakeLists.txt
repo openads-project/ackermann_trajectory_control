@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(trajectory_control)
+project(ackermann_trajectory_control)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -17,7 +17,7 @@ find_package(tf2_trajectory_planning_msgs REQUIRED)
 find_package(trajectory_planning_msgs REQUIRED)
 find_package(trajectory_planning_msgs_utils REQUIRED)
 
-add_executable(${PROJECT_NAME}_node src/TrajectoryControlNode.cpp src/PID.cpp)
+add_executable(${PROJECT_NAME}_node src/AckermannTrajectoryControlNode.cpp src/PID.cpp)
 
 ament_target_dependencies(${PROJECT_NAME}_node
   ackermann_msgs

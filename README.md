@@ -1,4 +1,4 @@
-# Trajectory Control
+# Ackermann Trajectory Control
 This package contains a trajectory controller for ackermann steered vehicles. It is implemented as ROS 2 C++ node, which subscribes to a `trajectory_planning_msgs/Trajectory` and publishes the control commands as `ackermann_msgs/AckermannDrive` (lon: acceleration, lat: steering_angle) to the vehicle. 
 
 ### Subscribed Topics
@@ -56,17 +56,17 @@ This package contains a trajectory controller for ackermann steered vehicles. It
 #### Default Command
 
 ```bash
-ros2 launch trajectory_control trajectory_control_node.launch.py
+ros2 launch ackermann_trajectory_control ackermann_trajectory_control_node.launch.py
 ```
 
 #### Launch Files
 
 | Package | File | Path | Description |
 | --- | --- | --- | --- |
-| `trajectory_control` | `trajectory_control_node.launch.py` | `/docker-ros/ws/install/trajectory_control/share/trajectory_control/launch/` | Default launch file starting a node |
+| `ackermann_trajectory_control` | `ackermann_trajectory_control_node.launch.py` | `/docker-ros/ws/install/ackermann_trajectory_control/share/ackermann_trajectory_control/launch/` | Default launch file starting a node |
 
 #### Configuration Files
 
 | Package | File | Path | Description |
 | --- | --- | --- | --- |
-| `trajectory_control` | `params.yml` | `/docker-ros/ws/install/trajectory_control/share/trajectory_control/config` | Default set of parameters. Proven in simulation and Passat CC. |
+| `ackermann_trajectory_control` | `params.yml` | `/docker-ros/ws/install/ackermann_trajectory_control/share/ackermann_trajectory_control/config` | Default set of parameters. Proven in simulation and Passat CC. |

@@ -1,29 +1,29 @@
 /**
- * @file TrajectoryControlNode.cpp
+ * @file AckermannTrajectoryControlNode.cpp
  * @author Guido Küppers
  * @brief  ROS-Node for trajectory control.
  */
 
-#include "TrajectoryControlNode.hpp"
+#include "AckermannTrajectoryControlNode.hpp"
 
 #include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
 // ROS message parameters
-const std::string TrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
-const std::string TrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
-const std::string TrajectoryControl::kOutputTopic = "~/ctrl_cmds";
+const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
+const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
+const std::string AckermannTrajectoryControl::kOutputTopic = "~/ctrl_cmds";
 
 // constructor of Trajectory Control Object
-TrajectoryControl::TrajectoryControl() : Node("trajectory_controller") {
+AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
   loadParameters();
   setup();
 }
 
-TrajectoryControl::~TrajectoryControl() {}
+AckermannTrajectoryControl::~AckermannTrajectoryControl() {}
 
 template <typename T>
-void TrajectoryControl::declareAndLoadParameter(const std::string& name, T& member_param,
+void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name, T& member_param,
                                                 const std::string& description,
                                                 const bool add_to_auto_reconfigurable_params, const bool is_required,
                                                 const bool read_only, const std::optional<T>& from_value,
@@ -81,7 +81,7 @@ void TrajectoryControl::declareAndLoadParameter(const std::string& name, T& memb
   }
 }
 
-void TrajectoryControl::loadParameters() {
+void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
   this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_, "Frame ID of the fixed frame",
                                 false);
@@ -134,7 +134,7 @@ void TrajectoryControl::loadParameters() {
  * @param parameters parameters
  * @return parameter change result
  */
-rcl_interfaces::msg::SetParametersResult TrajectoryControl::parametersCallback(
+rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersCallback(
     const std::vector<rclcpp::Parameter>& parameters) {
   for (const auto& param : parameters) {
     for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
@@ -157,7 +157,7 @@ rcl_interfaces::msg::SetParametersResult TrajectoryControl::parametersCallback(
   return result;
 }
 
-void TrajectoryControl::setup() {
+void AckermannTrajectoryControl::setup() {
   // initialize dv-PID
   dv_pid_ = new PID(0.0, 0.0, 0.0);
 
@@ -182,9 +182,9 @@ void TrajectoryControl::setup() {
 
   // initialize subscribers
   vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(
-      kInputTopicEgoData, 1, std::bind(&TrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+      kInputTopicEgoData, 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
-      kInputTopicTrajectory, 1, std::bind(&TrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+      kInputTopicTrajectory, 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic, 1);
@@ -192,11 +192,11 @@ void TrajectoryControl::setup() {
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
-                                       std::bind(&TrajectoryControl::VehicleCtrlCycle, this));
+                                       std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this));
 }
 
 // update the actual vehicle state
-void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
+void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
   cur_vehicle_state_ = *msg;
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
@@ -211,7 +211,7 @@ void TrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData
 }
 
 // update the current trajectory
-void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
+void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
   subscribed_trajectory_ = *msg;
   // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
@@ -240,7 +240,7 @@ void TrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::
   ResetOdometry();
 }
 
-void TrajectoryControl::ResetController() {
+void AckermannTrajectoryControl::ResetController() {
   a_tgt_ = 0.0;
   a_tgt_dv_ = 0.0;
   v_tgt_ = 0.0;
@@ -266,7 +266,7 @@ void TrajectoryControl::ResetController() {
   ResetOdometry();
 }
 
-void TrajectoryControl::setControllerGains() {
+void AckermannTrajectoryControl::setControllerGains() {
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   // feed-forward gains
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_acceleration_, velocity,
@@ -297,7 +297,7 @@ void TrajectoryControl::setControllerGains() {
 }
 
 // perform the vehicle control cycle
-void TrajectoryControl::VehicleCtrlCycle() {
+void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (last_time_ > now()) {
     RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
     ResetController();
@@ -349,7 +349,7 @@ void TrajectoryControl::VehicleCtrlCycle() {
   vehicle_ctrl_pub_->publish(vhcl_ctrl_output_.drive);
 }
 
-bool TrajectoryControl::InputSanityCheck() {
+bool AckermannTrajectoryControl::InputSanityCheck() {
   double age;
   age = (now() - cur_vehicle_state_.header.stamp).seconds();
   if (age > vehicle_state_timeout_ || age < 0.0)  // current vehicle state data older than vehicle_state_timeout_
@@ -373,7 +373,7 @@ bool TrajectoryControl::InputSanityCheck() {
   return true;
 }
 
-bool TrajectoryControl::TrjDataProc() {
+bool AckermannTrajectoryControl::TrjDataProc() {
   // Derive State Vectors
   std::vector<double> TIME, V, A, Y, THETA, KAPPA;
   int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_);
@@ -412,7 +412,7 @@ bool TrajectoryControl::TrjDataProc() {
   return true;
 }
 
-bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y,
+bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y,
                                             const double& desired_x, double& output_y) {
   if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end())) {
     RCLCPP_ERROR_STREAM(get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
@@ -439,19 +439,19 @@ bool TrajectoryControl::LinearInterpolation(const std::vector<double>& X, const 
   return true;
 }
 
-void TrajectoryControl::CalcOdometry(const double dt) {
+void AckermannTrajectoryControl::CalcOdometry(const double dt) {
   double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   odom_dy_ += sin(odom_dpsi_ + yawRate * 0.5 * dt) * velocity * dt;
   odom_dpsi_ += yawRate * dt;
 }
 
-void TrajectoryControl::ResetOdometry() {
+void AckermannTrajectoryControl::ResetOdometry() {
   odom_dpsi_ = 0.0;
   odom_dy_ = 0.0;
 }
 
-double TrajectoryControl::LateralControl(const double dt) {
+double AckermannTrajectoryControl::LateralControl(const double dt) {
   // cascaded control
   double w_y = 0.0;
   double e_y = w_y - dy_;
@@ -509,7 +509,7 @@ double TrajectoryControl::LateralControl(const double dt) {
   return st_ang;
 }
 
-double TrajectoryControl::LongitudinalControl(const double dt) {
+double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   double w_v = v_tgt_;
   double e_v = w_v - velocity;
@@ -546,7 +546,7 @@ double TrajectoryControl::LongitudinalControl(const double dt) {
 // Main of Trajectory Control Node
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
-  auto controller = std::make_shared<TrajectoryControl>();
+  auto controller = std::make_shared<AckermannTrajectoryControl>();
   rclcpp::spin(controller);
   rclcpp::shutdown();
   return 0;
