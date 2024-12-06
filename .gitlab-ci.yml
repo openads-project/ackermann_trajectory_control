@@ -2,7 +2,7 @@ include:
   - remote: https://raw.githubusercontent.com/ika-rwth-aachen/docker-ros/main/.gitlab-ci/docker-ros.yml
 
 variables:
-  BASE_IMAGE: rwthika/ros2:humble
+  BASE_IMAGE: rwthika/ros2:jazzy
   COMMAND: ros2 launch ackermann_trajectory_control ackermann_trajectory_control_node.launch.py
   PLATFORM: amd64
   TARGET: dev,run
