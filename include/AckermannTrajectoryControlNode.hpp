@@ -117,7 +117,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double v_tgt_;
   double y_tgt_;
   double psi_tgt_;
-  double kappa_tgt_;
+  double delta_tgt_;
 
   // Control Deviations
   double dpsi_;
