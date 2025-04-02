@@ -246,7 +246,7 @@ void AckermannTrajectoryControl::ResetController() {
   v_tgt_ = 0.0;
   y_tgt_ = 0.0;
   psi_tgt_ = 0.0;
-  kappa_tgt_ = 0.0;
+  delta_tgt_ = 0.0;
   dpsi_ = 0.0;
   dy_ = 0.0;
   dv_ = 0.0;
@@ -375,7 +375,7 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
 
 bool AckermannTrajectoryControl::TrjDataProc() {
   // Derive State Vectors
-  std::vector<double> TIME, V, A, Y, THETA, KAPPA;
+  std::vector<double> TIME, V, A, Y, THETA, DELTA;
   int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_);
   for (int i = 0; i < n_samples; i++) {
     TIME.push_back(trajectory_planning_msgs::trajectory_access::getT(tf_trajectory_, i));
@@ -384,9 +384,9 @@ bool AckermannTrajectoryControl::TrjDataProc() {
     if (tf_trajectory_.type_id == trajectory_planning_msgs::DRIVABLE::TYPE_ID) {
       A.push_back(trajectory_planning_msgs::trajectory_access::getA(tf_trajectory_, i));
       THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(tf_trajectory_, i));
-      KAPPA.push_back(trajectory_planning_msgs::trajectory_access::getKappa(tf_trajectory_, i));
+      DELTA.push_back(trajectory_planning_msgs::trajectory_access::getDeltaAck(tf_trajectory_, i));
     } else {
-      // To-Do Fill A, THETA and KAPPA with finite-differences
+      // To-Do Fill A, THETA and DELTA with finite-differences
       RCLCPP_ERROR_STREAM(get_logger(), "trajectory_planning_msgs::DRIVABLE-Type is currently not supported!");
       return false;
     }
@@ -401,7 +401,7 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   // interpolate lateral target values
   if (!LinearInterpolation(TIME, Y, delta_time + lat_t_lookahead_, y_tgt_)) return false;
   if (!LinearInterpolation(TIME, THETA, delta_time + lat_t_lookahead_, psi_tgt_)) return false;
-  if (!LinearInterpolation(TIME, KAPPA, delta_time + lat_t_lookahead_, kappa_tgt_)) return false;
+  if (!LinearInterpolation(TIME, DELTA, delta_time + lat_t_lookahead_, delta_tgt_)) return false;
 
   // CalcOdometry
   double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
@@ -471,8 +471,8 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
 
   double st_ang_pid = psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
 
-  // ackermann feed-forward control with trajectory kappa
-  double st_ang_ack = atan(wheelbase_ * kappa_tgt_);
+  // ackermann feed-forward control
+  double st_ang_ack = delta_tgt_;
 
   double st_ang = st_ang_pid + st_ang_ack * feed_forward_gain_steering_angle_;
 
