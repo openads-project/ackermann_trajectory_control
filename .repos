@@ -1,10 +1,7 @@
-# List of other repositories that are required to build the package(s) in this repository
-# https://github.com/dirk-thomas/vcstool
-#
 repositories:
   perception_interfaces:
     type: git
-    url: https://gitlab.ika.rwth-aachen.de/fb-fi/definitions/perception_interfaces.git
+    url: https://github.com/ika-rwth-aachen/perception_interfaces.git
     version: main
   planning_interfaces:
     type: git
