@@ -117,15 +117,15 @@ void AckermannTrajectoryControl::loadParameters() {
                                 "Feed forward acceleration gain", false);
   this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
                                 "Feed forward steering angle gain", false);
-  this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", false);
-  this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", false);
-  this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", false);
-  this->declareAndLoadParameter("dy_p", dy_p_, "dy P Gain", false);
-  this->declareAndLoadParameter("dy_i", dy_i_, "dy I Gain", false);
-  this->declareAndLoadParameter("dy_d", dy_d_, "dy D Gain", false);
-  this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", false);
-  this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", false);
-  this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", false);
+  this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", true);
+  this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", true);
+  this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", true);
+  this->declareAndLoadParameter("dy_p", dy_p_, "dy P Gain", true);
+  this->declareAndLoadParameter("dy_i", dy_i_, "dy I Gain", true);
+  this->declareAndLoadParameter("dy_d", dy_d_, "dy D Gain", true);
+  this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", true);
+  this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", true);
+  this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", true);
 }
 
 /**
