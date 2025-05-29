@@ -106,11 +106,11 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false,
                                 (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
   this->declareAndLoadParameter("max_steering_angle", lat_max_st_ang_, "Maximum steering angle", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)90.0, (std::optional<double>)1.0);
+                                (std::optional<double>)0.0, (std::optional<double>)90.0, (std::optional<double>)0.1);
   lat_max_st_ang_ *= M_PI / 180.0;
   this->declareAndLoadParameter("max_steering_angle_rate", lat_max_st_rate_, "Maximum steering angle rate", false,
                                 false, false, (std::optional<double>)0.0, (std::optional<double>)270.0,
-                                (std::optional<double>)1.0);
+                                (std::optional<double>)0.1);
   lat_max_st_rate_ *= M_PI / 180.0;
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
   this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
