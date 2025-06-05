@@ -114,9 +114,9 @@ void AckermannTrajectoryControl::loadParameters() {
   lat_max_st_rate_ *= M_PI / 180.0;
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
   this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
-                                "Feed forward acceleration gain", false);
+                                "Feed forward acceleration gain", true);
   this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
-                                "Feed forward steering angle gain", false);
+                                "Feed forward steering angle gain", true);
   this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", true);
   this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", true);
   this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", true);
@@ -193,6 +193,9 @@ void AckermannTrajectoryControl::setup() {
   last_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
                                        std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this));
+
+  parameters_callback_ = this->add_on_set_parameters_callback(
+            std::bind(&AckermannTrajectoryControl::parametersCallback, this, std::placeholders::_1));
 }
 
 // update the actual vehicle state
