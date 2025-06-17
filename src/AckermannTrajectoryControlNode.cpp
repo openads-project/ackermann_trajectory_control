@@ -211,6 +211,7 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
+  ResetOdometry();
 }
 
 // update the current trajectory
@@ -407,8 +408,8 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   if (!LinearInterpolation(TIME, DELTA, delta_time + lat_t_lookahead_, delta_tgt_)) return false;
 
   // CalcOdometry
-  double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-  CalcOdometry(dt);  //Cyclic Control
+  //double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+  CalcOdometry(delta_time);  //Cyclic Control
 
   dy_ = odom_dy_ - y_tgt_;
   dpsi_ = odom_dpsi_ - psi_tgt_;
