@@ -3,7 +3,7 @@ ackermann_trajectory_control_node:
     # General controller parameters
     vehicle_frame_id: "base_link"
     fixed_over_time_frame_id: "map"
-    control_frequency: 50.0 # [Hz]
+    control_frequency: 100.0 # [Hz]
     vehicle_state_timeout: 0.2 # [s]
     lateral_lookahed_time: 0.1 # [s]
     longitudinal_lookahed_time: 0.1 # [s]
