@@ -406,8 +406,10 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   if (!LinearInterpolation(TIME, DELTA, delta_time + lat_t_lookahead_, delta_tgt_)) return false;
 
   // CalcOdometry
-  //double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-  CalcOdometry(delta_time);  //Cyclic Control
+  double dt_ego = (now() - cur_vehicle_state_.header.stamp).seconds();
+  double dt_ctrl = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+  double dt = std::min(dt_ego, dt_ctrl);
+  CalcOdometry(dt);  // Cyclic Control
 
   dy_ = odom_dy_ - y_tgt_;
   dpsi_ = odom_dpsi_ - psi_tgt_;
