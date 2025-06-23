@@ -113,29 +113,29 @@ ackermann_trajectory_control_node:
       - 0.025 # value for 33.33 m/s
       - 0.02  # value for 38.89 m/s
     dy_i:
-      - 0.0  # value for -2.78 m/s
+      - 0.004  # value for -2.78 m/s
       - 0.0    # value for -0.2 m/s
       - 0.0    # value for  0.0 m/s
       - 0.0    # value for  0.2 m/s
-      - 0.0  # value for  2.78 m/s
-      - 0.0  # value for 11.11 m/s
-      - 0.0  # value for 16.67 m/s
-      - 0.0 # value for 22.22 m/s
+      - 0.002  # value for  2.78 m/s
+      - 0.004  # value for 11.11 m/s
+      - 0.001  # value for 16.67 m/s
+      - 0.0007 # value for 22.22 m/s
       - 0.0    # value for 27.78 m/s
       - 0.0    # value for 33.33 m/s
       - 0.0    # value for 38.89 m/s
     dy_d:
-      - 0.0  # value for -2.78 m/s
+      - 0.04  # value for -2.78 m/s
       - 0.0   # value for -0.2 m/s
       - 0.0   # value for  0.0 m/s
       - 0.0   # value for  0.2 m/s
-      - 0.0  # value for  2.78 m/s
-      - 0.0  # value for 11.11 m/s
-      - 0.0  # value for 16.67 m/s
-      - 0.0  # value for 22.22 m/s
-      - 0.0 # value for 27.78 m/s
-      - 0.0 # value for 33.33 m/s
-      - 0.0 # value for 38.89 m/s
+      - 0.04  # value for  2.78 m/s
+      - 0.02  # value for 11.11 m/s
+      - 0.02  # value for 16.67 m/s
+      - 0.02  # value for 22.22 m/s
+      - 0.015 # value for 27.78 m/s
+      - 0.015 # value for 33.33 m/s
+      - 0.015 # value for 38.89 m/s
     # heading deviation controller parameters
     dpsi_p:
       - 1.0 # value for -2.78 m/s
@@ -150,17 +150,17 @@ ackermann_trajectory_control_node:
       - 1.0 # value for 33.33 m/s
       - 1.0 # value for 38.89 m/s
     dpsi_i:
-      - 0.0  # value for -2.78 m/s
+      - 1.2  # value for -2.78 m/s
       - 0.0  # value for -0.2 m/s
       - 0.0  # value for  0.0 m/s
       - 0.0  # value for  0.2 m/s
-      - 0.0  # value for  2.78 m/s
-      - 0.0  # value for 11.11 m/s
-      - 0.0  # value for 16.67 m/s
-      - 0.0 # value for 22.22 m/s
-      - 0.0 # value for 27.78 m/s
-      - 0.0 # value for 33.33 m/s
-      - 0.0 # value for 38.89 m/s
+      - 1.2  # value for  2.78 m/s
+      - 0.6  # value for 11.11 m/s
+      - 0.4  # value for 16.67 m/s
+      - 0.14 # value for 22.22 m/s
+      - 0.13 # value for 27.78 m/s
+      - 0.13 # value for 33.33 m/s
+      - 0.13 # value for 38.89 m/s
     dpsi_d:
       - 0.0 # value for -2.78 m/s
       - 0.0 # value for -0.2 m/s
