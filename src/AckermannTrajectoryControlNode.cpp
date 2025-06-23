@@ -227,7 +227,6 @@ void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_ms
       dy_pid_->Reset();
       dpsi_pid_->Reset();
       dv_pid_->Reset();
-      ResetOdometry();
     }
   }
 
@@ -241,7 +240,6 @@ void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_ms
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
-  ResetOdometry();
 }
 
 void AckermannTrajectoryControl::ResetController() {
