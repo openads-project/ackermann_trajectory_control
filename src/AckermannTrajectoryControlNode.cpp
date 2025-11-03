@@ -347,7 +347,6 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     }
   }
   vhcl_ctrl_output_.header.stamp = now();
-  // publish unstamped message
   vehicle_ctrl_pub_->publish(vhcl_ctrl_output_);
 }
 
