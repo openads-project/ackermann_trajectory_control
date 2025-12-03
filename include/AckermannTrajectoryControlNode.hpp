@@ -72,7 +72,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;
   rclcpp::Subscription<trajectory_planning_msgs::msg::Trajectory>::SharedPtr trajectory_sub_;
 
-  rclcpp::Publisher<ackermann_msgs::msg::AckermannDrive>::SharedPtr vehicle_ctrl_pub_;
+  rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr vehicle_ctrl_pub_;
 
   rclcpp::TimerBase::SharedPtr vhcl_ctrl_timer_;
 

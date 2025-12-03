@@ -187,7 +187,7 @@ void AckermannTrajectoryControl::setup() {
       kInputTopicTrajectory, 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
 
   // initialize publishers
-  vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDrive>(kOutputTopic, 1);
+  vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(kOutputTopic, 1);
 
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_time_ = now();
@@ -347,8 +347,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     }
   }
   vhcl_ctrl_output_.header.stamp = now();
-  // publish unstamped message
-  vehicle_ctrl_pub_->publish(vhcl_ctrl_output_.drive);
+  vehicle_ctrl_pub_->publish(vhcl_ctrl_output_);
 }
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
