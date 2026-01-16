@@ -102,8 +102,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double lon_min_acc_ = -5.0;  // make sure that this value is negative
   double lon_max_jerk_ = 5.0;
 
-  double lat_max_st_ang_ = 28.0 * M_PI / 180.0;
-  double lat_max_st_rate_ = 56.0 * M_PI / 180.0;
+  double max_curvature_ = 0.0;
+  double max_curvature_rate_ = 0.0;
+  double max_curvature_accel_ = 0.0;
 
   double vehicle_state_timeout_ = 0.2;
 
@@ -123,6 +124,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double dpsi_;
   double dy_;
   double dv_;
+  double last_kappa_ = 0.0;
+  double last_kappa_rate_ = 0.0;
 
   // Controller
   PID *dv_pid_;

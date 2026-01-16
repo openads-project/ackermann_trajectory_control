@@ -105,13 +105,13 @@ void AckermannTrajectoryControl::loadParameters() {
                                 (std::optional<double>)0.1);
   this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false,
                                 (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
-  this->declareAndLoadParameter("max_steering_angle", lat_max_st_ang_, "Maximum steering angle", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)90.0, (std::optional<double>)0.1);
-  lat_max_st_ang_ *= M_PI / 180.0;
-  this->declareAndLoadParameter("max_steering_angle_rate", lat_max_st_rate_, "Maximum steering angle rate", false,
-                                false, false, (std::optional<double>)0.0, (std::optional<double>)270.0,
-                                (std::optional<double>)0.1);
-  lat_max_st_rate_ *= M_PI / 180.0;
+  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum curvature", false, false, false,
+                                (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_, "Maximum curvature rate", false, false, false,
+                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
+                                "Maximum curvature acceleration", false, false, false, (std::optional<double>)0.0,
+                                (std::optional<double>)20.0, (std::optional<double>)1e-12);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
   this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
                                 "Feed forward acceleration gain", true);
@@ -142,11 +142,14 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
         std::get<1>(auto_reconfigurable_param)(param);
       }
     }
-    if (param.get_name() == "max_steering_angle") {
-      lat_max_st_ang_ = param.get_value<double>() * M_PI / 180.0;
+    if (param.get_name() == "max_curvature") {
+      max_curvature_ = param.get_value<double>();
     }
-    if (param.get_name() == "max_steering_angle_rate") {
-      lat_max_st_rate_ = param.get_value<double>() * M_PI / 180.0;
+    if (param.get_name() == "max_curvature_rate") {
+      max_curvature_rate_ = param.get_value<double>();
+    }
+    if (param.get_name() == "max_curvature_acceleration") {
+      max_curvature_accel_ = param.get_value<double>();
     }
   }
 
@@ -252,6 +255,8 @@ void AckermannTrajectoryControl::ResetController() {
   dpsi_ = 0.0;
   dy_ = 0.0;
   dv_ = 0.0;
+  last_kappa_ = 0.0;
+  last_kappa_rate_ = 0.0;
   dy_pid_->Reset();
   dpsi_pid_->Reset();
   dv_pid_->Reset();
@@ -322,6 +327,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
     dv_pid_->Reset();
+    last_kappa_ = 0.0;
+    last_kappa_rate_ = 0.0;
   } else {
     if (!TrjDataProc()) {
       RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
@@ -331,15 +338,6 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
     double kappa_tgt = LateralControl(dt);
-    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
-    // be sure v!=0 (to avoid division by zero)
-    if (fabs(velocity) < 0.1) {
-      if (velocity < 0.0) {
-        velocity = -0.1;
-      } else {
-        velocity = 0.1;
-      }
-    }
     double st_ang = std::atan(kappa_tgt * wheelbase_);
     if (std::isnan(st_ang)) {
       RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
@@ -347,30 +345,6 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       dy_pid_->Reset();
       dpsi_pid_->Reset();
       return;
-    }
-
-    // limit desired steering angle
-    if (fabs(st_ang) > lat_max_st_ang_) {
-      if (st_ang >= 0) {
-        st_ang = lat_max_st_ang_;
-      } else {
-        st_ang = -lat_max_st_ang_;
-      }
-      dy_pid_->Reset();
-      dpsi_pid_->Reset();
-      RCLCPP_WARN_STREAM(get_logger(), "Steering-Angle limited!");
-    }
-    // calculate steering rate with respect to last steering angle
-    double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
-    if (fabs(st_rate) > lat_max_st_rate_ && dt > 0.0) {
-      if (st_rate >= 0) {
-        st_ang = vhcl_ctrl_output_.drive.steering_angle + lat_max_st_rate_ * dt;
-      } else {
-        st_ang = vhcl_ctrl_output_.drive.steering_angle - lat_max_st_rate_ * dt;
-      }
-      dy_pid_->Reset();
-      dpsi_pid_->Reset();
-      RCLCPP_WARN_STREAM(get_logger(), "Steering-rate limited!");
     }
     vhcl_ctrl_output_.drive.steering_angle = st_ang;
     vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
@@ -520,6 +494,58 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
   }
+
+  const double kappa_max = max_curvature_;
+  const double kappa_rate_max = max_curvature_rate_;
+  const double kappa_accel_max = max_curvature_accel_;
+
+  if (fabs(kappa_tgt) > max_curvature_) {
+    if (kappa_tgt >= 0.0) {
+      kappa_tgt = max_curvature_;
+    } else {
+      kappa_tgt = -max_curvature_;
+    }
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
+  }
+
+  double kappa_prev = last_kappa_;
+  double kappa_rate = 0.0;
+  if (dt > 0.0) {
+    kappa_rate = (kappa_tgt - kappa_prev) / dt;
+  }
+  if (fabs(kappa_rate) > max_curvature_rate_ && dt > 0.0) {
+    if (kappa_rate >= 0.0) {
+      kappa_rate = max_curvature_rate_;
+    } else {
+      kappa_rate = -max_curvature_rate_;
+    }
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
+  }
+
+  double kappa_accel = 0.0;
+  if (dt > 0.0) {
+    kappa_accel = (kappa_rate - last_kappa_rate_) / dt;
+  }
+  if (fabs(kappa_accel) > max_curvature_accel_ && dt > 0.0) {
+    if (kappa_accel >= 0.0) {
+      kappa_accel = max_curvature_accel_;
+    } else {
+      kappa_accel = -max_curvature_accel_;
+    }
+    kappa_rate = last_kappa_rate_ + kappa_accel * dt;
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+  }
+
+  last_kappa_ = kappa_tgt;
+  last_kappa_rate_ = kappa_rate;
 
   return kappa_tgt;
 }

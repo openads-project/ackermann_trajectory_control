@@ -22,8 +22,9 @@ ackermann_trajectory_control_node:
     max_longitudinal_acceleration: 2.0 # [m/s^2]
     min_longitudinal_acceleration: -4.5 # [m/s^2]
     max_longitudinal_jerk: 4.0 # [m/s^3]
-    max_steering_angle: 33.9 # [deg]
-    max_steering_angle_rate: 23.6 # [deg/s]
+    max_curvature: 0.1933268013 # [1/m]
+    max_curvature_rate: 0.1676052419 # [1/(m*s)]
+    max_curvature_acceleration: 0.7262893814 # [1/(m*s^2)]
 
     # Gain scheduling Look-Up-Tables
     velocity_lookup: # [m/s]
