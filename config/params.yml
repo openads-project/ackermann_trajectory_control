@@ -3,7 +3,7 @@ ackermann_trajectory_control_node:
     # General controller parameters
     vehicle_frame_id: "base_link"
     fixed_over_time_frame_id: "map"
-    control_frequency: 100.0 # [Hz]
+    control_frequency: 50.0 # [Hz]
     vehicle_state_timeout: 0.2 # [s]
     lateral_lookahed_time: 0.1 # [s]
     longitudinal_lookahed_time: 0.1 # [s]
@@ -20,10 +20,10 @@ ackermann_trajectory_control_node:
 
     # Control value constraints
     max_longitudinal_acceleration: 2.0 # [m/s^2]
-    min_longitudinal_acceleration: -3.0 # [m/s^2]
+    min_longitudinal_acceleration: -4.5 # [m/s^2]
     max_longitudinal_jerk: 4.0 # [m/s^3]
-    max_steering_angle: 38.7 # [deg]
-    max_steering_angle_rate: 20.0 # [deg/s]
+    max_steering_angle: 33.9 # [deg]
+    max_steering_angle_rate: 23.6 # [deg/s]
 
     # Gain scheduling Look-Up-Tables
     velocity_lookup: # [m/s]

@@ -330,15 +330,50 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     setControllerGains();
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
-    vhcl_ctrl_output_.drive.steering_angle = LateralControl(dt);
-    vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
-    if (std::isnan(vhcl_ctrl_output_.drive.steering_angle)) {
+    double kappa_tgt = LateralControl(dt);
+    double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
+    // be sure v!=0 (to avoid division by zero)
+    if (fabs(velocity) < 0.1) {
+      if (velocity < 0.0) {
+        velocity = -0.1;
+      } else {
+        velocity = 0.1;
+      }
+    }
+    double st_ang = std::atan(kappa_tgt * wheelbase_);
+    if (std::isnan(st_ang)) {
       RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
       vhcl_ctrl_output_.drive.steering_angle = 0.0;
       dy_pid_->Reset();
       dpsi_pid_->Reset();
       return;
     }
+
+    // limit desired steering angle
+    if (fabs(st_ang) > lat_max_st_ang_) {
+      if (st_ang >= 0) {
+        st_ang = lat_max_st_ang_;
+      } else {
+        st_ang = -lat_max_st_ang_;
+      }
+      dy_pid_->Reset();
+      dpsi_pid_->Reset();
+      RCLCPP_WARN_STREAM(get_logger(), "Steering-Angle limited!");
+    }
+    // calculate steering rate with respect to last steering angle
+    double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
+    if (fabs(st_rate) > lat_max_st_rate_ && dt > 0.0) {
+      if (st_rate >= 0) {
+        st_ang = vhcl_ctrl_output_.drive.steering_angle + lat_max_st_rate_ * dt;
+      } else {
+        st_ang = vhcl_ctrl_output_.drive.steering_angle - lat_max_st_rate_ * dt;
+      }
+      dy_pid_->Reset();
+      dpsi_pid_->Reset();
+      RCLCPP_WARN_STREAM(get_logger(), "Steering-rate limited!");
+    }
+    vhcl_ctrl_output_.drive.steering_angle = st_ang;
+    vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
     if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
       RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
       vhcl_ctrl_output_.drive.acceleration = 0.0;
@@ -473,12 +508,12 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     }
   }
 
-  double st_ang_pid = psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
+  double kappa_pid = std::tan(psi_dot_des*(wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
 
-  // ackermann feed-forward control
-  double st_ang_ack = delta_tgt_;
+  // ackermann feed-forward control (convert delta to kappa for feed-forward)
+  double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
 
-  double st_ang = st_ang_pid + st_ang_ack * feed_forward_gain_steering_angle_;
+  double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
 
   if (perception_msgs::object_access::getStandstill(cur_vehicle_state_))  //Standstill-Situation
   {
@@ -486,31 +521,7 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     dpsi_pid_->Reset();
   }
 
-  // limit desired steering angle
-  if (fabs(st_ang) > lat_max_st_ang_) {
-    if (st_ang >= 0) {
-      st_ang = lat_max_st_ang_;
-    } else {
-      st_ang = -lat_max_st_ang_;
-    }
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-    RCLCPP_WARN_STREAM(get_logger(), "Steering-Angle limited!");
-  }
-  // calculate steering rate with respect to last steering angle
-  double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
-  if (fabs(st_rate) > lat_max_st_rate_ && dt > 0.0) {
-    if (st_rate >= 0) {
-      st_ang = vhcl_ctrl_output_.drive.steering_angle + lat_max_st_rate_ * dt;
-    } else {
-      st_ang = vhcl_ctrl_output_.drive.steering_angle - lat_max_st_rate_ * dt;
-    }
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-    RCLCPP_WARN_STREAM(get_logger(), "Steering-rate limited!");
-  }
-
-  return st_ang;
+  return kappa_tgt;
 }
 
 double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
