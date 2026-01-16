@@ -505,8 +505,8 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     } else {
       kappa_tgt = -max_curvature_;
     }
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
+    dy_pid_->ResetIntegral();
+    dpsi_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
   }
 
@@ -522,8 +522,8 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
       kappa_rate = -max_curvature_rate_;
     }
     kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
+    dy_pid_->ResetIntegral();
+    dpsi_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
   }
 
@@ -539,8 +539,8 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     }
     kappa_rate = last_kappa_rate_ + kappa_accel * dt;
     kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
+    dy_pid_->ResetIntegral();
+    dpsi_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
   }
 
@@ -561,11 +561,11 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   // limit desired acceleration
   if (a_ctrl > lon_max_acc_) {
     a_ctrl = lon_max_acc_;
-    dv_pid_->Reset();
+    dv_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
   } else if (a_ctrl < lon_min_acc_) {
     a_ctrl = lon_min_acc_;
-    dv_pid_->Reset();
+    dv_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
   }
 
@@ -577,7 +577,7 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
     } else {
       a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
     }
-    dv_pid_->Reset();
+    dv_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal jerk limited!");
   }
   vhcl_ctrl_output_.drive.speed = v_tgt_;

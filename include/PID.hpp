@@ -13,6 +13,7 @@ class PID {
   ~PID();
 
   void Reset();
+  void ResetIntegral();
   void SetParameters(double Kp, double Ki, double Kd);
   double Calc(double e, double dt);
 

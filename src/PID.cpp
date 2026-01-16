@@ -18,6 +18,8 @@ void PID::Reset() {
   pre_e_ = nan("");
 }
 
+void PID::ResetIntegral() { i_val_ = 0.0; }
+
 double PID::Calc(double e, double dt) {
   i_val_ += e * dt;
   double d_val = 0.0;
