@@ -105,6 +105,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double max_curvature_ = 0.0;
   double max_curvature_rate_ = 0.0;
   double max_curvature_accel_ = 0.0;
+  double anti_windup_gain_ = 1.0;
+  bool use_back_calculation_ = false;
 
   double vehicle_state_timeout_ = 0.2;
 

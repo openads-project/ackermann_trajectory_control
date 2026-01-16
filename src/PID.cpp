@@ -20,6 +20,11 @@ void PID::Reset() {
 
 void PID::ResetIntegral() { i_val_ = 0.0; }
 
+void PID::BackCalculate(double u_unsat, double u_sat, double dt, double kaw) {
+  if (dt <= 0.0 || kaw <= 0.0 || Ki_ == 0.0) return;
+  i_val_ += (kaw / Ki_) * (u_sat - u_unsat) * dt;
+}
+
 double PID::Calc(double e, double dt) {
   i_val_ += e * dt;
   double d_val = 0.0;

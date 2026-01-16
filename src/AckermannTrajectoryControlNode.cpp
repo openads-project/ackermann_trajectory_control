@@ -112,6 +112,11 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
                                 "Maximum curvature acceleration", false, false, false, (std::optional<double>)0.0,
                                 (std::optional<double>)20.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true,
+                                false, false, (std::optional<double>)0.0, (std::optional<double>)100.0,
+                                (std::optional<double>)0.1);
+  this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation",
+                                true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
   this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
                                 "Feed forward acceleration gain", true);
@@ -150,6 +155,9 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
     }
     if (param.get_name() == "max_curvature_acceleration") {
       max_curvature_accel_ = param.get_value<double>();
+    }
+    if (param.get_name() == "use_back_calculation") {
+      use_back_calculation_ = param.get_value<bool>();
     }
   }
 
@@ -488,6 +496,7 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
 
   double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
+  double kappa_unsat = kappa_tgt;
 
   if (perception_msgs::object_access::getStandstill(cur_vehicle_state_))  //Standstill-Situation
   {
@@ -499,6 +508,7 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
   const double kappa_rate_max = max_curvature_rate_;
   const double kappa_accel_max = max_curvature_accel_;
 
+  bool kappa_limited = false;
   if (fabs(kappa_tgt) > max_curvature_) {
     if (kappa_tgt >= 0.0) {
       kappa_tgt = max_curvature_;
@@ -506,8 +516,8 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
       kappa_tgt = -max_curvature_;
     }
     dy_pid_->ResetIntegral();
-    dpsi_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
+    kappa_limited = true;
   }
 
   double kappa_prev = last_kappa_;
@@ -523,8 +533,8 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     }
     kappa_tgt = kappa_prev + kappa_rate * dt;
     dy_pid_->ResetIntegral();
-    dpsi_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
+    kappa_limited = true;
   }
 
   double kappa_accel = 0.0;
@@ -540,8 +550,19 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     kappa_rate = last_kappa_rate_ + kappa_accel * dt;
     kappa_tgt = kappa_prev + kappa_rate * dt;
     dy_pid_->ResetIntegral();
-    dpsi_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+    kappa_limited = true;
+  }
+
+  if (kappa_limited) {
+    if (use_back_calculation_) {
+      double kappa_fb_sat = kappa_tgt - kappa_ff * feed_forward_gain_steering_angle_;
+      double denom = (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
+      double psi_dot_sat = std::atan(kappa_fb_sat * wheelbase_) / denom;
+      dpsi_pid_->BackCalculate(psi_dot_des, psi_dot_sat, dt, anti_windup_gain_);
+    } else {
+      dpsi_pid_->ResetIntegral();
+    }
   }
 
   last_kappa_ = kappa_tgt;
@@ -556,16 +577,16 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   double e_v = w_v - velocity;
   double a_fb_v = dv_pid_->Calc(e_v, dt);
 
-  double a_ctrl = a_fb_v + a_tgt_ * feed_forward_gain_acceleration_;
+  double a_ff = a_tgt_ * feed_forward_gain_acceleration_;
+  double a_ctrl = a_fb_v + a_ff;
+  double a_unsat = a_ctrl;
 
   // limit desired acceleration
   if (a_ctrl > lon_max_acc_) {
     a_ctrl = lon_max_acc_;
-    dv_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
   } else if (a_ctrl < lon_min_acc_) {
     a_ctrl = lon_min_acc_;
-    dv_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
   }
 
@@ -577,8 +598,15 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
     } else {
       a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
     }
-    dv_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal jerk limited!");
+  }
+  if (a_ctrl != a_unsat) {
+    if (use_back_calculation_) {
+      double a_fb_sat = a_ctrl - a_ff;
+      dv_pid_->BackCalculate(a_fb_v, a_fb_sat, dt, anti_windup_gain_);
+    } else {
+      dv_pid_->ResetIntegral();
+    }
   }
   vhcl_ctrl_output_.drive.speed = v_tgt_;
   return a_ctrl;
