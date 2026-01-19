@@ -19,6 +19,8 @@ def generate_launch_description():
     input_trajectory_arg = DeclareLaunchArgument('input_trajectory', default_value='~/input_trajectory')
     input_ego_data_arg = DeclareLaunchArgument('input_ego_data', default_value='~/input_ego_data')
     output_arg = DeclareLaunchArgument('output', default_value='~/ctrl_cmds')
+    lat_arg = DeclareLaunchArgument('lat_active', default_value='~/lat_active')
+    lon_arg = DeclareLaunchArgument('lon_active', default_value='~/lon_active')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='False')
     log_level_arg = DeclareLaunchArgument("log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)")
 
@@ -33,7 +35,9 @@ def generate_launch_description():
         parameters=[config],
         remappings=[('~/input_trajectory', LaunchConfiguration('input_trajectory')),
                     ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
-                    ('~/ctrl_cmds', LaunchConfiguration('output'))]
+                    ('~/ctrl_cmds', LaunchConfiguration('output')),
+                    ('~/lat_active', LaunchConfiguration('lat_active')),
+                    ('~/lon_active', LaunchConfiguration('lon_active'))]
     )
 
     return LaunchDescription([
@@ -42,6 +46,8 @@ def generate_launch_description():
         input_trajectory_arg,
         input_ego_data_arg,
         output_arg,
+        lat_arg,
+        lon_arg,
         use_sim_time_arg,
         log_level_arg,
         SetParameter(name='use_sim_time', value=LaunchConfiguration('use_sim_time')),

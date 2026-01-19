@@ -12,6 +12,8 @@
 // ROS message parameters
 const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
 const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
+const std::string AckermannTrajectoryControl::kInputTopicLatActive = "~/lat_active";
+const std::string AckermannTrajectoryControl::kInputTopicLonActive = "~/lon_active";
 const std::string AckermannTrajectoryControl::kOutputTopic = "~/ctrl_cmds";
 
 // constructor of Trajectory Control Object
@@ -196,6 +198,10 @@ void AckermannTrajectoryControl::setup() {
       kInputTopicEgoData, 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
       kInputTopicTrajectory, 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+  lat_active_sub_ = create_subscription<std_msgs::msg::Bool>(
+      kInputTopicLatActive, 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
+  lon_active_sub_ = create_subscription<std_msgs::msg::Bool>(
+      kInputTopicLonActive, 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
 
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(kOutputTopic, 1);
@@ -251,6 +257,14 @@ void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_ms
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
+}
+
+void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
+  lat_active_ = msg->data;
+}
+
+void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
+  lon_active_ = msg->data;
 }
 
 void AckermannTrajectoryControl::ResetController() {
@@ -318,6 +332,13 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     ResetController();
   }
   last_time_ = now();
+  if (!lat_active_) {
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+  }
+  if (!lon_active_) {
+    dv_pid_->Reset();
+  }
   if (!InputSanityCheck())  // some inputs are not ok
   {
     // don't do anything
@@ -345,22 +366,40 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     setControllerGains();
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
-    double kappa_tgt = LateralControl(dt);
-    double st_ang = std::atan(kappa_tgt * wheelbase_);
-    if (std::isnan(st_ang)) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
-      vhcl_ctrl_output_.drive.steering_angle = 0.0;
-      dy_pid_->Reset();
-      dpsi_pid_->Reset();
-      return;
+    if (lat_active_) {
+      double kappa_tgt = LateralControl(dt);
+      double st_ang = std::atan(kappa_tgt * wheelbase_);
+      if (std::isnan(st_ang)) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
+        vhcl_ctrl_output_.drive.steering_angle = 0.0;
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
+        return;
+      }
+      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+    } else {
+      double st_ang = perception_msgs::object_access::getSteeringAngleAck(cur_vehicle_state_);
+      double st_rate = perception_msgs::object_access::getSteeringAngleRateAck(cur_vehicle_state_);
+      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+      last_kappa_ = std::tan(st_ang) / wheelbase_;
+      double denom = wheelbase_ * std::cos(st_ang) * std::cos(st_ang);
+      if (fabs(denom) > 1e-6) {
+        last_kappa_rate_ = st_rate / denom;
+      } else {
+        last_kappa_rate_ = 0.0;
+      }
     }
-    vhcl_ctrl_output_.drive.steering_angle = st_ang;
-    vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
-    if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
-      vhcl_ctrl_output_.drive.acceleration = 0.0;
-      dv_pid_->Reset();
-      return;
+    if (lon_active_) {
+      vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
+      if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
+        vhcl_ctrl_output_.drive.acceleration = 0.0;
+        dv_pid_->Reset();
+        return;
+      }
+    } else {
+      vhcl_ctrl_output_.drive.acceleration = perception_msgs::object_access::getAccLon(cur_vehicle_state_);
+      vhcl_ctrl_output_.drive.speed = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
     }
   }
   vhcl_ctrl_output_.header.stamp = now();

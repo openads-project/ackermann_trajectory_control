@@ -12,6 +12,7 @@
 
 // Input Messages
 #include <perception_msgs/msg/ego_data.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <trajectory_planning_msgs/msg/trajectory.hpp>
 
 // Output Messages
@@ -38,6 +39,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   // ROS message parameters
   static const std::string kInputTopicEgoData;
   static const std::string kInputTopicTrajectory;
+  static const std::string kInputTopicLatActive;
+  static const std::string kInputTopicLonActive;
   static const std::string kOutputTopic;
 
  private:
@@ -56,6 +59,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   // callbacks
   void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg);
   void TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg);
+  void LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg);
+  void LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg);
   void VehicleCtrlCycle();
 
   void setControllerGains();
@@ -71,6 +76,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
 
   rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;
   rclcpp::Subscription<trajectory_planning_msgs::msg::Trajectory>::SharedPtr trajectory_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr lat_active_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr lon_active_sub_;
 
   rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr vehicle_ctrl_pub_;
 
@@ -128,6 +135,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double dv_;
   double last_kappa_ = 0.0;
   double last_kappa_rate_ = 0.0;
+  bool lat_active_ = true;
+  bool lon_active_ = true;
 
   // Controller
   PID *dv_pid_;
