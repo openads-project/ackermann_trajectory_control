@@ -70,6 +70,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                            double &output_y);
   void CalcOdometry(const double dt);
   void ResetOdometry();
+  bool VehicleStateOk() const;
+  double UpdateKappaFromState();
+  void UpdateLonFromState();
   double LateralControl(const double dt);
   double LongitudinalControl(const double dt);
   void ResetController();

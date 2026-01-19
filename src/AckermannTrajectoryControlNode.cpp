@@ -332,6 +332,13 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     ResetController();
   }
   last_time_ = now();
+  bool vehicle_state_ok = VehicleStateOk();
+  if (!lat_active_ && vehicle_state_ok) {
+    UpdateKappaFromState();
+  }
+  if (!lon_active_ && vehicle_state_ok) {
+    UpdateLonFromState();
+  }
   if (!lat_active_) {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
@@ -378,16 +385,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       }
       vhcl_ctrl_output_.drive.steering_angle = st_ang;
     } else {
-      double st_ang = perception_msgs::object_access::getSteeringAngleAck(cur_vehicle_state_);
-      double st_rate = perception_msgs::object_access::getSteeringAngleRateAck(cur_vehicle_state_);
+      double st_ang = UpdateKappaFromState();
       vhcl_ctrl_output_.drive.steering_angle = st_ang;
-      last_kappa_ = std::tan(st_ang) / wheelbase_;
-      double denom = wheelbase_ * std::cos(st_ang) * std::cos(st_ang);
-      if (fabs(denom) > 1e-6) {
-        last_kappa_rate_ = st_rate / denom;
-      } else {
-        last_kappa_rate_ = 0.0;
-      }
     }
     if (lon_active_) {
       vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
@@ -398,8 +397,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         return;
       }
     } else {
-      vhcl_ctrl_output_.drive.acceleration = perception_msgs::object_access::getAccLon(cur_vehicle_state_);
-      vhcl_ctrl_output_.drive.speed = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
+      UpdateLonFromState();
     }
   }
   vhcl_ctrl_output_.header.stamp = now();
@@ -407,10 +405,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 }
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
-  double age;
-  age = (now() - cur_vehicle_state_.header.stamp).seconds();
-  if (age > vehicle_state_timeout_ || age < 0.0)  // current vehicle state data older than vehicle_state_timeout_
-  {
+  if (!VehicleStateOk()) {
     RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
     return false;
   }
@@ -509,6 +504,29 @@ void AckermannTrajectoryControl::CalcOdometry(const double dt) {
 void AckermannTrajectoryControl::ResetOdometry() {
   odom_dpsi_ = 0.0;
   odom_dy_ = 0.0;
+}
+
+bool AckermannTrajectoryControl::VehicleStateOk() const {
+  double age = (now() - cur_vehicle_state_.header.stamp).seconds();
+  return age <= vehicle_state_timeout_ && age >= 0.0;
+}
+
+double AckermannTrajectoryControl::UpdateKappaFromState() {
+  double st_ang = perception_msgs::object_access::getSteeringAngleAck(cur_vehicle_state_);
+  double st_rate = perception_msgs::object_access::getSteeringAngleRateAck(cur_vehicle_state_);
+  last_kappa_ = std::tan(st_ang) / wheelbase_;
+  double denom = wheelbase_ * std::cos(st_ang) * std::cos(st_ang);
+  if (fabs(denom) > 1e-6) {
+    last_kappa_rate_ = st_rate / denom;
+  } else {
+    last_kappa_rate_ = 0.0;
+  }
+  return st_ang;
+}
+
+void AckermannTrajectoryControl::UpdateLonFromState() {
+  vhcl_ctrl_output_.drive.acceleration = perception_msgs::object_access::getAccLon(cur_vehicle_state_);
+  vhcl_ctrl_output_.drive.speed = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
 }
 
 double AckermannTrajectoryControl::LateralControl(const double dt) {
