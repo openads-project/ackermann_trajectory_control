@@ -2,7 +2,7 @@
 <package format="3">
   <name>ackermann_trajectory_control</name>
   <version>1.0.0</version>
-  <description>Receives a planning_interfaces-Trajectory and generates the specific ackermann controls</description>
+  <description>Controls actuator interfaces to follow a trajectory</description>
 
   <maintainer email="guido.kueppers@rwth-aachen.de">Guido Küppers</maintainer>
   <license>TODO</license>
