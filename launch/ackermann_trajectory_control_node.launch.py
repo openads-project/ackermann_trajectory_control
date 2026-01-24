@@ -3,8 +3,10 @@
 from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, SetParameter
+from tracetools_launch.action import Trace
 
 def generate_launch_description():
 
@@ -20,6 +22,7 @@ def generate_launch_description():
     input_ego_data_arg = DeclareLaunchArgument('input_ego_data', default_value='~/input_ego_data')
     output_arg = DeclareLaunchArgument('output', default_value='~/ctrl_cmds')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='False')
+    trace_arg = DeclareLaunchArgument('trace', default_value='False', description='Enable tracing')
     log_level_arg = DeclareLaunchArgument("log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)")
 
     node = Node(
@@ -36,6 +39,12 @@ def generate_launch_description():
                     ('~/ctrl_cmds', LaunchConfiguration('output'))]
     )
 
+    trace_action = Trace(
+        session_name='trace',
+        dual_session=True,
+        condition=IfCondition(LaunchConfiguration('trace')),
+    )
+
     return LaunchDescription([
         params_arg,
         node_name_arg,
@@ -43,7 +52,9 @@ def generate_launch_description():
         input_ego_data_arg,
         output_arg,
         use_sim_time_arg,
+        trace_arg,
         log_level_arg,
         SetParameter(name='use_sim_time', value=LaunchConfiguration('use_sim_time')),
-        node
+        node,
+        trace_action
     ])
