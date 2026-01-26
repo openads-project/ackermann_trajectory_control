@@ -68,6 +68,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   bool TrjDataProc();
   bool LinearInterpolation(const std::vector<double> &X, const std::vector<double> &Y, const double &desired_x,
                            double &output_y);
+  bool LoadLateralLimitsCsv();
+  void UpdateLateralLimitsFromVelocity(const double velocity);
   void CalcOdometry(const double dt);
   void ResetOdometry();
   bool VehicleStateOk() const;
@@ -115,8 +117,13 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double max_curvature_ = 0.0;
   double max_curvature_rate_ = 0.0;
   double max_curvature_accel_ = 0.0;
+  double max_curvature_current_ = 0.0;
+  double max_curvature_rate_current_ = 0.0;
   double anti_windup_gain_ = 1.0;
   bool use_back_calculation_ = false;
+  bool use_speed_dependent_lateral_limits_ = false;
+  bool lateral_limits_loaded_ = false;
+  std::string lateral_limits_csv_path_;
 
   double vehicle_state_timeout_ = 0.2;
 
@@ -156,6 +163,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   std::vector<double> dpsi_i_ = {0.0, 0.0};
   std::vector<double> dpsi_d_ = {0.0, 0.0};
   std::vector<double> gain_scheduling_velocity_lookup_ = {-30.0, 30.0};  // velocity in m/s
+  std::vector<double> lateral_limits_velocity_;
+  std::vector<double> lateral_limits_kappa_max_;
+  std::vector<double> lateral_limits_kappa_rate_max_;
 
   std::vector<double> vec_feed_forward_gain_steering_angle_ = {0.0, 0.0};
   std::vector<double> vec_feed_forward_gain_acceleration_ = {0.0, 0.0};

@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   
   <depend>ackermann_msgs</depend>
+  <depend>ament_index_cpp</depend>
   <depend>perception_msgs_utils</depend>
   <depend>perception_msgs</depend>
   <depend>rclcpp</depend>

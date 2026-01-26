@@ -6,6 +6,11 @@
 
 #include "AckermannTrajectoryControlNode.hpp"
 
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
@@ -114,6 +119,10 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
                                 "Maximum curvature acceleration", false, false, false, (std::optional<double>)0.0,
                                 (std::optional<double>)20.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
+                                "Use speed dependent curvature limits", false);
+  this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
+                                "CSV file path for speed dependent curvature limits", false);
   this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true,
                                 false, false, (std::optional<double>)0.0, (std::optional<double>)100.0,
                                 (std::optional<double>)0.1);
@@ -133,6 +142,9 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", true);
   this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", true);
   this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", true);
+
+  max_curvature_current_ = max_curvature_;
+  max_curvature_rate_current_ = max_curvature_rate_;
 }
 
 /**
@@ -151,12 +163,24 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
     }
     if (param.get_name() == "max_curvature") {
       max_curvature_ = param.get_value<double>();
+      if (!use_speed_dependent_lateral_limits_) {
+        max_curvature_current_ = max_curvature_;
+      }
     }
     if (param.get_name() == "max_curvature_rate") {
       max_curvature_rate_ = param.get_value<double>();
+      if (!use_speed_dependent_lateral_limits_) {
+        max_curvature_rate_current_ = max_curvature_rate_;
+      }
     }
     if (param.get_name() == "max_curvature_acceleration") {
       max_curvature_accel_ = param.get_value<double>();
+    }
+    if (param.get_name() == "use_speed_dependent_lateral_limits") {
+      use_speed_dependent_lateral_limits_ = param.get_value<bool>();
+    }
+    if (param.get_name() == "lateral_limits_csv") {
+      lateral_limits_csv_path_ = param.get_value<std::string>();
     }
     if (param.get_name() == "use_back_calculation") {
       use_back_calculation_ = param.get_value<bool>();
@@ -206,6 +230,13 @@ void AckermannTrajectoryControl::setup() {
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(kOutputTopic, 1);
 
+  if (use_speed_dependent_lateral_limits_) {
+    lateral_limits_loaded_ = LoadLateralLimitsCsv();
+    if (!lateral_limits_loaded_) {
+      RCLCPP_WARN_STREAM(get_logger(), "Speed dependent lateral limits disabled due to CSV load failure.");
+    }
+  }
+
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
@@ -218,6 +249,7 @@ void AckermannTrajectoryControl::setup() {
 // update the actual vehicle state
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
   cur_vehicle_state_ = *msg;
+  UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
@@ -494,6 +526,106 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
   return true;
 }
 
+bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
+  lateral_limits_velocity_.clear();
+  lateral_limits_kappa_max_.clear();
+  lateral_limits_kappa_rate_max_.clear();
+
+  if (lateral_limits_csv_path_.empty()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "CSV path for lateral limits is empty.");
+    return false;
+  }
+
+  std::string csv_path = lateral_limits_csv_path_;
+  if (!csv_path.empty() && csv_path.front() != '/') {
+    try {
+      std::string share_dir = ament_index_cpp::get_package_share_directory("ackermann_trajectory_control");
+      csv_path = share_dir + "/" + csv_path;
+    } catch (const std::exception& ex) {
+      RCLCPP_ERROR_STREAM(get_logger(), "Failed to resolve CSV path: " << ex.what());
+      return false;
+    }
+  }
+
+  std::ifstream file(csv_path);
+  if (!file.is_open()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Failed to open CSV file: " << csv_path);
+    return false;
+  }
+
+  std::string line;
+  bool header = true;
+  while (std::getline(file, line)) {
+    if (line.empty()) continue;
+    if (header) {
+      header = false;
+      continue;
+    }
+    std::replace(line.begin(), line.end(), ',', '.');
+    std::stringstream ss(line);
+    std::string token;
+    std::vector<std::string> cols;
+    while (std::getline(ss, token, ';')) {
+      cols.push_back(token);
+    }
+    if (cols.size() < 4) continue;
+
+    try {
+      double v_ms = std::stod(cols[1]);
+      double kappa_max = std::stod(cols[2]);
+      double kappa_rate_max = std::stod(cols[3]);
+      lateral_limits_velocity_.push_back(v_ms);
+      lateral_limits_kappa_max_.push_back(kappa_max);
+      lateral_limits_kappa_rate_max_.push_back(kappa_rate_max);
+    } catch (const std::exception& ex) {
+      RCLCPP_ERROR_STREAM(get_logger(), "CSV parse error: " << ex.what());
+      return false;
+    }
+  }
+
+  if (lateral_limits_velocity_.empty() ||
+      lateral_limits_velocity_.size() != lateral_limits_kappa_max_.size() ||
+      lateral_limits_velocity_.size() != lateral_limits_kappa_rate_max_.size()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "CSV contains no valid lateral limit data.");
+    return false;
+  }
+
+  RCLCPP_INFO_STREAM(get_logger(), "Loaded lateral limits from CSV with "
+                                      << lateral_limits_velocity_.size() << " entries.");
+  return true;
+}
+
+void AckermannTrajectoryControl::UpdateLateralLimitsFromVelocity(const double velocity) {
+  if (!use_speed_dependent_lateral_limits_ || !lateral_limits_loaded_) {
+    max_curvature_current_ = max_curvature_;
+    max_curvature_rate_current_ = max_curvature_rate_;
+    return;
+  }
+  if (lateral_limits_velocity_.empty()) {
+    max_curvature_current_ = max_curvature_;
+    max_curvature_rate_current_ = max_curvature_rate_;
+    return;
+  }
+
+  double v = velocity;
+  if (v <= lateral_limits_velocity_.front()) {
+    max_curvature_current_ = lateral_limits_kappa_max_.front();
+    max_curvature_rate_current_ = lateral_limits_kappa_rate_max_.front();
+    return;
+  }
+  if (v >= lateral_limits_velocity_.back()) {
+    max_curvature_current_ = lateral_limits_kappa_max_.back();
+    max_curvature_rate_current_ = lateral_limits_kappa_rate_max_.back();
+    return;
+  }
+  if (!LinearInterpolation(lateral_limits_velocity_, lateral_limits_kappa_max_, v, max_curvature_current_)) {
+    max_curvature_current_ = max_curvature_;
+  }
+  if (!LinearInterpolation(lateral_limits_velocity_, lateral_limits_kappa_rate_max_, v, max_curvature_rate_current_)) {
+    max_curvature_rate_current_ = max_curvature_rate_;
+  }
+}
+
 void AckermannTrajectoryControl::CalcOdometry(const double dt) {
   double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
@@ -553,7 +685,6 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
 
   double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
-  double kappa_unsat = kappa_tgt;
 
   if (perception_msgs::object_access::getStandstill(cur_vehicle_state_))  //Standstill-Situation
   {
@@ -561,16 +692,13 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     dpsi_pid_->Reset();
   }
 
-  const double kappa_max = max_curvature_;
-  const double kappa_rate_max = max_curvature_rate_;
-  const double kappa_accel_max = max_curvature_accel_;
 
   bool kappa_limited = false;
-  if (fabs(kappa_tgt) > max_curvature_) {
+  if (fabs(kappa_tgt) > max_curvature_current_) {
     if (kappa_tgt >= 0.0) {
-      kappa_tgt = max_curvature_;
+      kappa_tgt = max_curvature_current_;
     } else {
-      kappa_tgt = -max_curvature_;
+      kappa_tgt = -max_curvature_current_;
     }
     dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
@@ -582,11 +710,11 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
   if (dt > 0.0) {
     kappa_rate = (kappa_tgt - kappa_prev) / dt;
   }
-  if (fabs(kappa_rate) > max_curvature_rate_ && dt > 0.0) {
+  if (fabs(kappa_rate) > max_curvature_rate_current_ && dt > 0.0) {
     if (kappa_rate >= 0.0) {
-      kappa_rate = max_curvature_rate_;
+      kappa_rate = max_curvature_rate_current_;
     } else {
-      kappa_rate = -max_curvature_rate_;
+      kappa_rate = -max_curvature_rate_current_;
     }
     kappa_tgt = kappa_prev + kappa_rate * dt;
     dy_pid_->ResetIntegral();

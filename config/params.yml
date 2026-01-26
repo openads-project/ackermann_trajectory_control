@@ -22,8 +22,10 @@ ackermann_trajectory_control_node:
     max_longitudinal_acceleration: 2.0 # [m/s^2]
     min_longitudinal_acceleration: -4.5 # [m/s^2]
     max_longitudinal_jerk: 4.0 # [m/s^3]
-    max_curvature: 0.1933268013 # [1/m]
-    max_curvature_rate: 0.1676052419 # [1/(m*s)]
+    use_speed_dependent_lateral_limits: true
+    lateral_limits_csv: "config/lateral-limits-v2.CSV"
+    max_curvature: 0.1933268013 # [1/m]; if use_speed_dependent_lateral_limits is false
+    max_curvature_rate: 0.1676052419 # [1/(m*s)]; if use_speed_dependent_lateral_limits is false
     max_curvature_acceleration: 0.7262893814 # [1/(m*s^2)]
     anti_windup_gain: 1.0 # [1/s]
     use_back_calculation: false
