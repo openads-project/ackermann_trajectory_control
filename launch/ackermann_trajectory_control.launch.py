@@ -14,8 +14,8 @@ def generate_launch_description():
         LaunchConfiguration('params')
     ])
 
-    node_name_default = 'ackermann_trajectory_control_node'
-    node_name_arg = DeclareLaunchArgument('node_name', default_value=node_name_default)
+    name_default = 'ackermann_trajectory_control'
+    name_arg = DeclareLaunchArgument('name', default_value=name_default)
     trajectory_topic_arg = DeclareLaunchArgument('trajectory_topic', default_value='~/trajectory')
     ego_data_topic_arg = DeclareLaunchArgument('ego_data_topic', default_value='~/ego_data')
     controls_topic_arg = DeclareLaunchArgument('controls_topic', default_value='~/controls')
@@ -27,7 +27,7 @@ def generate_launch_description():
     node = Node(
         package="ackermann_trajectory_control",
         executable="ackermann_trajectory_control_node",
-        name=LaunchConfiguration('node_name'),
+        name=LaunchConfiguration('name'),
         namespace="",
         output="screen",
         emulate_tty=True,
@@ -42,7 +42,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         params_arg,
-        node_name_arg,
+        name_arg,
         trajectory_topic_arg,
         ego_data_topic_arg,
         controls_topic_arg,
