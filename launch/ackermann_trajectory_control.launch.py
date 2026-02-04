@@ -16,11 +16,11 @@ def generate_launch_description():
 
     node_name_default = 'ackermann_trajectory_control_node'
     node_name_arg = DeclareLaunchArgument('node_name', default_value=node_name_default)
-    input_trajectory_arg = DeclareLaunchArgument('input_trajectory', default_value='~/input_trajectory')
-    input_ego_data_arg = DeclareLaunchArgument('input_ego_data', default_value='~/input_ego_data')
-    output_arg = DeclareLaunchArgument('output', default_value='~/ctrl_cmds')
-    lat_arg = DeclareLaunchArgument('lat_active', default_value='~/lat_active')
-    lon_arg = DeclareLaunchArgument('lon_active', default_value='~/lon_active')
+    trajectory_topic_arg = DeclareLaunchArgument('trajectory_topic', default_value='~/trajectory')
+    ego_data_topic_arg = DeclareLaunchArgument('ego_data_topic', default_value='~/ego_data')
+    controls_topic_arg = DeclareLaunchArgument('controls_topic', default_value='~/controls')
+    lat_control_active_arg = DeclareLaunchArgument('lat_control_active_topic', default_value='~/lat_control_active')
+    lon_control_active_arg = DeclareLaunchArgument('lon_control_active_topic', default_value='~/lon_control_active')
     use_sim_time_arg = DeclareLaunchArgument('use_sim_time', default_value='False')
     log_level_arg = DeclareLaunchArgument("log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)")
 
@@ -33,19 +33,19 @@ def generate_launch_description():
         emulate_tty=True,
         arguments=["--ros-args", "--log-level", LaunchConfiguration("log_level")],
         parameters=[config],
-        remappings=[('~/input_trajectory', LaunchConfiguration('input_trajectory')),
-                    ('~/input_ego_data', LaunchConfiguration('input_ego_data')),
-                    ('~/ctrl_cmds', LaunchConfiguration('output')),
-                    ('~/lat_active', LaunchConfiguration('lat_active')),
-                    ('~/lon_active', LaunchConfiguration('lon_active'))]
+        remappings=[('~/trajectory', LaunchConfiguration('trajectory_topic')),
+                    ('~/ego_data', LaunchConfiguration('ego_data_topic')),
+                    ('~/controls', LaunchConfiguration('controls_topic')),
+                    ('~/lat_control_active', LaunchConfiguration('lat_control_active_topic')),
+                    ('~/lon_control_active', LaunchConfiguration('lon_control_active_topic'))]
     )
 
     return LaunchDescription([
         params_arg,
         node_name_arg,
-        input_trajectory_arg,
-        input_ego_data_arg,
-        output_arg,
+        trajectory_topic_arg,
+        ego_data_topic_arg,
+        controls_topic_arg,
         lat_arg,
         lon_arg,
         use_sim_time_arg,

@@ -15,11 +15,11 @@
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
 // ROS message parameters
-const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
-const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
-const std::string AckermannTrajectoryControl::kInputTopicLatActive = "~/lat_active";
-const std::string AckermannTrajectoryControl::kInputTopicLonActive = "~/lon_active";
-const std::string AckermannTrajectoryControl::kOutputTopic = "~/ctrl_cmds";
+const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/ego_data";
+const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/trajectory";
+const std::string AckermannTrajectoryControl::kInputTopicLatActive = "~/lat_control_active";
+const std::string AckermannTrajectoryControl::kInputTopicLonActive = "~/lon_control_active";
+const std::string AckermannTrajectoryControl::kOutputTopic = "~/controls";
 
 // constructor of Trajectory Control Object
 AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
