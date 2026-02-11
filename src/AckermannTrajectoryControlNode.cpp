@@ -6,13 +6,20 @@
 
 #include "AckermannTrajectoryControlNode.hpp"
 
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
 // ROS message parameters
-const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/input_ego_data";
-const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/input_trajectory";
-const std::string AckermannTrajectoryControl::kOutputTopic = "~/ctrl_cmds";
+const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/ego_data";
+const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/trajectory";
+const std::string AckermannTrajectoryControl::kInputTopicLatActive = "~/lat_control_active";
+const std::string AckermannTrajectoryControl::kInputTopicLonActive = "~/lon_control_active";
+const std::string AckermannTrajectoryControl::kOutputTopic = "~/controls";
 
 // constructor of Trajectory Control Object
 AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
@@ -105,13 +112,22 @@ void AckermannTrajectoryControl::loadParameters() {
                                 (std::optional<double>)0.1);
   this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false,
                                 (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
-  this->declareAndLoadParameter("max_steering_angle", lat_max_st_ang_, "Maximum steering angle", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)90.0, (std::optional<double>)0.1);
-  lat_max_st_ang_ *= M_PI / 180.0;
-  this->declareAndLoadParameter("max_steering_angle_rate", lat_max_st_rate_, "Maximum steering angle rate", false,
-                                false, false, (std::optional<double>)0.0, (std::optional<double>)270.0,
+  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum curvature", false, false, false,
+                                (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_, "Maximum curvature rate", false, false, false,
+                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
+                                "Maximum curvature acceleration", false, false, false, (std::optional<double>)0.0,
+                                (std::optional<double>)20.0, (std::optional<double>)1e-12);
+  this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
+                                "Use speed dependent curvature limits", false);
+  this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
+                                "CSV file path for speed dependent curvature limits", false);
+  this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true,
+                                false, false, (std::optional<double>)0.0, (std::optional<double>)100.0,
                                 (std::optional<double>)0.1);
-  lat_max_st_rate_ *= M_PI / 180.0;
+  this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation",
+                                true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
   this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
                                 "Feed forward acceleration gain", true);
@@ -126,6 +142,9 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", true);
   this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", true);
   this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", true);
+
+  max_curvature_current_ = max_curvature_;
+  max_curvature_rate_current_ = max_curvature_rate_;
 }
 
 /**
@@ -142,11 +161,29 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
         std::get<1>(auto_reconfigurable_param)(param);
       }
     }
-    if (param.get_name() == "max_steering_angle") {
-      lat_max_st_ang_ = param.get_value<double>() * M_PI / 180.0;
+    if (param.get_name() == "max_curvature") {
+      max_curvature_ = param.get_value<double>();
+      if (!use_speed_dependent_lateral_limits_) {
+        max_curvature_current_ = max_curvature_;
+      }
     }
-    if (param.get_name() == "max_steering_angle_rate") {
-      lat_max_st_rate_ = param.get_value<double>() * M_PI / 180.0;
+    if (param.get_name() == "max_curvature_rate") {
+      max_curvature_rate_ = param.get_value<double>();
+      if (!use_speed_dependent_lateral_limits_) {
+        max_curvature_rate_current_ = max_curvature_rate_;
+      }
+    }
+    if (param.get_name() == "max_curvature_acceleration") {
+      max_curvature_accel_ = param.get_value<double>();
+    }
+    if (param.get_name() == "use_speed_dependent_lateral_limits") {
+      use_speed_dependent_lateral_limits_ = param.get_value<bool>();
+    }
+    if (param.get_name() == "lateral_limits_csv") {
+      lateral_limits_csv_path_ = param.get_value<std::string>();
+    }
+    if (param.get_name() == "use_back_calculation") {
+      use_back_calculation_ = param.get_value<bool>();
     }
   }
 
@@ -185,9 +222,20 @@ void AckermannTrajectoryControl::setup() {
       kInputTopicEgoData, 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
       kInputTopicTrajectory, 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+  lat_active_sub_ = create_subscription<std_msgs::msg::Bool>(
+      kInputTopicLatActive, 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
+  lon_active_sub_ = create_subscription<std_msgs::msg::Bool>(
+      kInputTopicLonActive, 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
 
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(kOutputTopic, 1);
+
+  if (use_speed_dependent_lateral_limits_) {
+    lateral_limits_loaded_ = LoadLateralLimitsCsv();
+    if (!lateral_limits_loaded_) {
+      RCLCPP_WARN_STREAM(get_logger(), "Speed dependent lateral limits disabled due to CSV load failure.");
+    }
+  }
 
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_time_ = now();
@@ -201,6 +249,7 @@ void AckermannTrajectoryControl::setup() {
 // update the actual vehicle state
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
   cur_vehicle_state_ = *msg;
+  UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
@@ -242,6 +291,14 @@ void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_ms
   }
 }
 
+void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
+  lat_active_ = msg->data;
+}
+
+void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
+  lon_active_ = msg->data;
+}
+
 void AckermannTrajectoryControl::ResetController() {
   a_tgt_ = 0.0;
   a_tgt_dv_ = 0.0;
@@ -252,6 +309,8 @@ void AckermannTrajectoryControl::ResetController() {
   dpsi_ = 0.0;
   dy_ = 0.0;
   dv_ = 0.0;
+  last_kappa_ = 0.0;
+  last_kappa_rate_ = 0.0;
   dy_pid_->Reset();
   dpsi_pid_->Reset();
   dv_pid_->Reset();
@@ -305,6 +364,20 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     ResetController();
   }
   last_time_ = now();
+  bool vehicle_state_ok = VehicleStateOk();
+  if (!lat_active_ && vehicle_state_ok) {
+    UpdateKappaFromState();
+  }
+  if (!lon_active_ && vehicle_state_ok) {
+    UpdateLonFromState();
+  }
+  if (!lat_active_) {
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+  }
+  if (!lon_active_) {
+    dv_pid_->Reset();
+  }
   if (!InputSanityCheck())  // some inputs are not ok
   {
     // don't do anything
@@ -322,6 +395,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
     dv_pid_->Reset();
+    last_kappa_ = 0.0;
+    last_kappa_rate_ = 0.0;
   } else {
     if (!TrjDataProc()) {
       RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
@@ -330,20 +405,31 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     setControllerGains();
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
-    vhcl_ctrl_output_.drive.steering_angle = LateralControl(dt);
-    vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
-    if (std::isnan(vhcl_ctrl_output_.drive.steering_angle)) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
-      vhcl_ctrl_output_.drive.steering_angle = 0.0;
-      dy_pid_->Reset();
-      dpsi_pid_->Reset();
-      return;
+    if (lat_active_) {
+      double kappa_tgt = LateralControl(dt);
+      double st_ang = std::atan(kappa_tgt * wheelbase_);
+      if (std::isnan(st_ang)) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
+        vhcl_ctrl_output_.drive.steering_angle = 0.0;
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
+        return;
+      }
+      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+    } else {
+      double st_ang = UpdateKappaFromState();
+      vhcl_ctrl_output_.drive.steering_angle = st_ang;
     }
-    if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
-      vhcl_ctrl_output_.drive.acceleration = 0.0;
-      dv_pid_->Reset();
-      return;
+    if (lon_active_) {
+      vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
+      if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
+        vhcl_ctrl_output_.drive.acceleration = 0.0;
+        dv_pid_->Reset();
+        return;
+      }
+    } else {
+      UpdateLonFromState();
     }
   }
   vhcl_ctrl_output_.header.stamp = now();
@@ -351,10 +437,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 }
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
-  double age;
-  age = (now() - cur_vehicle_state_.header.stamp).seconds();
-  if (age > vehicle_state_timeout_ || age < 0.0)  // current vehicle state data older than vehicle_state_timeout_
-  {
+  if (!VehicleStateOk()) {
     RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
     return false;
   }
@@ -443,6 +526,106 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
   return true;
 }
 
+bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
+  lateral_limits_velocity_.clear();
+  lateral_limits_kappa_max_.clear();
+  lateral_limits_kappa_rate_max_.clear();
+
+  if (lateral_limits_csv_path_.empty()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "CSV path for lateral limits is empty.");
+    return false;
+  }
+
+  std::string csv_path = lateral_limits_csv_path_;
+  if (!csv_path.empty() && csv_path.front() != '/') {
+    try {
+      std::string share_dir = ament_index_cpp::get_package_share_directory("ackermann_trajectory_control");
+      csv_path = share_dir + "/" + csv_path;
+    } catch (const std::exception& ex) {
+      RCLCPP_ERROR_STREAM(get_logger(), "Failed to resolve CSV path: " << ex.what());
+      return false;
+    }
+  }
+
+  std::ifstream file(csv_path);
+  if (!file.is_open()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Failed to open CSV file: " << csv_path);
+    return false;
+  }
+
+  std::string line;
+  bool header = true;
+  while (std::getline(file, line)) {
+    if (line.empty()) continue;
+    if (header) {
+      header = false;
+      continue;
+    }
+    std::replace(line.begin(), line.end(), ',', '.');
+    std::stringstream ss(line);
+    std::string token;
+    std::vector<std::string> cols;
+    while (std::getline(ss, token, ';')) {
+      cols.push_back(token);
+    }
+    if (cols.size() < 4) continue;
+
+    try {
+      double v_ms = std::stod(cols[1]);
+      double kappa_max = std::stod(cols[2]);
+      double kappa_rate_max = std::stod(cols[3]);
+      lateral_limits_velocity_.push_back(v_ms);
+      lateral_limits_kappa_max_.push_back(kappa_max);
+      lateral_limits_kappa_rate_max_.push_back(kappa_rate_max);
+    } catch (const std::exception& ex) {
+      RCLCPP_ERROR_STREAM(get_logger(), "CSV parse error: " << ex.what());
+      return false;
+    }
+  }
+
+  if (lateral_limits_velocity_.empty() ||
+      lateral_limits_velocity_.size() != lateral_limits_kappa_max_.size() ||
+      lateral_limits_velocity_.size() != lateral_limits_kappa_rate_max_.size()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "CSV contains no valid lateral limit data.");
+    return false;
+  }
+
+  RCLCPP_INFO_STREAM(get_logger(), "Loaded lateral limits from CSV with "
+                                      << lateral_limits_velocity_.size() << " entries.");
+  return true;
+}
+
+void AckermannTrajectoryControl::UpdateLateralLimitsFromVelocity(const double velocity) {
+  if (!use_speed_dependent_lateral_limits_ || !lateral_limits_loaded_) {
+    max_curvature_current_ = max_curvature_;
+    max_curvature_rate_current_ = max_curvature_rate_;
+    return;
+  }
+  if (lateral_limits_velocity_.empty()) {
+    max_curvature_current_ = max_curvature_;
+    max_curvature_rate_current_ = max_curvature_rate_;
+    return;
+  }
+
+  double v = velocity;
+  if (v <= lateral_limits_velocity_.front()) {
+    max_curvature_current_ = lateral_limits_kappa_max_.front();
+    max_curvature_rate_current_ = lateral_limits_kappa_rate_max_.front();
+    return;
+  }
+  if (v >= lateral_limits_velocity_.back()) {
+    max_curvature_current_ = lateral_limits_kappa_max_.back();
+    max_curvature_rate_current_ = lateral_limits_kappa_rate_max_.back();
+    return;
+  }
+  if (!LinearInterpolation(lateral_limits_velocity_, lateral_limits_kappa_max_, v, max_curvature_current_)) {
+    max_curvature_current_ = max_curvature_;
+  }
+  if (!LinearInterpolation(lateral_limits_velocity_, lateral_limits_kappa_rate_max_, v, max_curvature_rate_current_)) {
+    max_curvature_rate_current_ = max_curvature_rate_;
+  }
+}
+
 void AckermannTrajectoryControl::CalcOdometry(const double dt) {
   double yawRate = perception_msgs::object_access::getYawRate(cur_vehicle_state_);
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
@@ -453,6 +636,29 @@ void AckermannTrajectoryControl::CalcOdometry(const double dt) {
 void AckermannTrajectoryControl::ResetOdometry() {
   odom_dpsi_ = 0.0;
   odom_dy_ = 0.0;
+}
+
+bool AckermannTrajectoryControl::VehicleStateOk() const {
+  double age = (now() - cur_vehicle_state_.header.stamp).seconds();
+  return age <= vehicle_state_timeout_ && age >= 0.0;
+}
+
+double AckermannTrajectoryControl::UpdateKappaFromState() {
+  double st_ang = perception_msgs::object_access::getSteeringAngleAck(cur_vehicle_state_);
+  double st_rate = perception_msgs::object_access::getSteeringAngleRateAck(cur_vehicle_state_);
+  last_kappa_ = std::tan(st_ang) / wheelbase_;
+  double denom = wheelbase_ * std::cos(st_ang) * std::cos(st_ang);
+  if (fabs(denom) > 1e-6) {
+    last_kappa_rate_ = st_rate / denom;
+  } else {
+    last_kappa_rate_ = 0.0;
+  }
+  return st_ang;
+}
+
+void AckermannTrajectoryControl::UpdateLonFromState() {
+  vhcl_ctrl_output_.drive.acceleration = perception_msgs::object_access::getAccLon(cur_vehicle_state_);
+  vhcl_ctrl_output_.drive.speed = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
 }
 
 double AckermannTrajectoryControl::LateralControl(const double dt) {
@@ -473,12 +679,12 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     }
   }
 
-  double st_ang_pid = psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
+  double kappa_pid = std::tan(psi_dot_des*(wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
 
-  // ackermann feed-forward control
-  double st_ang_ack = delta_tgt_;
+  // ackermann feed-forward control (convert delta to kappa for feed-forward)
+  double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
 
-  double st_ang = st_ang_pid + st_ang_ack * feed_forward_gain_steering_angle_;
+  double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
 
   if (perception_msgs::object_access::getStandstill(cur_vehicle_state_))  //Standstill-Situation
   {
@@ -486,31 +692,68 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     dpsi_pid_->Reset();
   }
 
-  // limit desired steering angle
-  if (fabs(st_ang) > lat_max_st_ang_) {
-    if (st_ang >= 0) {
-      st_ang = lat_max_st_ang_;
+
+  bool kappa_limited = false;
+  if (fabs(kappa_tgt) > max_curvature_current_) {
+    if (kappa_tgt >= 0.0) {
+      kappa_tgt = max_curvature_current_;
     } else {
-      st_ang = -lat_max_st_ang_;
+      kappa_tgt = -max_curvature_current_;
     }
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-    RCLCPP_WARN_STREAM(get_logger(), "Steering-Angle limited!");
-  }
-  // calculate steering rate with respect to last steering angle
-  double st_rate = (st_ang - vhcl_ctrl_output_.drive.steering_angle) / dt;
-  if (fabs(st_rate) > lat_max_st_rate_ && dt > 0.0) {
-    if (st_rate >= 0) {
-      st_ang = vhcl_ctrl_output_.drive.steering_angle + lat_max_st_rate_ * dt;
-    } else {
-      st_ang = vhcl_ctrl_output_.drive.steering_angle - lat_max_st_rate_ * dt;
-    }
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-    RCLCPP_WARN_STREAM(get_logger(), "Steering-rate limited!");
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
+    kappa_limited = true;
   }
 
-  return st_ang;
+  double kappa_prev = last_kappa_;
+  double kappa_rate = 0.0;
+  if (dt > 0.0) {
+    kappa_rate = (kappa_tgt - kappa_prev) / dt;
+  }
+  if (fabs(kappa_rate) > max_curvature_rate_current_ && dt > 0.0) {
+    if (kappa_rate >= 0.0) {
+      kappa_rate = max_curvature_rate_current_;
+    } else {
+      kappa_rate = -max_curvature_rate_current_;
+    }
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
+    kappa_limited = true;
+  }
+
+  double kappa_accel = 0.0;
+  if (dt > 0.0) {
+    kappa_accel = (kappa_rate - last_kappa_rate_) / dt;
+  }
+  if (fabs(kappa_accel) > max_curvature_accel_ && dt > 0.0) {
+    if (kappa_accel >= 0.0) {
+      kappa_accel = max_curvature_accel_;
+    } else {
+      kappa_accel = -max_curvature_accel_;
+    }
+    kappa_rate = last_kappa_rate_ + kappa_accel * dt;
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+    kappa_limited = true;
+  }
+
+  if (kappa_limited) {
+    if (use_back_calculation_) {
+      double kappa_fb_sat = kappa_tgt - kappa_ff * feed_forward_gain_steering_angle_;
+      double denom = (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
+      double psi_dot_sat = std::atan(kappa_fb_sat * wheelbase_) / denom;
+      dpsi_pid_->BackCalculate(psi_dot_des, psi_dot_sat, dt, anti_windup_gain_);
+    } else {
+      dpsi_pid_->ResetIntegral();
+    }
+  }
+
+  last_kappa_ = kappa_tgt;
+  last_kappa_rate_ = kappa_rate;
+
+  return kappa_tgt;
 }
 
 double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
@@ -519,16 +762,16 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   double e_v = w_v - velocity;
   double a_fb_v = dv_pid_->Calc(e_v, dt);
 
-  double a_ctrl = a_fb_v + a_tgt_ * feed_forward_gain_acceleration_;
+  double a_ff = a_tgt_ * feed_forward_gain_acceleration_;
+  double a_ctrl = a_fb_v + a_ff;
+  double a_unsat = a_ctrl;
 
   // limit desired acceleration
   if (a_ctrl > lon_max_acc_) {
     a_ctrl = lon_max_acc_;
-    dv_pid_->Reset();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
   } else if (a_ctrl < lon_min_acc_) {
     a_ctrl = lon_min_acc_;
-    dv_pid_->Reset();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
   }
 
@@ -540,8 +783,15 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
     } else {
       a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
     }
-    dv_pid_->Reset();
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal jerk limited!");
+  }
+  if (a_ctrl != a_unsat) {
+    if (use_back_calculation_) {
+      double a_fb_sat = a_ctrl - a_ff;
+      dv_pid_->BackCalculate(a_fb_v, a_fb_sat, dt, anti_windup_gain_);
+    } else {
+      dv_pid_->ResetIntegral();
+    }
   }
   vhcl_ctrl_output_.drive.speed = v_tgt_;
   return a_ctrl;

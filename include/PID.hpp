@@ -13,6 +13,8 @@ class PID {
   ~PID();
 
   void Reset();
+  void ResetIntegral();
+  void BackCalculate(double u_unsat, double u_sat, double dt, double kaw);
   void SetParameters(double Kp, double Ki, double Kd);
   double Calc(double e, double dt);
 

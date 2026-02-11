@@ -12,6 +12,7 @@
 
 // Input Messages
 #include <perception_msgs/msg/ego_data.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <trajectory_planning_msgs/msg/trajectory.hpp>
 
 // Output Messages
@@ -38,6 +39,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   // ROS message parameters
   static const std::string kInputTopicEgoData;
   static const std::string kInputTopicTrajectory;
+  static const std::string kInputTopicLatActive;
+  static const std::string kInputTopicLonActive;
   static const std::string kOutputTopic;
 
  private:
@@ -56,6 +59,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   // callbacks
   void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg);
   void TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg);
+  void LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg);
+  void LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg);
   void VehicleCtrlCycle();
 
   void setControllerGains();
@@ -63,14 +68,21 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   bool TrjDataProc();
   bool LinearInterpolation(const std::vector<double> &X, const std::vector<double> &Y, const double &desired_x,
                            double &output_y);
+  bool LoadLateralLimitsCsv();
+  void UpdateLateralLimitsFromVelocity(const double velocity);
   void CalcOdometry(const double dt);
   void ResetOdometry();
+  bool VehicleStateOk() const;
+  double UpdateKappaFromState();
+  void UpdateLonFromState();
   double LateralControl(const double dt);
   double LongitudinalControl(const double dt);
   void ResetController();
 
   rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;
   rclcpp::Subscription<trajectory_planning_msgs::msg::Trajectory>::SharedPtr trajectory_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr lat_active_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr lon_active_sub_;
 
   rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr vehicle_ctrl_pub_;
 
@@ -102,8 +114,16 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double lon_min_acc_ = -5.0;  // make sure that this value is negative
   double lon_max_jerk_ = 5.0;
 
-  double lat_max_st_ang_ = 28.0 * M_PI / 180.0;
-  double lat_max_st_rate_ = 56.0 * M_PI / 180.0;
+  double max_curvature_ = 0.0;
+  double max_curvature_rate_ = 0.0;
+  double max_curvature_accel_ = 0.0;
+  double max_curvature_current_ = 0.0;
+  double max_curvature_rate_current_ = 0.0;
+  double anti_windup_gain_ = 1.0;
+  bool use_back_calculation_ = false;
+  bool use_speed_dependent_lateral_limits_ = false;
+  bool lateral_limits_loaded_ = false;
+  std::string lateral_limits_csv_path_;
 
   double vehicle_state_timeout_ = 0.2;
 
@@ -123,6 +143,10 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double dpsi_;
   double dy_;
   double dv_;
+  double last_kappa_ = 0.0;
+  double last_kappa_rate_ = 0.0;
+  bool lat_active_ = true;
+  bool lon_active_ = true;
 
   // Controller
   PID *dv_pid_;
@@ -139,6 +163,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   std::vector<double> dpsi_i_ = {0.0, 0.0};
   std::vector<double> dpsi_d_ = {0.0, 0.0};
   std::vector<double> gain_scheduling_velocity_lookup_ = {-30.0, 30.0};  // velocity in m/s
+  std::vector<double> lateral_limits_velocity_;
+  std::vector<double> lateral_limits_kappa_max_;
+  std::vector<double> lateral_limits_kappa_rate_max_;
 
   std::vector<double> vec_feed_forward_gain_steering_angle_ = {0.0, 0.0};
   std::vector<double> vec_feed_forward_gain_acceleration_ = {0.0, 0.0};
