@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
+#include <tracetools/tracetools.h>
 
 #include <PID.hpp>
 

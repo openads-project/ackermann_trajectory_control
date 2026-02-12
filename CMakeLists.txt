@@ -16,6 +16,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_trajectory_planning_msgs REQUIRED)
+find_package(tracetools REQUIRED)
 find_package(trajectory_planning_msgs REQUIRED)
 find_package(trajectory_planning_msgs_utils REQUIRED)
 
@@ -31,6 +32,7 @@ ament_target_dependencies(${PROJECT_NAME}_node
   tf2_geometry_msgs
   tf2_ros
   tf2_trajectory_planning_msgs
+  tracetools
   trajectory_planning_msgs
   trajectory_planning_msgs_utils
 )

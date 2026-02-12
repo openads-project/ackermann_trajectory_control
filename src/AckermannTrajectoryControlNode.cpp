@@ -244,6 +244,14 @@ void AckermannTrajectoryControl::setup() {
 
   parameters_callback_ = this->add_on_set_parameters_callback(
             std::bind(&AckermannTrajectoryControl::parametersCallback, this, std::placeholders::_1));
+  
+  // Annotate message links for tracing: Publish ackermann commands periodically, depending an all subscribed topics.
+  std::vector<const void *> link_subs;
+  link_subs.push_back(static_cast<const void *>(vehicle_state_sub_->get_subscription_handle().get()));
+  link_subs.push_back(static_cast<const void *>(trajectory_sub_->get_subscription_handle().get()));
+  std::vector<const void *> link_pubs;
+  link_pubs.push_back(static_cast<const void *>(vehicle_ctrl_pub_->get_publisher_handle().get()));
+  TRACETOOLS_TRACEPOINT(message_link_periodic_async, link_subs.data(), link_subs.size(), link_pubs.data(), link_pubs.size());
 }
 
 // update the actual vehicle state
