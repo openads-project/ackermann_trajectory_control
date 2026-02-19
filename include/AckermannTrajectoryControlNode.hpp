@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cmath>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <tracetools/tracetools.h>
 
@@ -150,9 +151,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   bool lon_active_ = true;
 
   // Controller
-  PID *dv_pid_;
-  PID *dy_pid_;
-  PID *dpsi_pid_;
+  std::unique_ptr<PID> dv_pid_;
+  std::unique_ptr<PID> dy_pid_;
+  std::unique_ptr<PID> dpsi_pid_;
 
   std::vector<double> dv_p_ = {0.0, 0.0};
   std::vector<double> dv_i_ = {0.0, 0.0};

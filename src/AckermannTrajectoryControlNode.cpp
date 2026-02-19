@@ -196,13 +196,13 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
 
 void AckermannTrajectoryControl::setup() {
   // initialize dv-PID
-  dv_pid_ = new PID(0.0, 0.0, 0.0);
+  dv_pid_ = std::make_unique<PID>(0.0, 0.0, 0.0);
 
   // initialize dy-PID
-  dy_pid_ = new PID(0.0, 0.0, 0.0);
+  dy_pid_ = std::make_unique<PID>(0.0, 0.0, 0.0);
 
   // initialize dpsi-PID
-  dpsi_pid_ = new PID(0.0, 0.0, 0.0);
+  dpsi_pid_ = std::make_unique<PID>(0.0, 0.0, 0.0);
 
   // set Initial output values
   vhcl_ctrl_output_.drive.steering_angle = 0.0;

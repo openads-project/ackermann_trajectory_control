@@ -6,6 +6,7 @@
 #include "PID.hpp"
 
 PID::PID(double Kp, double Ki, double Kd) { this->SetParameters(Kp, Ki, Kd); }
+PID::~PID() = default;
 
 void PID::SetParameters(double Kp, double Ki, double Kd) {
   Kp_ = Kp;
