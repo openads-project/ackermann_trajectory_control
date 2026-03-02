@@ -4,7 +4,8 @@
   <version>1.2.0</version>
   <description>Controls actuator interfaces to follow a trajectory</description>
 
-  <maintainer email="guido.kueppers@rwth-aachen.de">Guido Küppers</maintainer>
+  <author email="guido.linden@rwth-aachen.de">Guido Linden</author>
+  <maintainer email="guido.linden@rwth-aachen.de">Guido Linden</maintainer>
   <license>TODO</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
