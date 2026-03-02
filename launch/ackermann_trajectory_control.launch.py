@@ -25,7 +25,6 @@ def generate_launch_description():
         DeclareLaunchArgument("namespace", default_value="", description="node namespace"),
         DeclareLaunchArgument("params", default_value=os.path.join(get_package_share_directory("ackermann_trajectory_control"), "config", "params.yml"), description="path to parameter file"),
         DeclareLaunchArgument("log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)"),
-        DeclareLaunchArgument("startup_state", default_value="None", description="initial lifecycle state"),
         DeclareLaunchArgument("use_sim_time", default_value="false", description="use simulation clock"),
         DeclareLaunchArgument("trace", default_value="False", description="Enable tracing"),
         *remappable_topics,
