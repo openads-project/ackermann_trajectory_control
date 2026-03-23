@@ -2,7 +2,7 @@
 <package format="3">
   <name>ackermann_trajectory_control</name>
   <version>1.3.0</version>
-  <description>This package contains a trajectory controller for ackermann steered vehicles. It is implemented as ROS 2 C++ node, which subscribes to a `trajectory_planning_msgs/Trajectory` and publishes the control commands as `ackermann_msgs/AckermannDriveStamped` (lon: acceleration, lat: steering_angle) to the vehicle.</description>
+  <description>This package contains a trajectory controller for ackermann steered vehicles. It is implemented as ROS 2 C++ node, which subscribes to a `trajectory_planning_msgs/Trajectory` and publishes the control commands as `ackermann_msgs/AckermannDriveStamped` to the vehicle.</description>
 
   <author email="guido.linden@rwth-aachen.de">Guido Linden</author>
   <maintainer email="guido.linden@rwth-aachen.de">Guido Linden</maintainer>

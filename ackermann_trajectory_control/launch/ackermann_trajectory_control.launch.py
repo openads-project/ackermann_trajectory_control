@@ -10,21 +10,42 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetParameter
 from tracetools_launch.action import Trace
 
+
 def generate_launch_description():
 
     remappable_topics = [
-        DeclareLaunchArgument("ego_data_topic", default_value="~/ego_data"),
-        DeclareLaunchArgument("trajectory_topic", default_value="~/trajectory"),
-        DeclareLaunchArgument("lat_control_active_topic", default_value="~/lat_control_active"),
-        DeclareLaunchArgument("lon_control_active_topic", default_value="~/lon_control_active"),
-        DeclareLaunchArgument("controls_topic", default_value="~/controls"),
+        DeclareLaunchArgument("ego_data_topic", default_value="~/ego_data", description="topic for ego data input"),
+        DeclareLaunchArgument(
+            "trajectory_topic", default_value="~/trajectory", description="topic for trajectory input"
+        ),
+        DeclareLaunchArgument(
+            "lat_control_active_topic",
+            default_value="~/lat_control_active",
+            description="topic for lateral control activation",
+        ),
+        DeclareLaunchArgument(
+            "lon_control_active_topic",
+            default_value="~/lon_control_active",
+            description="topic for longitudinal control activation",
+        ),
+        DeclareLaunchArgument(
+            "controls_topic", default_value="~/controls", description="topic for control commands output"
+        ),
     ]
 
     args = [
         DeclareLaunchArgument("name", default_value="ackermann_trajectory_control_node", description="node name"),
         DeclareLaunchArgument("namespace", default_value="", description="node namespace"),
-        DeclareLaunchArgument("params", default_value=os.path.join(get_package_share_directory("ackermann_trajectory_control"), "config", "params.yml"), description="path to parameter file"),
-        DeclareLaunchArgument("log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)"),
+        DeclareLaunchArgument(
+            "params",
+            default_value=os.path.join(
+                get_package_share_directory("ackermann_trajectory_control"), "config", "params.yml"
+            ),
+            description="path to parameter file",
+        ),
+        DeclareLaunchArgument(
+            "log_level", default_value="info", description="ROS logging level (debug, info, warn, error, fatal)"
+        ),
         DeclareLaunchArgument("use_sim_time", default_value="false", description="use simulation clock"),
         DeclareLaunchArgument("trace", default_value="False", description="Enable tracing"),
         *remappable_topics,
@@ -43,14 +64,16 @@ def generate_launch_description():
             emulate_tty=True,
         ),
         Trace(
-            session_name='trace',
+            session_name="trace",
             dual_session=True,
-            condition=IfCondition(LaunchConfiguration('trace')),
-        )
+            condition=IfCondition(LaunchConfiguration("trace")),
+        ),
     ]
 
-    return LaunchDescription([
-        *args,
-        SetParameter("use_sim_time", LaunchConfiguration("use_sim_time")),
-        *nodes,
-    ])
+    return LaunchDescription(
+        [
+            *args,
+            SetParameter("use_sim_time", LaunchConfiguration("use_sim_time")),
+            *nodes,
+        ]
+    )
