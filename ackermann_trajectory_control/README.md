@@ -55,8 +55,7 @@ flowchart LR
 | `max_curvature_rate` | `float` | `0.0` | Maximum allowed curvature rate (constraint, absolute value) |
 | `max_curvature_acceleration` | `float` | `0.0` | Maximum allowed curvature acceleration (constraint, absolute value) |
 | `use_speed_dependent_lateral_limits` | `bool` | `false` | Boolean to indicate if controllers uses speed dependent curvature limits given through a CSV file |
-| `lateral_limits_csv` | `string` | `ament_index_cpp::get_package_share_directory("ackermann_trajectory_control") +
-      "/config/example-limits.csv"` | CSV file path for speed dependent curvature limits |
+| `lateral_limits_csv` | `string` | `ament_index_cpp::get_package_share_directory("ackermann_trajectory_control") + "/config/example-limits.csv"` | CSV file path for speed dependent curvature limits |
 | `anti_windup_gain` | `float` | `1.0` | Anti-windup back-calculation gain |
 | `use_back_calculation` | `bool` | `false` | Enable anti-windup back-calculation |
 | `velocity_lookup` | `float[]` | `[-30.0, 30.0]` | List of velocities in m/s for which the following gains are defined  |
