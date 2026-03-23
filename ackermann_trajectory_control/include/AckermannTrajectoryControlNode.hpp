@@ -5,10 +5,11 @@
  */
 #pragma once
 
+#include <tracetools/tracetools.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <tracetools/tracetools.h>
 
 #include <PID.hpp>
 
@@ -50,13 +51,13 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   void setup();
   void loadParameters();
   template <typename T>
-  void declareAndLoadParameter(const std::string &name, T &member_param, const std::string &description,
+  void declareAndLoadParameter(const std::string& name, T& member_param, const std::string& description,
                                const bool add_to_auto_reconfigurable_params = true, const bool is_required = false,
-                               const bool read_only = false, const std::optional<T> &from_value = std::nullopt,
-                               const std::optional<T> &to_value = std::nullopt,
-                               const std::optional<T> &step_value = std::nullopt,
-                               const std::string &additional_constraints = "");
-  rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
+                               const bool read_only = false, const std::optional<T>& from_value = std::nullopt,
+                               const std::optional<T>& to_value = std::nullopt,
+                               const std::optional<T>& step_value = std::nullopt,
+                               const std::string& additional_constraints = "");
+  rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter>& parameters);
 
   // callbacks
   void VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg);
@@ -68,8 +69,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   void setControllerGains();
   bool InputSanityCheck();
   bool TrjDataProc();
-  bool LinearInterpolation(const std::vector<double> &X, const std::vector<double> &Y, const double &desired_x,
-                           double &output_y);
+  bool LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x,
+                           double& output_y);
   bool LoadLateralLimitsCsv();
   void UpdateLateralLimitsFromVelocity(const double velocity);
   void CalcOdometry(const double dt);
@@ -102,7 +103,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   rclcpp::Time last_time_;
 
   // parameters
-  std::vector<std::tuple<std::string, std::function<void(const rclcpp::Parameter &)>>> auto_reconfigurable_params_;
+  std::vector<std::tuple<std::string, std::function<void(const rclcpp::Parameter&)>>> auto_reconfigurable_params_;
 
   // AckermannTrajectoryControl Parameters
   std::string vehicle_frame_id_ = "base_link";
@@ -125,7 +126,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   bool use_back_calculation_ = false;
   bool use_speed_dependent_lateral_limits_ = false;
   bool lateral_limits_loaded_ = false;
-  std::string lateral_limits_csv_path_;
+  std::string lateral_limits_csv_path_ =
+      ament_index_cpp::get_package_share_directory("ackermann_trajectory_control") + "/config/example-limits.csv";
 
   double vehicle_state_timeout_ = 0.2;
 

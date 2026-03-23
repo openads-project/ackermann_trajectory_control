@@ -23,7 +23,7 @@
     min_longitudinal_acceleration: -4.5 # [m/s^2]
     max_longitudinal_jerk: 4.0 # [m/s^3]
     use_speed_dependent_lateral_limits: true
-    lateral_limits_csv: "config/lateral-limits-v2.CSV"
+    lateral_limits_csv: "config/example-limits.csv" # path to csv file with speed dependent lateral limits; if use_speed_dependent_lateral_limits is true
     max_curvature: 0.1933268013 # [1/m]; if use_speed_dependent_lateral_limits is false
     max_curvature_rate: 0.1676052419 # [1/(m*s)]; if use_speed_dependent_lateral_limits is false
     max_curvature_acceleration: 0.7262893814 # [1/(m*s^2)]
