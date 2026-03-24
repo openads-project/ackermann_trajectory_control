@@ -1,8 +1,5 @@
-/**
- * @file PID.hpp
- * @author Guido Küppers
- * @brief  Discrete PID-Controller Class.
- */
+// Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include <cmath>

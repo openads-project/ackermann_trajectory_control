@@ -1,8 +1,5 @@
-/**
- * @file AckermannTrajectoryControlNode.hpp
- * @author Guido Küppers
- * @brief  ROS-Node for trajectory control.
- */
+// Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
+// SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include <tracetools/tracetools.h>

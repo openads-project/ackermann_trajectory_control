@@ -1,8 +1,5 @@
-/**
- * @file PID.cpp
- * @author Guido Küppers
- * @brief  Discrete PID-Controller Class.
- */
+// Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
+// SPDX-License-Identifier: Apache-2.0
 #include "PID.hpp"
 
 PID::PID(double Kp, double Ki, double Kd) { this->SetParameters(Kp, Ki, Kd); }
