@@ -44,8 +44,8 @@ flowchart LR
 | `fixed_over_time_frame_id` | `string` | `"map"` | Frame ID of the fixed frame for time-wise transformations  (e.g. map) |
 | `control_frequency` | `float` | `100.0` | Frequency of the control loop in Hz |
 | `vehicle_state_timeout` | `float` | `0.2` | Maximum allowed age of the ego data in seconds |
-| `wheelbase` | `float` | `2.711` | Wheelbase of the vehicle in meters (required for lateral control) |
-| `selfsteergradient` | `float` | `0.002917853041365` | Self steer gradient of the vehicle (required for lateral control) |
+| `wheelbase` | `float` | `3.1` | Wheelbase of the vehicle in meters (required for lateral control) |
+| `selfsteergradient` | `float` | `0.00265` | Self steer gradient of the vehicle (required for lateral control) |
 | `longitudinal_lookahed_time` | `float` | `0.1` | Time in seconds for the longitudinal look ahead |
 | `lateral_lookahed_time` | `float` | `0.1` | Time in seconds for the lateral look ahead |
 | `max_longitudinal_acceleration` | `float` | `3.5` | Maximum allowed longitudinal acceleration in m/s^2 (constraint) |
