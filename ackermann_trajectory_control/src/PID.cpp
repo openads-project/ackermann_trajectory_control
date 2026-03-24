@@ -1,8 +1,14 @@
 // Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
 // SPDX-License-Identifier: Apache-2.0
+
+/**
+ * @file PID.cpp
+ * @brief Implements the PID controller used by the Ackermann trajectory controller.
+ */
 #include "PID.hpp"
 
 PID::PID(double Kp, double Ki, double Kd) { this->SetParameters(Kp, Ki, Kd); }
+
 PID::~PID() = default;
 
 void PID::SetParameters(double Kp, double Ki, double Kd) {

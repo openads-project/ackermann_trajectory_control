@@ -1,5 +1,10 @@
 // Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
 // SPDX-License-Identifier: Apache-2.0
+
+/**
+ * @file AckermannTrajectoryControlNode.cpp
+ * @brief Implements the Ackermann trajectory controller ROS 2 node.
+ */
 #include "AckermannTrajectoryControlNode.hpp"
 
 #include <algorithm>
@@ -10,7 +15,6 @@
 #include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
-// constructor of Trajectory Control Object
 AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
   loadParameters();
   setup();
@@ -160,12 +164,6 @@ void AckermannTrajectoryControl::loadParameters() {
   max_curvature_rate_current_ = max_curvature_rate_;
 }
 
-/**
- * @brief Handles reconfiguration when a parameter value is changed
- *
- * @param parameters parameters
- * @return parameter change result
- */
 rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersCallback(
     const std::vector<rclcpp::Parameter>& parameters) {
   for (const auto& param : parameters) {
@@ -270,7 +268,6 @@ void AckermannTrajectoryControl::setup() {
                         link_pubs.size());
 }
 
-// update the actual vehicle state
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
   cur_vehicle_state_ = *msg;
   UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
@@ -287,7 +284,6 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
   ResetOdometry();
 }
 
-// update the current trajectory
 void AckermannTrajectoryControl::TrajectoryCallback(
     const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
   subscribed_trajectory_ = *msg;
@@ -382,7 +378,6 @@ void AckermannTrajectoryControl::setControllerGains() {
   dpsi_pid_->SetParameters(p, i, d);
 }
 
-// perform the vehicle control cycle
 void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (last_time_ > now()) {
     RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
@@ -821,7 +816,6 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   return a_ctrl;
 }
 
-// Main of Trajectory Control Node
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
   auto controller = std::make_shared<AckermannTrajectoryControl>();
