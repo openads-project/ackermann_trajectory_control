@@ -5,8 +5,8 @@
     fixed_over_time_frame_id: "map"
     control_frequency: 50.0 # [Hz]
     vehicle_state_timeout: 0.2 # [s]
-    lateral_lookahed_time: 0.1 # [s]
-    longitudinal_lookahed_time: 0.1 # [s]
+    lateral_lookahead_time: 0.1 # [s]
+    longitudinal_lookahead_time: 0.1 # [s]
 
     # Inverse single track model parameters
     wheelbase: 3.1 # [m]
@@ -17,14 +17,14 @@
     min_longitudinal_acceleration: -4.5 # [m/s^2]
     max_longitudinal_jerk: 4.0 # [m/s^3]
     use_speed_dependent_lateral_limits: true
-    lateral_limits_csv: "config/example-limits.csv" # path to csv file with speed dependent lateral limits; if use_speed_dependent_lateral_limits is true
+    lateral_limits_csv: "config/example-limits.csv" # Path to the CSV file with speed-dependent lateral limits if use_speed_dependent_lateral_limits is true
     max_curvature: 0.2 # [1/m]; if use_speed_dependent_lateral_limits is false
     max_curvature_rate: 0.2 # [1/(m*s)]; if use_speed_dependent_lateral_limits is false
     max_curvature_acceleration: 0.75 # [1/(m*s^2)]
     anti_windup_gain: 1.0 # [1/s]
     use_back_calculation: false
 
-    # Gain scheduling Look-Up-Tables
+    # Gain scheduling lookup tables
     velocity_lookup: # [m/s]
       - -2.78
       - -0.2
@@ -82,7 +82,7 @@
       - 0.1   # value for  0.2 m/s
       - 0.1   # value for  2.78 m/s
       - 0.05  # value for 13.89 m/s
-      - 0.025  # value for 27.78 m/s
+      - 0.025 # value for 27.78 m/s
     dy_i:
       - 0.004  # value for -2.78 m/s
       - 0.0    # value for -0.2 m/s

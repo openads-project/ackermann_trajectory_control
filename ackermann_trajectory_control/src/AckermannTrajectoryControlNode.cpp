@@ -83,7 +83,7 @@ void AckermannTrajectoryControl::declareAndLoadParameter(
 void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
   this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_,
-                                "Frame ID of the fixed frame for time-wise transformations  (e.g. map)", false);
+                                "Frame ID of the fixed frame used for transformations over time (e.g. map)", false);
   this->declareAndLoadParameter("control_frequency", control_frequency_, "Frequency of the control loop in Hz", true,
                                 false, false, (std::optional<double>)0.0, (std::optional<double>)200.0,
                                 (std::optional<double>)1.0);
@@ -93,13 +93,13 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("wheelbase", wheelbase_,
                                 "Wheelbase of the vehicle in meters (required for lateral control)", false);
   this->declareAndLoadParameter("selfsteergradient", self_st_gradient_,
-                                "Self steer gradient of the vehicle (required for lateral control)", false);
-  this->declareAndLoadParameter("longitudinal_lookahed_time", lon_t_lookahead_,
-                                "Time in seconds for the longitudinal look ahead", true, false, false,
+                                "Self-steer gradient of the vehicle (required for lateral control)", false);
+  this->declareAndLoadParameter("longitudinal_lookahead_time", lon_t_lookahead_,
+                                "Time in seconds for the longitudinal look-ahead", true, false, false,
                                 (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
-  this->declareAndLoadParameter("lateral_lookahed_time", lat_t_lookahead_, "Time in seconds for the lateral look ahead",
-                                true, false, false, (std::optional<double>)0.0, (std::optional<double>)5.0,
-                                (std::optional<double>)0.1);
+  this->declareAndLoadParameter("lateral_lookahead_time", lat_t_lookahead_,
+                                "Time in seconds for the lateral look-ahead", true, false, false,
+                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
   this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_,
                                 "Maximum allowed longitudinal acceleration in m/s^2 (constraint)", true, false, false,
                                 (std::optional<double>)0.0, (std::optional<double>)10.0, (std::optional<double>)0.1);
@@ -122,22 +122,22 @@ void AckermannTrajectoryControl::loadParameters() {
                                 (std::optional<double>)1e-12);
   this->declareAndLoadParameter(
       "use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
-      "Boolean to indicate if controllers uses speed dependent curvature limits given through a CSV file", false);
+      "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file", false);
   this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
-                                "CSV file path for speed dependent curvature limits", false);
+                                "CSV file path for speed-dependent curvature limits", false);
   this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false,
                                 false, (std::optional<double>)0.0, (std::optional<double>)100.0,
                                 (std::optional<double>)0.1);
   this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation",
                                 true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_,
-                                "List of velocities in m/s for which the following gains are defined ", false);
+                                "List of velocities in m/s for which the following gains are defined", false);
   this->declareAndLoadParameter(
       "feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
-      "List of feed forward gains for the acceleration controller (mapping to velocity_lookup)", true);
+      "List of feed-forward gains for the acceleration controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
       "feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
-      "List of feed forward gains for the steering angle controller (mapping to velocity_lookup)", true);
+      "List of feed-forward gains for the steering-angle controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
       "dv_p", dv_p_, "List of proportional gains for the velocity controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
@@ -404,7 +404,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     return;
   }
 
-  // standstill signal?
+  // Hold zero output while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
     vhcl_ctrl_output_.drive.steering_angle = 0.0;
@@ -490,8 +490,8 @@ bool AckermannTrajectoryControl::TrjDataProc() {
       THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(tf_trajectory_, i));
       DELTA.push_back(trajectory_planning_msgs::trajectory_access::getDeltaAck(tf_trajectory_, i));
     } else {
-      // To-Do Fill A, THETA and DELTA with finite-differences
-      RCLCPP_ERROR_STREAM(get_logger(), "trajectory_planning_msgs::DRIVABLE-Type is currently not supported!");
+      RCLCPP_ERROR_STREAM(
+          get_logger(), "Unsupported trajectory type. Only trajectory_planning_msgs::DRIVABLE is currently supported.");
       return false;
     }
   }
@@ -522,7 +522,7 @@ bool AckermannTrajectoryControl::TrjDataProc() {
 bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y,
                                                      const double& desired_x, double& output_y) {
   if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end())) {
-    RCLCPP_ERROR_STREAM(get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
+    RCLCPP_ERROR_STREAM(get_logger(), "Desired x value is outside the range covered by the input vector.");
     return false;
   }
   if (X.size() != Y.size()) {
