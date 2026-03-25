@@ -774,10 +774,10 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
   }
 
   double kappa_rate = 0.0;
-  bool kappa_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
-                                  max_curvature_accel_, last_kappa_, last_kappa_rate_);
+  bool kappa_is_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
+                                     max_curvature_accel_, last_kappa_, last_kappa_rate_);
 
-  if (kappa_limited) {
+  if (kappa_is_limited) {
     if (use_back_calculation_) {
       double kappa_fb_sat = kappa_tgt - kappa_ff * feed_forward_gain_steering_angle_;
       double denom = (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
