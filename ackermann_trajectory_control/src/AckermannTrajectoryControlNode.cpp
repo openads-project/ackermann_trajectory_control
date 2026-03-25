@@ -741,6 +741,58 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt, double& kappa_tgt, 
   return kappa_limited;
 }
 
+bool AckermannTrajectoryControl::LimitKappa(const double dt, double& kappa_tgt, double& kappa_rate,
+                                            const double max_curvature, const double max_curvature_rate,
+                                            const double max_curvature_accel, const double kappa_prev,
+                                            const double kappa_rate_prev) {
+  bool kappa_limited = false;
+  if (fabs(kappa_tgt) > max_curvature) {
+    if (kappa_tgt >= 0.0) {
+      kappa_tgt = max_curvature;
+    } else {
+      kappa_tgt = -max_curvature;
+    }
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
+    kappa_limited = true;
+  }
+
+  kappa_rate = 0.0;
+  if (dt > 0.0) {
+    kappa_rate = (kappa_tgt - kappa_prev) / dt;
+  }
+  if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
+    if (kappa_rate >= 0.0) {
+      kappa_rate = max_curvature_rate;
+    } else {
+      kappa_rate = -max_curvature_rate;
+    }
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
+    kappa_limited = true;
+  }
+
+  double kappa_accel = 0.0;
+  if (dt > 0.0) {
+    kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
+  }
+  if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
+    if (kappa_accel >= 0.0) {
+      kappa_accel = max_curvature_accel;
+    } else {
+      kappa_accel = -max_curvature_accel;
+    }
+    kappa_rate = kappa_rate_prev + kappa_accel * dt;
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+    kappa_limited = true;
+  }
+
+  return kappa_limited;
+}
+
 double AckermannTrajectoryControl::LateralControl(const double dt) {
   // cascaded control
   double w_y = 0.0;
