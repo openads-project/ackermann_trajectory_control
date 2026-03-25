@@ -201,6 +201,23 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   void UpdateLonFromState();
 
   /**
+   * @brief Applies curvature, curvature-rate, and curvature-acceleration limits to the requested target curvature.
+   *
+   * @param dt Control-loop step size in seconds.
+   * @param kappa_tgt Requested target curvature, updated in-place when limited.
+   * @param kappa_rate Resulting target curvature rate after limiting.
+   * @param max_curvature Active curvature limit.
+   * @param max_curvature_rate Active curvature-rate limit.
+   * @param max_curvature_accel Active curvature-acceleration limit.
+   * @param kappa_prev Previously commanded curvature.
+   * @param kappa_rate_prev Previously commanded curvature rate.
+   * @return `true` if any curvature limit became active.
+   */
+  bool LimitKappa(const double dt, double& kappa_tgt, double& kappa_rate, const double max_curvature,
+                  const double max_curvature_rate, const double max_curvature_accel, const double kappa_prev,
+                  const double kappa_rate_prev);
+
+  /**
    * @brief Computes the target curvature for the current control step.
    *
    * @param dt Control-loop step size in seconds.
