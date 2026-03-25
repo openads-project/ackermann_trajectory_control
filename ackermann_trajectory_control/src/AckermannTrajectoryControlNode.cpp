@@ -406,10 +406,20 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     return;
   }
 
-  // Hold zero output while the trajectory explicitly requests standstill.
+  if (!TrjDataProc()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
+    return;
+  }
+
+  // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
-    vhcl_ctrl_output_.drive.steering_angle = 0.0;
+    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+    double kappa_tgt = std::tan(delta_tgt_) / wheelbase_;
+    double kappa_rate = 0.0;
+    LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_, max_curvature_accel_,
+               last_kappa_, last_kappa_rate_);
+    vhcl_ctrl_output_.drive.steering_angle = std::atan(kappa_tgt * wheelbase_);
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
     vhcl_ctrl_output_.drive.acceleration = 0.0;
@@ -417,13 +427,9 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
     dv_pid_->Reset();
-    last_kappa_ = 0.0;
-    last_kappa_rate_ = 0.0;
+    last_kappa_ = kappa_tgt;
+    last_kappa_rate_ = kappa_rate;
   } else {
-    if (!TrjDataProc()) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
-      return;
-    }
     setControllerGains();
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
