@@ -32,7 +32,7 @@ This controller is designed to be used in the context of the the *Open Automated
 
 1. Start a container of the pre-built runtime image.
     ```bash
-    docker run --rm -it TODO bash
+    docker run --rm -it ghcr.io/openads-project/ackermann_trajectory_control:latest bash
     ```
 1. Inside the container, launch the pre-built node.
     ```bash
