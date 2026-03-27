@@ -1,13 +1,19 @@
-# ackermann_trajectory_control
+# Cascaded Trajectory Control for Ackermann-Steered Vehicles
 
 <p align="center">
   <a href="https://github.com/openads-project"><img src="https://img.shields.io/badge/OpenADS-f5ff01"/></a>
   <a href="https://www.ros.org"><img src="https://img.shields.io/badge/ROS 2-jazzy-22314e"/></a>
 </p>
 
-**TODO: Repository tagline/description**
+This repository contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to [`trajectory_planning_msgs/Trajectory`](https://github.com/ika-rwth-aachen/planning_interfaces) and [`perception_msgs/EgoData`](https://github.com/ika-rwth-aachen/perception_interfaces) and publishes control commands as [`ackermann_msgs/AckermannDriveStamped`](https://github.com/ros-drivers/ackermann_msgs).
 
-TODO: High-level repository introduction paragraph
+The control loop is executed at a configurable frequency and consists of a cascaded PID control architecture with a feedforward term based on the trajectory's curvature and acceleration and a feedback term based on velocity deviations for longitudinal control and lateral displacement and yaw-deviations for lateral control w.r.t. the planned trajectory. Additional features of the controller are:
+- **Control Limiting**: The controller limits the control commands to user-defined maximum values for longitudinal acceleration and jerk, as well as curvature, curvature rate, and curvature acceleration for lateral control.
+- **Anti-Windup**: The controller implements configurable anti-windup mechanisms for the integral term of the PID controller to prevent excessive accumulation of the integral error when the control commands are saturated.
+- **Principle of Bi-Level-Stabilization**: The controller supports the principle of bi-level-stabilization according to [Werling](https://publikationen.bibliothek.kit.edu/1000021738).
+- **Velocity-Dependent Gain-Scheduling**: PID gains are scheduled based on the current velocity of the vehicle to improve control performance across a wide range of operating conditions.
+
+This controller is designed to be used in the context of the the *Open Automated Driving Stack* and well tested in combination with the [`trajectory_optimization`](https://github.com/openads-project/trajectory_optimization).
 
 <p align="center">
   <strong>🚀 <a href="#-quick-start">Quick Start</a></strong> • <strong>🧑‍💻 <a href="%E2%80%8D-development">Development</a></strong> • <strong>📝 <a href="#-documentation">Documentation</a></strong>
@@ -29,7 +35,7 @@ TODO: High-level repository introduction paragraph
     ```bash
     docker run --rm -it TODO bash
     ```
-1. Inside the container, launch the pre-built nodes.
+1. Inside the container, launch the pre-built node.
     ```bash
     ros2 launch ackermann_trajectory_control ackermann_trajectory_control.launch.py
     ```
