@@ -2,10 +2,6 @@
 
 This package contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to trajectory_planning_msgs/Trajectory and publishes control commands as ackermann_msgs/AckermannDriveStamped.
 
-- [Nodes](#nodes)
-  - [ackermann_trajectory_controller](#ackermann_trajectory_controller)
-- [Launch Files](#launch-files)
-
 ## Nodes
 
 ### `ackermann_trajectory_controller`

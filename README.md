@@ -22,6 +22,9 @@ TODO: High-level repository introduction paragraph
 
 ## 🚀 Quick Start
 
+> [!NOTE]
+> Example only: replace this section with repository-specific quick start instructions.
+
 1. Start a container of the pre-built runtime image.
     ```bash
     docker run --rm -it TODO bash
@@ -74,9 +77,16 @@ colcon test-result --verbose
 
 ## 📝 Documentation
 
-- Package Documentation
-  - [ackermann_trajectory_control](ackermann_trajectory_control/README.md)
+For further details see the respective package README files and the [Doxygen Documentation](https://openads-project.github.io/ackermann_trajectory_control).
 
+| Package | Purpose |
+| --- | --- |
+| [ackermann_trajectory_control](ackermann_trajectory_control/README.md) | This package contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to trajectory_planning_msgs/Trajectory and publishes control commands as ackermann_msgs/AckermannDriveStamped. |
+
+## ⚖️ Licensing
+
+- The source code in this repository is licensed under Apache-2.0. See [LICENSE](LICENSE).
+- Docker images built from this repository also contain third-party software with its own license terms.
 
 ## 🙏 Acknowledgements
 
