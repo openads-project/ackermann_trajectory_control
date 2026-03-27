@@ -281,6 +281,14 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                   const double kappa_rate_prev);
 
   /**
+   * @brief Converts curvature-domain commands into steering-domain commands for the current vehicle geometry.
+   *
+   * @param command Curvature command in inverse meters and inverse meters per second.
+   * @return Steering command in radians and radians per second.
+   */
+  SteeringCommand CurvatureToSteeringCommand(const CurvatureCommand& command) const;
+
+  /**
    * @brief Computes the target curvature for the current control step.
    *
    * @param dt Control-loop step size in seconds.
