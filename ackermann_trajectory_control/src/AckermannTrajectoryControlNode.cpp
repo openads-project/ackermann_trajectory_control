@@ -650,14 +650,6 @@ bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
   return true;
 }
 
-AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::UpdateLonFromState(
-    const perception_msgs::msg::EgoData& ego_data) {
-  LongitudinalCommand longitudinal_command;
-  longitudinal_command.speed = perception_msgs::object_access::getVelLon(ego_data);
-  longitudinal_command.acceleration = perception_msgs::object_access::getAccLon(ego_data);
-  return longitudinal_command;
-}
-
 void AckermannTrajectoryControl::UpdateLateralLimitsFromVelocity(const double velocity) {
   if (!use_speed_dependent_lateral_limits_ || !lateral_limits_loaded_) {
     max_curvature_current_ = max_curvature_;
@@ -719,6 +711,14 @@ AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKa
     kappa_rate = 0.0;
   }
   return steering_command;
+}
+
+AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::UpdateLonFromState(
+    const perception_msgs::msg::EgoData& ego_data) {
+  LongitudinalCommand longitudinal_command;
+  longitudinal_command.speed = perception_msgs::object_access::getVelLon(ego_data);
+  longitudinal_command.acceleration = perception_msgs::object_access::getAccLon(ego_data);
+  return longitudinal_command;
 }
 
 bool AckermannTrajectoryControl::LimitKappa(const double dt, double& kappa_tgt, double& kappa_rate,
