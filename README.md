@@ -1,7 +1,6 @@
-# Cascaded Trajectory Control for Ackermann-Steered Vehicles
+# ackermann_trajectory_control
 
 <p align="center">
-  <a href="https://github.com/openads-project"><img src="https://img.shields.io/badge/OpenADS-f5ff01"/></a>
   <a href="https://www.ros.org"><img src="https://img.shields.io/badge/ROS 2-jazzy-22314e"/></a>
 </p>
 
@@ -16,11 +15,11 @@ The control loop is executed at a configurable frequency and consists of a casca
 This controller is designed to be used in the context of the the *Open Automated Driving Stack* and well tested in combination with the [`trajectory_optimization`](https://github.com/openads-project/trajectory_optimization).
 
 <p align="center">
-  <strong>🚀 <a href="#-quick-start">Quick Start</a></strong> • <strong>🧑‍💻 <a href="%E2%80%8D-development">Development</a></strong> • <strong>📝 <a href="#-documentation">Documentation</a></strong>
+  <strong>🚀 <a href="#-quick-start">Quick Start</a></strong> • <strong>🧑‍💻 <a href="#-development">Development</a></strong> • <strong>📝 <a href="#-documentation">Documentation</a></strong>
 </p>
 
 > [!IMPORTANT]
-> This repository is part of [🚗 ***OpenADS***](https://github.com/openads-project), the *Open Automated Driving Stack*.
+> This repository is part of [***OpenADS***](https://github.com/openads-project), the *Open Automated Driving Stack*.
 
 
 <!-- <img src="TODO: teaser image/gif" width=800> -->
@@ -83,7 +82,7 @@ colcon test-result --verbose
 
 ## 📝 Documentation
 
-For further details see the respective package README files and the [Doxygen Documentation](https://openads-project.github.io/ackermann_trajectory_control).
+For further details see the respective package README files and the [Documentation](https://openads-project.github.io/ackermann_trajectory_control).
 
 | Package | Purpose |
 | --- | --- |
