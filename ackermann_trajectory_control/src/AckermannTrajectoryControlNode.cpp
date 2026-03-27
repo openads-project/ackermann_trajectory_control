@@ -352,11 +352,13 @@ void AckermannTrajectoryControl::setControllerGains() {
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   // feed-forward gains
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_acceleration_, velocity,
-                           feed_forward_gain_acceleration_))
+                           feed_forward_gain_acceleration_)) {
     feed_forward_gain_acceleration_ = 0.0;
+  }
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_steering_angle_, velocity,
-                           feed_forward_gain_steering_angle_))
+                           feed_forward_gain_steering_angle_)) {
     feed_forward_gain_steering_angle_ = 0.0;
+  }
 
   double p, i, d;
   // dv Controller
