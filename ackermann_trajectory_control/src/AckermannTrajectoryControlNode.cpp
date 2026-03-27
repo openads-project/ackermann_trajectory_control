@@ -628,14 +628,6 @@ bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
   return true;
 }
 
-AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::UpdateLonFromState(
-    const perception_msgs::msg::EgoData& ego_data) {
-  LongitudinalCommand longitudinal_command;
-  longitudinal_command.speed = perception_msgs::object_access::getVelLon(ego_data);
-  longitudinal_command.acceleration = perception_msgs::object_access::getAccLon(ego_data);
-  return longitudinal_command;
-}
-
 void AckermannTrajectoryControl::UpdateLateralLimitsFromVelocity(const double velocity) {
   if (!use_speed_dependent_lateral_limits_ || !lateral_limits_loaded_) {
     max_curvature_current_ = max_curvature_;
