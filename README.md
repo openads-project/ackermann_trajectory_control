@@ -101,4 +101,14 @@ The source code in this repository is licensed under Apache-2.0, see [LICENSE](L
 
 ## 🙏 Acknowledgements
 
-TODO: Project/funding acknowledgements
+Development and maintenance of this repository are supported by the following projects. We acknowledge the funding of the respective institutions.
+
+| Project | Funding Institution | Grant Number |
+| --- | --- | --- |
+| [AIthena](https://www.aithena-project.eu/) |  	🇪🇺 European Union | 101076754 |
+
+<p>
+  <img src="https://ec.europa.eu/regional_policy/images/information-sources/logo-download-center/eu_funded_en.jpg" height=70>
+</p>
+
+<sup><sup>Funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Climate, Infrastructure and Environment Executive Agency (CINEA). Neither the European Union nor CINEA can be held responsible for them.</sup></sup>
