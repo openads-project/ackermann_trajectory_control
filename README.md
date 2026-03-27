@@ -97,8 +97,7 @@ For further details see the respective package README files and the [Documentati
 
 ## ⚖️ Licensing
 
-- The source code in this repository is licensed under Apache-2.0. See [LICENSE](LICENSE).
-- Docker images built from this repository also contain third-party software with its own license terms.
+The source code in this repository is licensed under Apache-2.0, see [LICENSE](LICENSE). Container images provided by this repository may contain third-party software shipped with their own license terms.
 
 ## 🙏 Acknowledgements
 
