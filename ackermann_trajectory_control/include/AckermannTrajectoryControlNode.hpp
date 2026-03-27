@@ -82,6 +82,12 @@ class AckermannTrajectoryControl : public rclcpp::Node {
     double steering_angle_rate = 0.0;
   };
 
+  struct LongitudinalCommand {
+    double speed = 0.0;
+    double acceleration = 0.0;
+    double jerk = 0.0;
+  };
+
   /**
    * @brief Creates publishers, subscriptions, timers, and controller instances.
    */
@@ -236,9 +242,16 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                                               double& kappa, double& kappa_rate);
 
   /**
-   * @brief Copies measured longitudinal state into the outgoing control message.
+   * @brief Derives the current longitudinal command from the measured longitudinal state.
+   *
+   * The returned command contains measured speed and acceleration actual values. Jerk is set to `0.0` because the
+   * ego-state input does not provide a measured longitudinal jerk.
+   *
+   * @param ego_data Current ego-state input.
+   * @return Current measured longitudinal command in meters per second, meters per second squared, and meters per
+   * second cubed.
    */
-  void UpdateLonFromState();
+  static LongitudinalCommand UpdateLonFromState(const perception_msgs::msg::EgoData& ego_data);
 
   /**
    * @brief Applies curvature, curvature-rate, and curvature-acceleration limits to the requested target curvature.
@@ -274,12 +287,12 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   CurvatureCommand LateralControl(const double dt);
 
   /**
-   * @brief Computes the target longitudinal acceleration for the current control step.
+   * @brief Computes the target longitudinal command for the current control step.
    *
    * @param dt Control-loop step size in seconds.
-   * @return Target acceleration in meters per second squared.
+   * @return Target longitudinal command in meters per second, meters per second squared, and meters per second cubed.
    */
-  double LongitudinalControl(const double dt);
+  LongitudinalCommand LongitudinalControl(const double dt);
 
   /**
    * @brief Resets controller state, cached outputs, and stored input messages.

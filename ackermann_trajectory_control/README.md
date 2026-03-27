@@ -30,7 +30,7 @@ flowchart LR
 
 | Topic | Type | Description |
 | --- | --- | --- |
-| `~/controls` | `ackermann_msgs/msg/AckermannDriveStamped` | Control commands for the vehicle: longitudinal acceleration and lateral steering angle |
+| `~/controls` | `ackermann_msgs/msg/AckermannDriveStamped` | Control commands for the vehicle: longitudinal speed, acceleration, and jerk, plus lateral steering angle and steering-angle rate |
 
 #### Parameters
 
