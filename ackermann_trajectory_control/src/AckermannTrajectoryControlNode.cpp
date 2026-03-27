@@ -756,41 +756,46 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
 }
 
 AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::LateralControl(const double dt) {
-  // cascaded control
-  double w_y = 0.0;
-  double e_y = w_y - dy_;
-  double w_psi = dy_pid_->Calc(e_y, dt);
-  double e_psi = w_psi - dpsi_;
-  double psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
-
+  const bool vehicle_standstill = perception_msgs::object_access::getStandstill(cur_vehicle_state_);
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
-  // be sure v!=0 (to avoid division by zero)
-  if (fabs(velocity) < 0.1) {
-    if (velocity < 0.0) {
-      velocity = -0.1;
-    } else {
-      velocity = 0.1;
+
+  double psi_dot_des = 0.0;
+  double kappa_pid = 0.0;
+
+  if (!vehicle_standstill) {
+    // cascaded control
+    double w_y = 0.0;
+    double e_y = w_y - dy_;
+    double w_psi = dy_pid_->Calc(e_y, dt);
+    double e_psi = w_psi - dpsi_;
+    psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
+
+    // be sure v!=0 (to avoid division by zero)
+    if (fabs(velocity) < 0.1) {
+      if (velocity < 0.0) {
+        velocity = -0.1;
+      } else {
+        velocity = 0.1;
+      }
     }
+
+    kappa_pid = std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
+  } else {
+    // kappa_pid is zero in standstill, we reset the PID controllers in addition
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
   }
-
-  double kappa_pid = std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
-
+  
   // ackermann feed-forward control (convert delta to kappa for feed-forward)
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
 
   double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
 
-  if (perception_msgs::object_access::getStandstill(cur_vehicle_state_))  //Standstill-Situation
-  {
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-  }
-
   double kappa_rate = 0.0;
   bool kappa_is_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
                                      max_curvature_accel_, last_kappa_, last_kappa_rate_);
 
-  if (kappa_is_limited) {
+  if (kappa_is_limited && !vehicle_standstill) {
     if (use_back_calculation_) {
       double kappa_fb_sat = kappa_tgt - kappa_ff * feed_forward_gain_steering_angle_;
       double denom = (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
