@@ -85,49 +85,49 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_,
                                 "Frame ID of the fixed frame used for transformations over time (e.g. map)", false);
   this->declareAndLoadParameter("control_frequency", control_frequency_, "Frequency of the control loop in Hz", true,
-                                false, false, (std::optional<double>)0.0, (std::optional<double>)200.0,
-                                (std::optional<double>)1.0);
+                                false, false, std::optional<double>{0.0}, std::optional<double>{200.0},
+                                std::optional<double>{1.0});
   this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_,
                                 "Maximum allowed age of the ego data in seconds", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)0.05);
+                                std::optional<double>{0.0}, std::optional<double>{1.0}, std::optional<double>{0.05});
   this->declareAndLoadParameter("wheelbase", wheelbase_,
                                 "Wheelbase of the vehicle in meters (required for lateral control)", false);
   this->declareAndLoadParameter("selfsteergradient", self_st_gradient_,
                                 "Self-steer gradient of the vehicle (required for lateral control)", false);
   this->declareAndLoadParameter("longitudinal_lookahead_time", lon_t_lookahead_,
                                 "Time in seconds for the longitudinal look-ahead", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
+                                std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{0.1});
   this->declareAndLoadParameter("lateral_lookahead_time", lat_t_lookahead_,
                                 "Time in seconds for the lateral look-ahead", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
+                                std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{0.1});
   this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_,
                                 "Maximum allowed longitudinal acceleration in m/s^2 (constraint)", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)10.0, (std::optional<double>)0.1);
+                                std::optional<double>{0.0}, std::optional<double>{10.0}, std::optional<double>{0.1});
   this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_,
                                 "Minimum allowed longitudinal acceleration in m/s^2 (constraint, should be negative)",
-                                true, false, false, (std::optional<double>)-10.0, (std::optional<double>)0.0,
-                                (std::optional<double>)0.1);
+                                true, false, false, std::optional<double>{-10.0}, std::optional<double>{0.0},
+                                std::optional<double>{0.1});
   this->declareAndLoadParameter(
       "max_longitudinal_jerk", lon_max_jerk_, "Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value)",
-      true, false, false, (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
+      true, false, false, std::optional<double>{0.0}, std::optional<double>{20.0}, std::optional<double>{0.1});
   this->declareAndLoadParameter("max_curvature", max_curvature_,
                                 "Maximum allowed curvature (constraint, absolute value)", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)1e-12);
+                                std::optional<double>{0.0}, std::optional<double>{1.0}, std::optional<double>{1e-12});
   this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_,
                                 "Maximum allowed curvature rate (constraint, absolute value)", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)1e-12);
+                                std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{1e-12});
   this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
                                 "Maximum allowed curvature acceleration (constraint, absolute value)", false, false,
-                                false, (std::optional<double>)0.0, (std::optional<double>)20.0,
-                                (std::optional<double>)1e-12);
+                                false, std::optional<double>{0.0}, std::optional<double>{20.0},
+                                std::optional<double>{1e-12});
   this->declareAndLoadParameter(
       "use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
       "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file", false);
   this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
                                 "CSV file path for speed-dependent curvature limits", false);
   this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false,
-                                false, (std::optional<double>)0.0, (std::optional<double>)100.0,
-                                (std::optional<double>)0.1);
+                                false, std::optional<double>{0.0}, std::optional<double>{100.0},
+                                std::optional<double>{0.1});
   this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation",
                                 true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_,
