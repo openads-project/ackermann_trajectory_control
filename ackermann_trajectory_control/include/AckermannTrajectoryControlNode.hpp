@@ -52,6 +52,16 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   ~AckermannTrajectoryControl();
 
  private:
+  struct CurvatureCommand {
+    double kappa = 0.0;
+    double kappa_rate = 0.0;
+  };
+
+  struct SteeringCommand {
+    double steering_angle = 0.0;
+    double steering_angle_rate = 0.0;
+  };
+
   /**
    * @brief Creates publishers, subscriptions, timers, and controller instances.
    */
@@ -189,11 +199,19 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   bool VehicleStateOk() const;
 
   /**
-   * @brief Derives the current curvature state from the measured steering angle. Also updates the cached curvature and curvature rate for the next control cycle.
+   * @brief Derives the current steering command from the measured steering state and computes the matching curvature
+   * state.
    *
-   * @return Current steering angle in radians.
+   * The returned steering command contains measured steering-angle actual values, not controller target values.
+   *
+   * @param ego_data Current ego-state input.
+   * @param wheelbase Wheelbase used for Ackermann conversion in meters.
+   * @param kappa Output curvature computed from the measured steering angle.
+   * @param kappa_rate Output curvature rate computed from the measured steering-angle rate.
+   * @return Current measured steering command in radians and radians per second.
    */
-  double UpdateKappaFromState();
+  static SteeringCommand UpdateKappaFromState(const perception_msgs::msg::EgoData& ego_data, const double wheelbase,
+                                              double& kappa, double& kappa_rate);
 
   /**
    * @brief Copies measured longitudinal state into the outgoing control message.
@@ -223,12 +241,20 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                   const double kappa_rate_prev);
 
   /**
+   * @brief Converts curvature-domain commands into steering-domain commands for the current vehicle geometry.
+   *
+   * @param command Curvature command in inverse meters and inverse meters per second.
+   * @return Steering command in radians and radians per second.
+   */
+  SteeringCommand CurvatureToSteeringCommand(const CurvatureCommand& command) const;
+
+  /**
    * @brief Computes the target curvature for the current control step.
    *
    * @param dt Control-loop step size in seconds.
-   * @return Target curvature in inverse meters.
+   * @return Target curvature command in inverse meters and inverse meters per second.
    */
-  double LateralControl(const double dt);
+  CurvatureCommand LateralControl(const double dt);
 
   /**
    * @brief Computes the target longitudinal acceleration for the current control step.
