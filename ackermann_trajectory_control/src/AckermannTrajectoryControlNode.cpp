@@ -360,7 +360,7 @@ void AckermannTrajectoryControl::setControllerGains() {
     feed_forward_gain_steering_angle_ = 0.0;
   }
 
-  double p, i, d;
+  double p = 0.0, i = 0.0, d = 0.0;
   // dv Controller
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_p_, velocity, p)) p = 0.0;
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_i_, velocity, i)) i = 0.0;
@@ -533,7 +533,7 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
   }
 
   // go through array and search for sampling points
-  int i;
+  int i = 0;
   for (i = 0; i < (int)X.size(); i++) {
     if (X[i] < desired_x) {
       continue;
