@@ -1,7 +1,14 @@
 # ackermann_trajectory_control
 
 <p align="center">
+  <a href="https://github.com/openads-project"><img src="https://img.shields.io/badge/OpenADS-f5ff01"/></a>
   <a href="https://www.ros.org"><img src="https://img.shields.io/badge/ROS 2-jazzy-22314e"/></a>
+  <a href="https://github.com/openads-project/ackermann_trajectory_control/releases/latest"><img src="https://img.shields.io/github/v/release/openads-project/ackermann_trajectory_control"/></a>
+  <a href="https://github.com/openads-project/ackermann_trajectory_control/blob/main/LICENSE"><img src="https://img.shields.io/github/license/openads-project/ackermann_trajectory_control"/></a>
+  <br>
+  <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docker-ros.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docker-ros.yml/badge.svg"/></a>
+  <a href="https://openads-project.github.io/ackermann_trajectory_control"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docs.yml/badge.svg"/></a>
+  <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml/badge.svg"/></a>
 </p>
 
 This repository contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to [`trajectory_planning_msgs/Trajectory`](https://github.com/ika-rwth-aachen/planning_interfaces) and [`perception_msgs/EgoData`](https://github.com/ika-rwth-aachen/perception_interfaces) and publishes control commands as [`ackermann_msgs/AckermannDriveStamped`](https://github.com/ros-drivers/ackermann_msgs).
@@ -45,7 +52,7 @@ This controller is designed to be used in the context of the the *Open Automated
 
 1. Clone the repository.
     ```bash
-    git clone https://gitlab.ika.rwth-aachen.de/fb-fi/its-modules/control/ackermann_trajectory_control.git
+    git clone https://github.com/openads-project/ackermann_trajectory_control.git
     ```
 1. Initialize the [`.openads-dev-environment`](https://github.com/openads-project/openads-dev-environment) submodule containing development environment configuration.
     ```bash
