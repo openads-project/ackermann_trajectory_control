@@ -105,7 +105,7 @@ Development and maintenance of this repository are supported by the following pr
 
 | Project | Funding Institution | Grant Number |
 | --- | --- | --- |
-| [AIthena](https://www.aithena-project.eu/) |  	🇪🇺 European Union | 101076754 |
+| [AIthena](https://aithena.eu/) | 🇪🇺 European Union | 101076754 |
 
 <p>
   <img src="https://ec.europa.eu/regional_policy/images/information-sources/logo-download-center/eu_funded_en.jpg" height=70>
