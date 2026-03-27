@@ -437,13 +437,13 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         dpsi_pid_->Reset();
         return;
       }
-      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(st_ang);
     } else {
       double st_ang = UpdateKappaFromState();
-      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(st_ang);
     }
     if (lon_active_) {
-      vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
+      vhcl_ctrl_output_.drive.acceleration = static_cast<float>(LongitudinalControl(dt));
       if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
         RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
         vhcl_ctrl_output_.drive.acceleration = 0.0;
@@ -533,8 +533,8 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
   }
 
   // go through array and search for sampling points
-  int i = 0;
-  for (i = 0; i < (int)X.size(); i++) {
+  size_t i = 0;
+  for (i = 0; i < X.size(); i++) {
     if (X[i] < desired_x) {
       continue;
     } else if (X[i] == desired_x) {
@@ -678,8 +678,9 @@ double AckermannTrajectoryControl::UpdateKappaFromState() {
 }
 
 void AckermannTrajectoryControl::UpdateLonFromState() {
-  vhcl_ctrl_output_.drive.acceleration = perception_msgs::object_access::getAccLon(cur_vehicle_state_);
-  vhcl_ctrl_output_.drive.speed = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
+  vhcl_ctrl_output_.drive.acceleration =
+      static_cast<float>(perception_msgs::object_access::getAccLon(cur_vehicle_state_));
+  vhcl_ctrl_output_.drive.speed = static_cast<float>(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
 }
 
 double AckermannTrajectoryControl::LateralControl(const double dt) {
@@ -814,7 +815,7 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
       dv_pid_->ResetIntegral();
     }
   }
-  vhcl_ctrl_output_.drive.speed = v_tgt_;
+  vhcl_ctrl_output_.drive.speed = static_cast<float>(v_tgt_);
   return a_ctrl;
 }
 
