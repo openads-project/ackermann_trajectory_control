@@ -308,17 +308,17 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double self_st_gradient_ = 0.00265;
 
   /// Target values extracted from the reference trajectory.
-  double a_tgt_;
-  double a_tgt_dv_;
-  double v_tgt_;
-  double y_tgt_;
-  double psi_tgt_;
-  double delta_tgt_;
+  double a_tgt_ = 0.0;
+  double a_tgt_dv_ = 0.0;
+  double v_tgt_ = 0.0;
+  double y_tgt_ = 0.0;
+  double psi_tgt_ = 0.0;
+  double delta_tgt_ = 0.0;
 
   /// Current control deviations and cached curvature state.
-  double dpsi_;
-  double dy_;
-  double dv_;
+  double dpsi_ = 0.0;
+  double dy_ = 0.0;
+  double dv_ = 0.0;
   double last_kappa_ = 0.0;
   double last_kappa_rate_ = 0.0;
   bool lat_active_ = true;
@@ -348,8 +348,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   std::vector<double> vec_feed_forward_gain_acceleration_ = {0.0, 0.0};
 
   /// Feed-forward gains selected for the current speed.
-  double feed_forward_gain_steering_angle_;
-  double feed_forward_gain_acceleration_;
+  double feed_forward_gain_steering_angle_ = 1.0;
+  double feed_forward_gain_acceleration_ = 1.0;
 
   /// Most recently published control command.
   ackermann_msgs::msg::AckermannDriveStamped vhcl_ctrl_output_;

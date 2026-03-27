@@ -67,9 +67,9 @@ class PID {
   double Calc(double e, double dt);
 
  private:
-  double Kp_;               ///< Proportional gain.
-  double Ki_;               ///< Integral gain.
-  double Kd_;               ///< Derivative gain.
+  double Kp_ = 0.0;         ///< Proportional gain.
+  double Ki_ = 0.0;         ///< Integral gain.
+  double Kd_ = 0.0;         ///< Derivative gain.
   double i_val_ = 0.0;      ///< Accumulated integral term.
   double pre_e_ = nan("");  ///< Previously processed error, NaN before the first update.
 
