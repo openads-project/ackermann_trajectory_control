@@ -89,7 +89,7 @@ colcon test-result --verbose
 
 ## 📝 Documentation
 
-Package and node interfaces are documented in the respective package READMEs listed below.Implementation details are found in the [Source Code Documentation](https://openads-project.github.io/ackermann_trajectory_control).
+Package and node interfaces are documented in the respective package READMEs listed below. Implementation details are found in the [Source Code Documentation](https://openads-project.github.io/ackermann_trajectory_control).
 
 | Package | Description |
 | --- | --- |
