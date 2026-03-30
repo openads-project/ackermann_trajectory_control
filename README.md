@@ -29,7 +29,7 @@ This controller is designed to be used in the context of the the *Open Automated
 > This repository is part of [***OpenADS***](https://github.com/openads-project), the *Open Automated Driving Stack*.
 
 
-<!-- <img src="TODO: teaser image/gif" width=800> -->
+
 
 
 ## 🚀 Quick Start
@@ -89,9 +89,9 @@ colcon test-result --verbose
 
 ## 📝 Documentation
 
-For further details see the respective package README files and the [Documentation](https://openads-project.github.io/ackermann_trajectory_control).
+Package and node interfaces are documented in the respective package READMEs listed below.Implementation details are found in the [Source Code Documentation](https://openads-project.github.io/ackermann_trajectory_control).
 
-| Package | Purpose |
+| Package | Description |
 | --- | --- |
 | [ackermann_trajectory_control](ackermann_trajectory_control/README.md) | This package contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to trajectory_planning_msgs/Trajectory and publishes control commands as ackermann_msgs/AckermannDriveStamped. |
 
