@@ -11,9 +11,9 @@
   <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml/badge.svg"/></a>
 </p>
 
-This repository contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to [`trajectory_planning_msgs/Trajectory`](https://github.com/ika-rwth-aachen/planning_interfaces) and [`perception_msgs/EgoData`](https://github.com/ika-rwth-aachen/perception_interfaces) and publishes control commands as [`ackermann_msgs/AckermannDriveStamped`](https://github.com/ros-drivers/ackermann_msgs).
-
 **Cascaded ROS 2 PID Controller for Ackermann steered vehicles**
+
+This repository contains a trajectory controller for Ackermann-steered vehicles. It is implemented as a ROS 2 C++ node that subscribes to [`trajectory_planning_msgs/Trajectory`](https://github.com/ika-rwth-aachen/planning_interfaces) and [`perception_msgs/EgoData`](https://github.com/ika-rwth-aachen/perception_interfaces) and publishes control commands as [`ackermann_msgs/AckermannDriveStamped`](https://github.com/ros-drivers/ackermann_msgs).
 
 The control loop is executed at a configurable frequency and consists of a cascaded PID control architecture with a feedforward term based on the trajectory's curvature and acceleration and a feedback term based on velocity deviations for longitudinal control and lateral displacement and yaw-deviations for lateral control w.r.t. the planned trajectory. Additional features of the controller are:
 - **Control Limiting**: The controller limits the control commands to user-defined maximum values for longitudinal acceleration and jerk, as well as curvature, curvature rate, and curvature acceleration for lateral control.
