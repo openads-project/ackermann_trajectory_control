@@ -20,8 +20,6 @@ jobs:
           base-image: rwthika/ros2:jazzy
           rmw-implementation: rmw_zenoh_cpp
           command: ros2 launch ackermann_trajectory_control ackermann_trajectory_control.launch.py
-          enable-slim: false
           enable-industrial-ci: true
-          enable-recursive-vcs-import: false
         env:
           TARGET_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=1
