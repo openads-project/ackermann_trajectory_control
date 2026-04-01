@@ -23,11 +23,16 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
 AckermannTrajectoryControl::~AckermannTrajectoryControl() {}
 
 template <typename T>
-void AckermannTrajectoryControl::declareAndLoadParameter(
-    const std::string& name, T& member_param, const std::string& description,
-    const bool add_to_auto_reconfigurable_params, const bool is_required, const bool read_only,
-    const std::optional<T>& from_value, const std::optional<T>& to_value, const std::optional<T>& step_value,
-    const std::string& additional_constraints) {
+void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name,
+                                                         T& member_param,
+                                                         const std::string& description,
+                                                         const bool add_to_auto_reconfigurable_params,
+                                                         const bool is_required,
+                                                         const bool read_only,
+                                                         const std::optional<T>& from_value,
+                                                         const std::optional<T>& to_value,
+                                                         const std::optional<T>& step_value,
+                                                         const std::string& additional_constraints) {
   rcl_interfaces::msg::ParameterDescriptor param_desc;
   param_desc.description = description;
   param_desc.additional_constraints = additional_constraints;
@@ -84,81 +89,72 @@ void AckermannTrajectoryControl::loadParameters() {
   this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
   this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_,
                                 "Frame ID of the fixed frame used for transformations over time (e.g. map)", false);
-  this->declareAndLoadParameter("control_frequency", control_frequency_, "Frequency of the control loop in Hz", true,
-                                false, false, std::optional<double>{0.0}, std::optional<double>{200.0},
-                                std::optional<double>{1.0});
-  this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_,
-                                "Maximum allowed age of the ego data in seconds", true, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{1.0}, std::optional<double>{0.05});
-  this->declareAndLoadParameter("wheelbase", wheelbase_,
-                                "Wheelbase of the vehicle in meters (required for lateral control)", false);
+  this->declareAndLoadParameter("control_frequency", control_frequency_, "Frequency of the control loop in Hz", true, false,
+                                false, std::optional<double>{0.0}, std::optional<double>{200.0}, std::optional<double>{1.0});
+  this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_, "Maximum allowed age of the ego data in seconds",
+                                true, false, false, std::optional<double>{0.0}, std::optional<double>{1.0},
+                                std::optional<double>{0.05});
+  this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle in meters (required for lateral control)",
+                                false);
   this->declareAndLoadParameter("selfsteergradient", self_st_gradient_,
                                 "Self-steer gradient of the vehicle (required for lateral control)", false);
   this->declareAndLoadParameter("longitudinal_lookahead_time", lon_t_lookahead_,
-                                "Time in seconds for the longitudinal look-ahead", true, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{0.1});
-  this->declareAndLoadParameter("lateral_lookahead_time", lat_t_lookahead_,
-                                "Time in seconds for the lateral look-ahead", true, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{0.1});
+                                "Time in seconds for the longitudinal look-ahead", true, false, false, std::optional<double>{0.0},
+                                std::optional<double>{5.0}, std::optional<double>{0.1});
+  this->declareAndLoadParameter("lateral_lookahead_time", lat_t_lookahead_, "Time in seconds for the lateral look-ahead", true,
+                                false, false, std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{0.1});
   this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_,
                                 "Maximum allowed longitudinal acceleration in m/s^2 (constraint)", true, false, false,
                                 std::optional<double>{0.0}, std::optional<double>{10.0}, std::optional<double>{0.1});
   this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_,
-                                "Minimum allowed longitudinal acceleration in m/s^2 (constraint, should be negative)",
-                                true, false, false, std::optional<double>{-10.0}, std::optional<double>{0.0},
+                                "Minimum allowed longitudinal acceleration in m/s^2 (constraint, should be negative)", true,
+                                false, false, std::optional<double>{-10.0}, std::optional<double>{0.0},
                                 std::optional<double>{0.1});
-  this->declareAndLoadParameter(
-      "max_longitudinal_jerk", lon_max_jerk_, "Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value)",
-      true, false, false, std::optional<double>{0.0}, std::optional<double>{20.0}, std::optional<double>{0.1});
-  this->declareAndLoadParameter("max_curvature", max_curvature_,
-                                "Maximum allowed curvature (constraint, absolute value)", false, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{1.0}, std::optional<double>{1e-12});
+  this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_,
+                                "Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value)", true, false, false,
+                                std::optional<double>{0.0}, std::optional<double>{20.0}, std::optional<double>{0.1});
+  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum allowed curvature (constraint, absolute value)", false,
+                                false, false, std::optional<double>{0.0}, std::optional<double>{1.0},
+                                std::optional<double>{1e-12});
   this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_,
                                 "Maximum allowed curvature rate (constraint, absolute value)", false, false, false,
                                 std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{1e-12});
   this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
-                                "Maximum allowed curvature acceleration (constraint, absolute value)", false, false,
-                                false, std::optional<double>{0.0}, std::optional<double>{20.0},
-                                std::optional<double>{1e-12});
-  this->declareAndLoadParameter(
-      "use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
-      "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file", false);
+                                "Maximum allowed curvature acceleration (constraint, absolute value)", false, false, false,
+                                std::optional<double>{0.0}, std::optional<double>{20.0}, std::optional<double>{1e-12});
+  this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
+                                "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file",
+                                false);
   this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
                                 "CSV file path for speed-dependent curvature limits", false);
-  this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false,
-                                false, std::optional<double>{0.0}, std::optional<double>{100.0},
-                                std::optional<double>{0.1});
-  this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation",
-                                true);
+  this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false, false,
+                                std::optional<double>{0.0}, std::optional<double>{100.0}, std::optional<double>{0.1});
+  this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation", true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_,
                                 "List of velocities in m/s for which the following gains are defined", false);
+  this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
+                                "List of feed-forward gains for the acceleration controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
+                                "List of feed-forward gains for the steering-angle controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter("dv_p", dv_p_,
+                                "List of proportional gains for the velocity controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dv_i", dv_i_, "List of integral gains for the velocity controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter("dv_d", dv_d_,
+                                "List of derivative gains for the velocity controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dy_p", dy_p_,
+                                "List of proportional gains for the lateral controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dy_i", dy_i_, "List of integral gains for the lateral controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter("dy_d", dy_d_, "List of derivative gains for the lateral controller (mapping to velocity_lookup)",
+                                true);
   this->declareAndLoadParameter(
-      "feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
-      "List of feed-forward gains for the acceleration controller (mapping to velocity_lookup)", true);
+      "dpsi_p", dpsi_p_, "List of proportional gains for the heading deviation controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dpsi_i", dpsi_i_,
+                                "List of integral gains for the heading deviation controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
-      "feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
-      "List of feed-forward gains for the steering-angle controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "dv_p", dv_p_, "List of proportional gains for the velocity controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "dv_i", dv_i_, "List of integral gains for the velocity controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "dv_d", dv_d_, "List of derivative gains for the velocity controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "dy_p", dy_p_, "List of proportional gains for the lateral controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter("dy_i", dy_i_,
-                                "List of integral gains for the lateral controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "dy_d", dy_d_, "List of derivative gains for the lateral controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "dpsi_p", dpsi_p_, "List of proportional gains for the heading deviation controller (mapping to velocity_lookup)",
-      true);
-  this->declareAndLoadParameter(
-      "dpsi_i", dpsi_i_, "List of integral gains for the heading deviation controller (mapping to velocity_lookup)",
-      true);
-  this->declareAndLoadParameter(
-      "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)",
-      true);
+      "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)", true);
 
   max_curvature_current_ = max_curvature_;
   max_curvature_rate_current_ = max_curvature_rate_;
@@ -234,11 +230,9 @@ void AckermannTrajectoryControl::setup() {
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
       "~/trajectory", 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
   lat_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      "~/lat_control_active", 1,
-      std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
+      "~/lat_control_active", 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
   lon_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      "~/lon_control_active", 1,
-      std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
+      "~/lon_control_active", 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
 
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("~/controls", 1);
@@ -264,8 +258,7 @@ void AckermannTrajectoryControl::setup() {
   link_subs.push_back(static_cast<const void*>(trajectory_sub_->get_subscription_handle().get()));
   std::vector<const void*> link_pubs;
   link_pubs.push_back(static_cast<const void*>(vehicle_ctrl_pub_->get_publisher_handle().get()));
-  TRACETOOLS_TRACEPOINT(message_link_periodic_async, link_subs.data(), link_subs.size(), link_pubs.data(),
-                        link_pubs.size());
+  TRACETOOLS_TRACEPOINT(message_link_periodic_async, link_subs.data(), link_subs.size(), link_pubs.data(), link_pubs.size());
 }
 
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
@@ -274,9 +267,9 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
-    tf_trajectory_ = tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_,
-                                            tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
-                                            fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                               fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
@@ -284,8 +277,7 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
   ResetOdometry();
 }
 
-void AckermannTrajectoryControl::TrajectoryCallback(
-    const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
+void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
   subscribed_trajectory_ = *msg;
   // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
@@ -303,22 +295,18 @@ void AckermannTrajectoryControl::TrajectoryCallback(
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
-    tf_trajectory_ = tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_,
-                                            tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
-                                            fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                               fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
 }
 
-void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
-  lat_active_ = msg->data;
-}
+void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) { lat_active_ = msg->data; }
 
-void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
-  lon_active_ = msg->data;
-}
+void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) { lon_active_ = msg->data; }
 
 void AckermannTrajectoryControl::ResetController() {
   a_tgt_ = 0.0;
@@ -492,8 +480,8 @@ bool AckermannTrajectoryControl::TrjDataProc() {
       THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(tf_trajectory_, i));
       DELTA.push_back(trajectory_planning_msgs::trajectory_access::getDeltaAck(tf_trajectory_, i));
     } else {
-      RCLCPP_ERROR_STREAM(
-          get_logger(), "Unsupported trajectory type. Only trajectory_planning_msgs::DRIVABLE is currently supported.");
+      RCLCPP_ERROR_STREAM(get_logger(),
+                          "Unsupported trajectory type. Only trajectory_planning_msgs::DRIVABLE is currently supported.");
       return false;
     }
   }
@@ -521,8 +509,10 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   return true;
 }
 
-bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y,
-                                                     const double& desired_x, double& output_y) {
+bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& X,
+                                                     const std::vector<double>& Y,
+                                                     const double& desired_x,
+                                                     double& output_y) {
   if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end())) {
     RCLCPP_ERROR_STREAM(get_logger(), "Desired x value is outside the range covered by the input vector.");
     return false;
@@ -611,8 +601,7 @@ bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
     return false;
   }
 
-  RCLCPP_INFO_STREAM(get_logger(),
-                     "Loaded lateral limits from CSV with " << lateral_limits_velocity_.size() << " entries.");
+  RCLCPP_INFO_STREAM(get_logger(), "Loaded lateral limits from CSV with " << lateral_limits_velocity_.size() << " entries.");
   return true;
 }
 
@@ -678,8 +667,7 @@ double AckermannTrajectoryControl::UpdateKappaFromState() {
 }
 
 void AckermannTrajectoryControl::UpdateLonFromState() {
-  vhcl_ctrl_output_.drive.acceleration =
-      static_cast<float>(perception_msgs::object_access::getAccLon(cur_vehicle_state_));
+  vhcl_ctrl_output_.drive.acceleration = static_cast<float>(perception_msgs::object_access::getAccLon(cur_vehicle_state_));
   vhcl_ctrl_output_.drive.speed = static_cast<float>(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
 }
 
@@ -701,8 +689,7 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     }
   }
 
-  double kappa_pid =
-      std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
+  double kappa_pid = std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
 
   // ackermann feed-forward control (convert delta to kappa for feed-forward)
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
@@ -819,6 +806,13 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   return a_ctrl;
 }
 
+/**
+ * @brief Initializes ROS 2, starts the Ackermann trajectory controller node, and blocks until shutdown.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line argument values.
+ * @return Exit status code reported to the operating system.
+ */
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
   auto controller = std::make_shared<AckermannTrajectoryControl>();
