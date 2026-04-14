@@ -83,8 +83,6 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
   this->declareAndLoadParameter(
       "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)", true);
 
-  max_curvature_current_ = max_curvature_;
-  max_curvature_rate_current_ = max_curvature_rate_;
   this->setup();
 }
 
@@ -236,6 +234,9 @@ void AckermannTrajectoryControl::setup() {
       RCLCPP_WARN_STREAM(get_logger(), "Speed dependent lateral limits disabled due to CSV load failure.");
     }
   }
+
+  // Initialize active curvature limits from the configured static or speed-dependent constraints.
+  UpdateLateralLimitsFromVelocity(0.0);
 
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_time_ = now();
