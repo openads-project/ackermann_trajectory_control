@@ -37,13 +37,13 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
   this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_,
                                 "Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value)", true, false, false,
                                 0.0, 20.0, 0.1);
-  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum allowed curvature (constraint, absolute value)", false,
+  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum allowed curvature (constraint, absolute value)", true,
                                 false, false, 0.0, 1.0, 1e-12);
   this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_,
-                                "Maximum allowed curvature rate (constraint, absolute value)", false, false, false, 0.0, 5.0,
+                                "Maximum allowed curvature rate (constraint, absolute value)", true, false, false, 0.0, 5.0,
                                 1e-12);
   this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
-                                "Maximum allowed curvature acceleration (constraint, absolute value)", false, false, false, 0.0,
+                                "Maximum allowed curvature acceleration (constraint, absolute value)", true, false, false, 0.0,
                                 20.0, 1e-12);
   this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
                                 "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file",
@@ -163,31 +163,20 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
     for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
       if (param.get_name() == std::get<0>(auto_reconfigurable_param)) {
         std::get<1>(auto_reconfigurable_param)(param);
+        RCLCPP_INFO(this->get_logger(), "Reconfigured parameter '%s' to: %s", param.get_name().c_str(),
+                    param.value_to_string().c_str());
+        break;
       }
     }
     if (param.get_name() == "max_curvature") {
-      max_curvature_ = param.get_value<double>();
       if (!use_speed_dependent_lateral_limits_) {
         max_curvature_current_ = max_curvature_;
       }
     }
     if (param.get_name() == "max_curvature_rate") {
-      max_curvature_rate_ = param.get_value<double>();
       if (!use_speed_dependent_lateral_limits_) {
         max_curvature_rate_current_ = max_curvature_rate_;
       }
-    }
-    if (param.get_name() == "max_curvature_acceleration") {
-      max_curvature_accel_ = param.get_value<double>();
-    }
-    if (param.get_name() == "use_speed_dependent_lateral_limits") {
-      use_speed_dependent_lateral_limits_ = param.get_value<bool>();
-    }
-    if (param.get_name() == "lateral_limits_csv") {
-      lateral_limits_csv_path_ = param.get_value<std::string>();
-    }
-    if (param.get_name() == "use_back_calculation") {
-      use_back_calculation_ = param.get_value<bool>();
     }
   }
 
