@@ -58,11 +58,6 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   void setup();
 
   /**
-   * @brief Declares ROS parameters and loads their current values.
-   */
-  void loadParameters();
-
-  /**
    * @brief Declares a parameter, loads its current value, and optionally enables runtime reconfiguration.
    *
    * @tparam T Parameter value type.
