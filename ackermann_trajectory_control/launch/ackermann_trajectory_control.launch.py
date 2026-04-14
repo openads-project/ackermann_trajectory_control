@@ -15,12 +15,10 @@ from tracetools_launch.action import Trace
 
 
 def generate_launch_description():
-
+    """Generate the launch description for ackermann_trajectory_control."""
     remappable_topics = [
         DeclareLaunchArgument("ego_data_topic", default_value="~/ego_data", description="Input topic for ego data"),
-        DeclareLaunchArgument(
-            "trajectory_topic", default_value="~/trajectory", description="Input topic for the trajectory"
-        ),
+        DeclareLaunchArgument("trajectory_topic", default_value="~/trajectory", description="Input topic for the trajectory"),
         DeclareLaunchArgument(
             "lat_control_active_topic",
             default_value="~/lat_control_active",
@@ -31,9 +29,7 @@ def generate_launch_description():
             default_value="~/lon_control_active",
             description="Input topic indicating longitudinal-control activation",
         ),
-        DeclareLaunchArgument(
-            "controls_topic", default_value="~/controls", description="Output topic for control commands"
-        ),
+        DeclareLaunchArgument("controls_topic", default_value="~/controls", description="Output topic for control commands"),
     ]
 
     args = [
@@ -41,9 +37,7 @@ def generate_launch_description():
         DeclareLaunchArgument("namespace", default_value="", description="Node namespace"),
         DeclareLaunchArgument(
             "params",
-            default_value=os.path.join(
-                get_package_share_directory("ackermann_trajectory_control"), "config", "params.yml"
-            ),
+            default_value=os.path.join(get_package_share_directory("ackermann_trajectory_control"), "config", "params.yml"),
             description="Path to the parameter file",
         ),
         DeclareLaunchArgument(
