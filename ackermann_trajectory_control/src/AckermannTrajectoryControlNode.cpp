@@ -17,45 +17,41 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
   this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_,
                                 "Frame ID of the fixed frame used for transformations over time (e.g. map)", false);
   this->declareAndLoadParameter("control_frequency", control_frequency_, "Frequency of the control loop in Hz", true, false,
-                                false, std::optional<double>{0.0}, std::optional<double>{200.0}, std::optional<double>{1.0});
+                                false, 0.0, 200.0, 1.0);
   this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_, "Maximum allowed age of the ego data in seconds",
-                                true, false, false, std::optional<double>{0.0}, std::optional<double>{1.0},
-                                std::optional<double>{0.05});
+                                true, false, false, 0.0, 1.0, 0.05);
   this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle in meters (required for lateral control)",
                                 false);
   this->declareAndLoadParameter("selfsteergradient", self_st_gradient_,
                                 "Self-steer gradient of the vehicle (required for lateral control)", false);
   this->declareAndLoadParameter("longitudinal_lookahead_time", lon_t_lookahead_,
-                                "Time in seconds for the longitudinal look-ahead", true, false, false, std::optional<double>{0.0},
-                                std::optional<double>{5.0}, std::optional<double>{0.1});
+                                "Time in seconds for the longitudinal look-ahead", true, false, false, 0.0, 5.0, 0.1);
   this->declareAndLoadParameter("lateral_lookahead_time", lat_t_lookahead_, "Time in seconds for the lateral look-ahead", true,
-                                false, false, std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{0.1});
+                                false, false, 0.0, 5.0, 0.1);
   this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_,
-                                "Maximum allowed longitudinal acceleration in m/s^2 (constraint)", true, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{10.0}, std::optional<double>{0.1});
+                                "Maximum allowed longitudinal acceleration in m/s^2 (constraint)", true, false, false, 0.0, 10.0,
+                                0.1);
   this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_,
                                 "Minimum allowed longitudinal acceleration in m/s^2 (constraint, should be negative)", true,
-                                false, false, std::optional<double>{-10.0}, std::optional<double>{0.0},
-                                std::optional<double>{0.1});
+                                false, false, -10.0, 0.0, 0.1);
   this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_,
                                 "Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value)", true, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{20.0}, std::optional<double>{0.1});
+                                0.0, 20.0, 0.1);
   this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum allowed curvature (constraint, absolute value)", false,
-                                false, false, std::optional<double>{0.0}, std::optional<double>{1.0},
-                                std::optional<double>{1e-12});
+                                false, false, 0.0, 1.0, 1e-12);
   this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_,
-                                "Maximum allowed curvature rate (constraint, absolute value)", false, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{5.0}, std::optional<double>{1e-12});
+                                "Maximum allowed curvature rate (constraint, absolute value)", false, false, false, 0.0, 5.0,
+                                1e-12);
   this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
-                                "Maximum allowed curvature acceleration (constraint, absolute value)", false, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{20.0}, std::optional<double>{1e-12});
+                                "Maximum allowed curvature acceleration (constraint, absolute value)", false, false, false, 0.0,
+                                20.0, 1e-12);
   this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
                                 "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file",
                                 false);
   this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
                                 "CSV file path for speed-dependent curvature limits", false);
   this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false, false,
-                                std::optional<double>{0.0}, std::optional<double>{100.0}, std::optional<double>{0.1});
+                                0.0, 100.0, 0.1);
   this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation", true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_,
                                 "List of velocities in m/s for which the following gains are defined", false);
@@ -90,63 +86,73 @@ AckermannTrajectoryControl::~AckermannTrajectoryControl() {}
 
 template <typename T>
 void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name,
-                                                         T& member_param,
+                                                         T& param,
                                                          const std::string& description,
                                                          const bool add_to_auto_reconfigurable_params,
                                                          const bool is_required,
                                                          const bool read_only,
-                                                         const std::optional<T>& from_value,
-                                                         const std::optional<T>& to_value,
-                                                         const std::optional<T>& step_value,
+                                                         const std::optional<double>& from_value,
+                                                         const std::optional<double>& to_value,
+                                                         const std::optional<double>& step_value,
                                                          const std::string& additional_constraints) {
   rcl_interfaces::msg::ParameterDescriptor param_desc;
   param_desc.description = description;
   param_desc.additional_constraints = additional_constraints;
   param_desc.read_only = read_only;
 
-  auto param_type = rclcpp::ParameterValue(member_param).get_type();
+  auto type = rclcpp::ParameterValue(param).get_type();
 
   if (from_value.has_value() && to_value.has_value()) {
     if constexpr (std::is_integral_v<T>) {
       rcl_interfaces::msg::IntegerRange range;
-      T step = step_value.has_value() ? step_value.value() : 0;
-      range.set__from_value(from_value.value()).set__to_value(to_value.value()).set__step(step);
+      range.set__from_value(static_cast<T>(from_value.value())).set__to_value(static_cast<T>(to_value.value()));
+      if (step_value.has_value()) range.set__step(static_cast<T>(step_value.value()));
       param_desc.integer_range = {range};
     } else if constexpr (std::is_floating_point_v<T>) {
       rcl_interfaces::msg::FloatingPointRange range;
-      T step = step_value.has_value() ? step_value.value() : 0.0;
-      range.set__from_value(from_value.value()).set__to_value(to_value.value()).set__step(step);
+      range.set__from_value(static_cast<T>(from_value.value())).set__to_value(static_cast<T>(to_value.value()));
+      if (step_value.has_value()) range.set__step(static_cast<T>(step_value.value()));
       param_desc.floating_point_range = {range};
     } else {
-      RCLCPP_WARN(this->get_logger(), "Parameter type does not support range.");
+      RCLCPP_WARN(this->get_logger(), "Parameter type of parameter '%s' does not support specifying a range", name.c_str());
     }
   }
 
-  this->declare_parameter(name, param_type, param_desc);
+  this->declare_parameter(name, type, param_desc);
 
   try {
-    member_param = this->get_parameter(name).get_value<T>();
+    param = this->get_parameter(name).get_value<T>();
+    std::stringstream ss;
+    ss << "Loaded parameter '" << name << "': ";
+    if constexpr (is_vector_v<T>) {
+      ss << "[";
+      for (const auto& element : param) ss << element << (&element != &param.back() ? ", " : "");
+      ss << "]";
+    } else {
+      ss << param;
+    }
+    RCLCPP_INFO_STREAM(this->get_logger(), ss.str());
   } catch (rclcpp::exceptions::ParameterUninitializedException&) {
     if (is_required) {
-      RCLCPP_FATAL_STREAM(this->get_logger(), "Parameter '" << name << "' not set but required. Exiting.");
+      RCLCPP_FATAL_STREAM(this->get_logger(), "Missing required parameter '" << name << "', exiting");
       exit(EXIT_FAILURE);
     } else {
       std::stringstream ss;
-      ss << "Parameter '" << name << "' not set. Using default value: ";
+      ss << "Missing parameter '" << name << "', using default value: ";
       if constexpr (is_vector_v<T>) {
         ss << "[";
-        for (const auto& element : member_param) ss << element << (&element != &member_param.back() ? ", " : "]");
+        for (const auto& element : param) ss << element << (&element != &param.back() ? ", " : "");
+        ss << "]";
       } else {
-        ss << member_param;
+        ss << param;
       }
       RCLCPP_WARN_STREAM(this->get_logger(), ss.str());
+      this->set_parameters({rclcpp::Parameter(name, rclcpp::ParameterValue(param))});
     }
   }
 
   if (add_to_auto_reconfigurable_params) {
-    std::function<void(const rclcpp::Parameter&)> setter = [&member_param](const rclcpp::Parameter& param) {
-      member_param = param.get_value<T>();
-    };
+    std::function<void(const rclcpp::Parameter&)> setter = [&param](const rclcpp::Parameter& p) { param = p.get_value<T>(); };
     auto_reconfigurable_params_.push_back(std::make_tuple(name, setter));
   }
 }

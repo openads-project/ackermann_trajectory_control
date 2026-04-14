@@ -62,7 +62,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    *
    * @tparam T Parameter value type.
    * @param name Parameter name.
-   * @param member_param Target member that stores the parameter value.
+   * @param param Target member that stores the parameter value.
    * @param description Human-readable parameter description.
    * @param add_to_auto_reconfigurable_params Whether to update the member automatically on parameter changes.
    * @param is_required Whether the parameter must be initialized externally.
@@ -74,14 +74,14 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    */
   template <typename T>
   void declareAndLoadParameter(const std::string& name,
-                               T& member_param,
+                               T& param,
                                const std::string& description,
                                const bool add_to_auto_reconfigurable_params = true,
                                const bool is_required = false,
                                const bool read_only = false,
-                               const std::optional<T>& from_value = std::nullopt,
-                               const std::optional<T>& to_value = std::nullopt,
-                               const std::optional<T>& step_value = std::nullopt,
+                               const std::optional<double>& from_value = std::nullopt,
+                               const std::optional<double>& to_value = std::nullopt,
+                               const std::optional<double>& step_value = std::nullopt,
                                const std::string& additional_constraints = "");
 
   /**
