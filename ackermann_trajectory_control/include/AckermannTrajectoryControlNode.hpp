@@ -24,28 +24,12 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_trajectory_planning_msgs/tf2_trajectory_planning_msgs.hpp>
 
-/**
- * @brief Type trait that evaluates to `true` for `std::vector` specializations.
- *
- * @tparam C Container type to inspect.
- */
 template <typename C>
 struct is_vector : std::false_type {};
 
-/**
- * @brief Specialization that marks `std::vector` types as vectors.
- *
- * @tparam T Vector element type.
- * @tparam A Allocator type.
- */
 template <typename T, typename A>
 struct is_vector<std::vector<T, A>> : std::true_type {};
 
-/**
- * @brief Convenience variable template for `is_vector`.
- *
- * @tparam C Container type to inspect.
- */
 template <typename C>
 inline constexpr bool is_vector_v = is_vector<C>::value;
 
