@@ -1,10 +1,6 @@
 // Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * @file AckermannTrajectoryControlNode.hpp
- * @brief Declares the Ackermann trajectory controller node and its helper utilities.
- */
 #pragma once
 
 #include <tracetools/tracetools.h>
@@ -98,9 +94,13 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    * @param additional_constraints Additional textual constraints shown in parameter metadata.
    */
   template <typename T>
-  void declareAndLoadParameter(const std::string& name, T& member_param, const std::string& description,
-                               const bool add_to_auto_reconfigurable_params = true, const bool is_required = false,
-                               const bool read_only = false, const std::optional<T>& from_value = std::nullopt,
+  void declareAndLoadParameter(const std::string& name,
+                               T& member_param,
+                               const std::string& description,
+                               const bool add_to_auto_reconfigurable_params = true,
+                               const bool is_required = false,
+                               const bool read_only = false,
+                               const std::optional<T>& from_value = std::nullopt,
                                const std::optional<T>& to_value = std::nullopt,
                                const std::optional<T>& step_value = std::nullopt,
                                const std::string& additional_constraints = "");
@@ -174,8 +174,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    * @param output_y Interpolated output value.
    * @return `true` if interpolation succeeded.
    */
-  bool LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x,
-                           double& output_y);
+  bool LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y, const double& desired_x, double& output_y);
 
   /**
    * @brief Loads speed-dependent curvature limits from a CSV file.

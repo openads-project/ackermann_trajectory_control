@@ -1,10 +1,6 @@
 // Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * @file PID.hpp
- * @brief Declares a PID controller with optional anti-windup back-calculation support.
- */
 #pragma once
 
 #include <cmath>

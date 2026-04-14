@@ -1,10 +1,6 @@
 // Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * @file AckermannTrajectoryControlNode.cpp
- * @brief Implements the Ackermann trajectory controller ROS 2 node.
- */
 #include "AckermannTrajectoryControlNode.hpp"
 
 #include <algorithm>
