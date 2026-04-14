@@ -1,8 +1,5 @@
-/**
- * @file AckermannTrajectoryControlNode.cpp
- * @author Guido Küppers
- * @brief  ROS-Node for trajectory control.
- */
+// Copyright Institute for Automotive Engineering (ika), RWTH Aachen University
+// SPDX-License-Identifier: Apache-2.0
 
 #include "AckermannTrajectoryControlNode.hpp"
 
@@ -14,176 +11,172 @@
 #include <perception_msgs_utils/object_access.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
-// ROS message parameters
-const std::string AckermannTrajectoryControl::kInputTopicEgoData = "~/ego_data";
-const std::string AckermannTrajectoryControl::kInputTopicTrajectory = "~/trajectory";
-const std::string AckermannTrajectoryControl::kInputTopicLatActive = "~/lat_control_active";
-const std::string AckermannTrajectoryControl::kInputTopicLonActive = "~/lon_control_active";
-const std::string AckermannTrajectoryControl::kOutputTopic = "~/controls";
-
-// constructor of Trajectory Control Object
 AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
-  loadParameters();
-  setup();
+  // declare and load node parameters
+  this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
+  this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_,
+                                "Frame ID of the fixed frame used for transformations over time (e.g. map)", false);
+  this->declareAndLoadParameter("control_frequency", control_frequency_, "Frequency of the control loop in Hz", true, false,
+                                false, 0.0, 200.0, 1.0);
+  this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_, "Maximum allowed age of the ego data in seconds",
+                                true, false, false, 0.0, 1.0, 0.05);
+  this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle in meters (required for lateral control)",
+                                false);
+  this->declareAndLoadParameter("selfsteergradient", self_st_gradient_,
+                                "Self-steer gradient of the vehicle (required for lateral control)", false);
+  this->declareAndLoadParameter("longitudinal_lookahead_time", lon_t_lookahead_,
+                                "Time in seconds for the longitudinal look-ahead", true, false, false, 0.0, 5.0, 0.1);
+  this->declareAndLoadParameter("lateral_lookahead_time", lat_t_lookahead_, "Time in seconds for the lateral look-ahead", true,
+                                false, false, 0.0, 5.0, 0.1);
+  this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_,
+                                "Maximum allowed longitudinal acceleration in m/s^2 (constraint)", true, false, false, 0.0, 10.0,
+                                0.1);
+  this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_,
+                                "Minimum allowed longitudinal acceleration in m/s^2 (constraint, should be negative)", true,
+                                false, false, -10.0, 0.0, 0.1);
+  this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_,
+                                "Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value)", true, false, false,
+                                0.0, 20.0, 0.1);
+  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum allowed curvature (constraint, absolute value)", true,
+                                false, false, 0.0, 1.0, 1e-12);
+  this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_,
+                                "Maximum allowed curvature rate (constraint, absolute value)", true, false, false, 0.0, 5.0,
+                                1e-12);
+  this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
+                                "Maximum allowed curvature acceleration (constraint, absolute value)", true, false, false, 0.0,
+                                20.0, 1e-12);
+  this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
+                                "Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file",
+                                false);
+  this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
+                                "CSV file path for speed-dependent curvature limits", false);
+  this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false, false,
+                                0.0, 100.0, 0.1);
+  this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation", true);
+  this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_,
+                                "List of velocities in m/s for which the following gains are defined", false);
+  this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
+                                "List of feed-forward gains for the acceleration controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
+                                "List of feed-forward gains for the steering-angle controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter("dv_p", dv_p_,
+                                "List of proportional gains for the velocity controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dv_i", dv_i_, "List of integral gains for the velocity controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter("dv_d", dv_d_,
+                                "List of derivative gains for the velocity controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dy_p", dy_p_,
+                                "List of proportional gains for the lateral controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dy_i", dy_i_, "List of integral gains for the lateral controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter("dy_d", dy_d_, "List of derivative gains for the lateral controller (mapping to velocity_lookup)",
+                                true);
+  this->declareAndLoadParameter(
+      "dpsi_p", dpsi_p_, "List of proportional gains for the heading deviation controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter("dpsi_i", dpsi_i_,
+                                "List of integral gains for the heading deviation controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter(
+      "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)", true);
+
+  this->setup();
 }
 
 AckermannTrajectoryControl::~AckermannTrajectoryControl() {}
 
 template <typename T>
-void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name, T& member_param,
-                                                const std::string& description,
-                                                const bool add_to_auto_reconfigurable_params, const bool is_required,
-                                                const bool read_only, const std::optional<T>& from_value,
-                                                const std::optional<T>& to_value, const std::optional<T>& step_value,
-                                                const std::string& additional_constraints) {
+void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name,
+                                                         T& param,
+                                                         const std::string& description,
+                                                         const bool add_to_auto_reconfigurable_params,
+                                                         const bool is_required,
+                                                         const bool read_only,
+                                                         const std::optional<double>& from_value,
+                                                         const std::optional<double>& to_value,
+                                                         const std::optional<double>& step_value,
+                                                         const std::string& additional_constraints) {
   rcl_interfaces::msg::ParameterDescriptor param_desc;
   param_desc.description = description;
   param_desc.additional_constraints = additional_constraints;
   param_desc.read_only = read_only;
 
-  auto param_type = rclcpp::ParameterValue(member_param).get_type();
+  auto type = rclcpp::ParameterValue(param).get_type();
 
   if (from_value.has_value() && to_value.has_value()) {
     if constexpr (std::is_integral_v<T>) {
       rcl_interfaces::msg::IntegerRange range;
-      T step = step_value.has_value() ? step_value.value() : 0;
-      range.set__from_value(from_value.value()).set__to_value(to_value.value()).set__step(step);
+      range.set__from_value(static_cast<T>(from_value.value())).set__to_value(static_cast<T>(to_value.value()));
+      if (step_value.has_value()) range.set__step(static_cast<T>(step_value.value()));
       param_desc.integer_range = {range};
     } else if constexpr (std::is_floating_point_v<T>) {
       rcl_interfaces::msg::FloatingPointRange range;
-      T step = step_value.has_value() ? step_value.value() : 0.0;
-      range.set__from_value(from_value.value()).set__to_value(to_value.value()).set__step(step);
+      range.set__from_value(static_cast<T>(from_value.value())).set__to_value(static_cast<T>(to_value.value()));
+      if (step_value.has_value()) range.set__step(static_cast<T>(step_value.value()));
       param_desc.floating_point_range = {range};
     } else {
-      RCLCPP_WARN(this->get_logger(), "Parameter type does not support range.");
+      RCLCPP_WARN(this->get_logger(), "Parameter type of parameter '%s' does not support specifying a range", name.c_str());
     }
   }
 
-  this->declare_parameter(name, param_type, param_desc);
+  this->declare_parameter(name, type, param_desc);
 
   try {
-    member_param = this->get_parameter(name).get_value<T>();
+    param = this->get_parameter(name).get_value<T>();
+    std::stringstream ss;
+    ss << "Loaded parameter '" << name << "': ";
+    if constexpr (is_vector_v<T>) {
+      ss << "[";
+      for (const auto& element : param) ss << element << (&element != &param.back() ? ", " : "");
+      ss << "]";
+    } else {
+      ss << param;
+    }
+    RCLCPP_INFO_STREAM(this->get_logger(), ss.str());
   } catch (rclcpp::exceptions::ParameterUninitializedException&) {
     if (is_required) {
-      RCLCPP_FATAL_STREAM(this->get_logger(), "Parameter '" << name << "' not set but required. Exiting.");
+      RCLCPP_FATAL_STREAM(this->get_logger(), "Missing required parameter '" << name << "', exiting");
       exit(EXIT_FAILURE);
     } else {
       std::stringstream ss;
-      ss << "Parameter '" << name << "' not set. Using default value: ";
+      ss << "Missing parameter '" << name << "', using default value: ";
       if constexpr (is_vector_v<T>) {
         ss << "[";
-        for (const auto& element : member_param) ss << element << (&element != &member_param.back() ? ", " : "]");
+        for (const auto& element : param) ss << element << (&element != &param.back() ? ", " : "");
+        ss << "]";
       } else {
-        ss << member_param;
+        ss << param;
       }
       RCLCPP_WARN_STREAM(this->get_logger(), ss.str());
+      this->set_parameters({rclcpp::Parameter(name, rclcpp::ParameterValue(param))});
     }
   }
 
   if (add_to_auto_reconfigurable_params) {
-    std::function<void(const rclcpp::Parameter&)> setter = [&member_param](const rclcpp::Parameter& param) {
-      member_param = param.get_value<T>();
-    };
+    std::function<void(const rclcpp::Parameter&)> setter = [&param](const rclcpp::Parameter& p) { param = p.get_value<T>(); };
     auto_reconfigurable_params_.push_back(std::make_tuple(name, setter));
   }
 }
 
-void AckermannTrajectoryControl::loadParameters() {
-  this->declareAndLoadParameter("vehicle_frame_id", vehicle_frame_id_, "Frame ID of the vehicle", false);
-  this->declareAndLoadParameter("fixed_over_time_frame_id", fixed_over_time_frame_id_, "Frame ID of the fixed frame",
-                                false);
-  this->declareAndLoadParameter("control_frequency", control_frequency_, "Control cycle frequency", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)200.0, (std::optional<double>)1.0);
-  this->declareAndLoadParameter("vehicle_state_timeout", vehicle_state_timeout_,
-                                "Timeout for vehicle-state information", true, false, false, (std::optional<double>)0.0,
-                                (std::optional<double>)1.0, (std::optional<double>)0.05);
-  this->declareAndLoadParameter("wheelbase", wheelbase_, "Wheelbase of the vehicle", false);
-  this->declareAndLoadParameter("selfsteergradient", self_st_gradient_, "Self-steer-gradient of the vehicle", false);
-  this->declareAndLoadParameter("longitudinal_lookahed_time", lon_t_lookahead_, "Longitudinal lookahead time", true,
-                                false, false, (std::optional<double>)0.0, (std::optional<double>)5.0,
-                                (std::optional<double>)0.1);
-  this->declareAndLoadParameter("lateral_lookahed_time", lat_t_lookahead_, "Lateral lookahead time", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)0.1);
-  this->declareAndLoadParameter("max_longitudinal_acceleration", lon_max_acc_, "Maximum longitudinal acceleration",
-                                true, false, false, (std::optional<double>)0.0, (std::optional<double>)10.0,
-                                (std::optional<double>)0.1);
-  this->declareAndLoadParameter("min_longitudinal_acceleration", lon_min_acc_, "Minimum longitudinal acceleration",
-                                true, false, false, (std::optional<double>)-10.0, (std::optional<double>)0.0,
-                                (std::optional<double>)0.1);
-  this->declareAndLoadParameter("max_longitudinal_jerk", lon_max_jerk_, "Maximum longitudinal jerk", true, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)20.0, (std::optional<double>)0.1);
-  this->declareAndLoadParameter("max_curvature", max_curvature_, "Maximum curvature", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)1.0, (std::optional<double>)1e-12);
-  this->declareAndLoadParameter("max_curvature_rate", max_curvature_rate_, "Maximum curvature rate", false, false, false,
-                                (std::optional<double>)0.0, (std::optional<double>)5.0, (std::optional<double>)1e-12);
-  this->declareAndLoadParameter("max_curvature_acceleration", max_curvature_accel_,
-                                "Maximum curvature acceleration", false, false, false, (std::optional<double>)0.0,
-                                (std::optional<double>)20.0, (std::optional<double>)1e-12);
-  this->declareAndLoadParameter("use_speed_dependent_lateral_limits", use_speed_dependent_lateral_limits_,
-                                "Use speed dependent curvature limits", false);
-  this->declareAndLoadParameter("lateral_limits_csv", lateral_limits_csv_path_,
-                                "CSV file path for speed dependent curvature limits", false);
-  this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true,
-                                false, false, (std::optional<double>)0.0, (std::optional<double>)100.0,
-                                (std::optional<double>)0.1);
-  this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation",
-                                true);
-  this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_, "Velocity lookup values", false);
-  this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
-                                "Feed forward acceleration gain", true);
-  this->declareAndLoadParameter("feed_forward_steering_angle_gain", vec_feed_forward_gain_steering_angle_,
-                                "Feed forward steering angle gain", true);
-  this->declareAndLoadParameter("dv_p", dv_p_, "dv P Gain", true);
-  this->declareAndLoadParameter("dv_i", dv_i_, "dv I Gain", true);
-  this->declareAndLoadParameter("dv_d", dv_d_, "dv D Gain", true);
-  this->declareAndLoadParameter("dy_p", dy_p_, "dy P Gain", true);
-  this->declareAndLoadParameter("dy_i", dy_i_, "dy I Gain", true);
-  this->declareAndLoadParameter("dy_d", dy_d_, "dy D Gain", true);
-  this->declareAndLoadParameter("dpsi_p", dpsi_p_, "dpsi P Gain", true);
-  this->declareAndLoadParameter("dpsi_i", dpsi_i_, "dpsi I Gain", true);
-  this->declareAndLoadParameter("dpsi_d", dpsi_d_, "dpsi D Gain", true);
-
-  max_curvature_current_ = max_curvature_;
-  max_curvature_rate_current_ = max_curvature_rate_;
-}
-
-/**
- * @brief Handles reconfiguration when a parameter value is changed
- *
- * @param parameters parameters
- * @return parameter change result
- */
 rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersCallback(
     const std::vector<rclcpp::Parameter>& parameters) {
   for (const auto& param : parameters) {
     for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
       if (param.get_name() == std::get<0>(auto_reconfigurable_param)) {
         std::get<1>(auto_reconfigurable_param)(param);
+        RCLCPP_INFO(this->get_logger(), "Reconfigured parameter '%s' to: %s", param.get_name().c_str(),
+                    param.value_to_string().c_str());
+        break;
       }
     }
     if (param.get_name() == "max_curvature") {
-      max_curvature_ = param.get_value<double>();
       if (!use_speed_dependent_lateral_limits_) {
         max_curvature_current_ = max_curvature_;
       }
     }
     if (param.get_name() == "max_curvature_rate") {
-      max_curvature_rate_ = param.get_value<double>();
       if (!use_speed_dependent_lateral_limits_) {
         max_curvature_rate_current_ = max_curvature_rate_;
       }
-    }
-    if (param.get_name() == "max_curvature_acceleration") {
-      max_curvature_accel_ = param.get_value<double>();
-    }
-    if (param.get_name() == "use_speed_dependent_lateral_limits") {
-      use_speed_dependent_lateral_limits_ = param.get_value<bool>();
-    }
-    if (param.get_name() == "lateral_limits_csv") {
-      lateral_limits_csv_path_ = param.get_value<std::string>();
-    }
-    if (param.get_name() == "use_back_calculation") {
-      use_back_calculation_ = param.get_value<bool>();
     }
   }
 
@@ -219,16 +212,16 @@ void AckermannTrajectoryControl::setup() {
 
   // initialize subscribers
   vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(
-      kInputTopicEgoData, 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+      "~/ego_data", 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
-      kInputTopicTrajectory, 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+      "~/trajectory", 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
   lat_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      kInputTopicLatActive, 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
+      "~/lat_control_active", 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
   lon_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      kInputTopicLonActive, 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
+      "~/lon_control_active", 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
 
   // initialize publishers
-  vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(kOutputTopic, 1);
+  vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("~/controls", 1);
 
   if (use_speed_dependent_lateral_limits_) {
     lateral_limits_loaded_ = LoadLateralLimitsCsv();
@@ -237,33 +230,35 @@ void AckermannTrajectoryControl::setup() {
     }
   }
 
+  // Initialize active curvature limits from the configured static or speed-dependent constraints.
+  UpdateLateralLimitsFromVelocity(0.0);
+
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
                                        std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this));
 
   parameters_callback_ = this->add_on_set_parameters_callback(
-            std::bind(&AckermannTrajectoryControl::parametersCallback, this, std::placeholders::_1));
-  
+      std::bind(&AckermannTrajectoryControl::parametersCallback, this, std::placeholders::_1));
+
   // Annotate message links for tracing: Publish ackermann commands periodically, depending an all subscribed topics.
-  std::vector<const void *> link_subs;
-  link_subs.push_back(static_cast<const void *>(vehicle_state_sub_->get_subscription_handle().get()));
-  link_subs.push_back(static_cast<const void *>(trajectory_sub_->get_subscription_handle().get()));
-  std::vector<const void *> link_pubs;
-  link_pubs.push_back(static_cast<const void *>(vehicle_ctrl_pub_->get_publisher_handle().get()));
+  std::vector<const void*> link_subs;
+  link_subs.push_back(static_cast<const void*>(vehicle_state_sub_->get_subscription_handle().get()));
+  link_subs.push_back(static_cast<const void*>(trajectory_sub_->get_subscription_handle().get()));
+  std::vector<const void*> link_pubs;
+  link_pubs.push_back(static_cast<const void*>(vehicle_ctrl_pub_->get_publisher_handle().get()));
   TRACETOOLS_TRACEPOINT(message_link_periodic_async, link_subs.data(), link_subs.size(), link_pubs.data(), link_pubs.size());
 }
 
-// update the actual vehicle state
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
   cur_vehicle_state_ = *msg;
   UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
-    tf_trajectory_ = tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_,
-                                            tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
-                                            fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                               fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
@@ -271,7 +266,6 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
   ResetOdometry();
 }
 
-// update the current trajectory
 void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
   subscribed_trajectory_ = *msg;
   // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
@@ -290,22 +284,18 @@ void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_ms
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
-    tf_trajectory_ = tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_,
-                                            tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
-                                            fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    tf_trajectory_ =
+        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                               fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
     RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
 }
 
-void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
-  lat_active_ = msg->data;
-}
+void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) { lat_active_ = msg->data; }
 
-void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
-  lon_active_ = msg->data;
-}
+void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) { lon_active_ = msg->data; }
 
 void AckermannTrajectoryControl::ResetController() {
   a_tgt_ = 0.0;
@@ -339,13 +329,15 @@ void AckermannTrajectoryControl::setControllerGains() {
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   // feed-forward gains
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_acceleration_, velocity,
-                           feed_forward_gain_acceleration_))
+                           feed_forward_gain_acceleration_)) {
     feed_forward_gain_acceleration_ = 0.0;
+  }
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, vec_feed_forward_gain_steering_angle_, velocity,
-                           feed_forward_gain_steering_angle_))
+                           feed_forward_gain_steering_angle_)) {
     feed_forward_gain_steering_angle_ = 0.0;
+  }
 
-  double p, i, d;
+  double p = 0.0, i = 0.0, d = 0.0;
   // dv Controller
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_p_, velocity, p)) p = 0.0;
   if (!LinearInterpolation(gain_scheduling_velocity_lookup_, dv_i_, velocity, i)) i = 0.0;
@@ -365,7 +357,6 @@ void AckermannTrajectoryControl::setControllerGains() {
   dpsi_pid_->SetParameters(p, i, d);
 }
 
-// perform the vehicle control cycle
 void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (last_time_ > now()) {
     RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
@@ -392,7 +383,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     return;
   }
 
-  // standstill signal?
+  // Hold zero output while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
     vhcl_ctrl_output_.drive.steering_angle = 0.0;
@@ -423,13 +414,13 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         dpsi_pid_->Reset();
         return;
       }
-      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(st_ang);
     } else {
       double st_ang = UpdateKappaFromState();
-      vhcl_ctrl_output_.drive.steering_angle = st_ang;
+      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(st_ang);
     }
     if (lon_active_) {
-      vhcl_ctrl_output_.drive.acceleration = LongitudinalControl(dt);
+      vhcl_ctrl_output_.drive.acceleration = static_cast<float>(LongitudinalControl(dt));
       if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
         RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
         vhcl_ctrl_output_.drive.acceleration = 0.0;
@@ -478,8 +469,8 @@ bool AckermannTrajectoryControl::TrjDataProc() {
       THETA.push_back(trajectory_planning_msgs::trajectory_access::getTheta(tf_trajectory_, i));
       DELTA.push_back(trajectory_planning_msgs::trajectory_access::getDeltaAck(tf_trajectory_, i));
     } else {
-      // To-Do Fill A, THETA and DELTA with finite-differences
-      RCLCPP_ERROR_STREAM(get_logger(), "trajectory_planning_msgs::DRIVABLE-Type is currently not supported!");
+      RCLCPP_ERROR_STREAM(get_logger(),
+                          "Unsupported trajectory type. Only trajectory_planning_msgs::DRIVABLE is currently supported.");
       return false;
     }
   }
@@ -507,10 +498,12 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   return true;
 }
 
-bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& X, const std::vector<double>& Y,
-                                            const double& desired_x, double& output_y) {
+bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& X,
+                                                     const std::vector<double>& Y,
+                                                     const double& desired_x,
+                                                     double& output_y) {
   if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end())) {
-    RCLCPP_ERROR_STREAM(get_logger(), "Desired X-Value is not in between of X-Min and X-Max of the given vector!");
+    RCLCPP_ERROR_STREAM(get_logger(), "Desired x value is outside the range covered by the input vector.");
     return false;
   }
   if (X.size() != Y.size()) {
@@ -519,8 +512,8 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
   }
 
   // go through array and search for sampling points
-  int i;
-  for (i = 0; i < (int)X.size(); i++) {
+  size_t i = 0;
+  for (i = 0; i < X.size(); i++) {
     if (X[i] < desired_x) {
       continue;
     } else if (X[i] == desired_x) {
@@ -591,15 +584,13 @@ bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
     }
   }
 
-  if (lateral_limits_velocity_.empty() ||
-      lateral_limits_velocity_.size() != lateral_limits_kappa_max_.size() ||
+  if (lateral_limits_velocity_.empty() || lateral_limits_velocity_.size() != lateral_limits_kappa_max_.size() ||
       lateral_limits_velocity_.size() != lateral_limits_kappa_rate_max_.size()) {
     RCLCPP_ERROR_STREAM(get_logger(), "CSV contains no valid lateral limit data.");
     return false;
   }
 
-  RCLCPP_INFO_STREAM(get_logger(), "Loaded lateral limits from CSV with "
-                                      << lateral_limits_velocity_.size() << " entries.");
+  RCLCPP_INFO_STREAM(get_logger(), "Loaded lateral limits from CSV with " << lateral_limits_velocity_.size() << " entries.");
   return true;
 }
 
@@ -665,8 +656,8 @@ double AckermannTrajectoryControl::UpdateKappaFromState() {
 }
 
 void AckermannTrajectoryControl::UpdateLonFromState() {
-  vhcl_ctrl_output_.drive.acceleration = perception_msgs::object_access::getAccLon(cur_vehicle_state_);
-  vhcl_ctrl_output_.drive.speed = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
+  vhcl_ctrl_output_.drive.acceleration = static_cast<float>(perception_msgs::object_access::getAccLon(cur_vehicle_state_));
+  vhcl_ctrl_output_.drive.speed = static_cast<float>(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
 }
 
 double AckermannTrajectoryControl::LateralControl(const double dt) {
@@ -687,7 +678,7 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     }
   }
 
-  double kappa_pid = std::tan(psi_dot_des*(wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
+  double kappa_pid = std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
 
   // ackermann feed-forward control (convert delta to kappa for feed-forward)
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
@@ -699,7 +690,6 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
   }
-
 
   bool kappa_limited = false;
   if (fabs(kappa_tgt) > max_curvature_current_) {
@@ -801,11 +791,17 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
       dv_pid_->ResetIntegral();
     }
   }
-  vhcl_ctrl_output_.drive.speed = v_tgt_;
+  vhcl_ctrl_output_.drive.speed = static_cast<float>(v_tgt_);
   return a_ctrl;
 }
 
-// Main of Trajectory Control Node
+/**
+ * @brief Initializes ROS 2, starts the Ackermann trajectory controller node, and blocks until shutdown.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line argument values.
+ * @return Exit status code reported to the operating system.
+ */
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
   auto controller = std::make_shared<AckermannTrajectoryControl>();
