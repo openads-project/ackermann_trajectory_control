@@ -381,9 +381,9 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   }
   if (!lon_active_ && vehicle_state_ok) {
     const LongitudinalCommand longitudinal_command = UpdateLonFromState(cur_vehicle_state_);
-    vhcl_ctrl_output_.drive.speed = longitudinal_command.speed;
-    vhcl_ctrl_output_.drive.acceleration = longitudinal_command.acceleration;
-    vhcl_ctrl_output_.drive.jerk = longitudinal_command.jerk;
+    vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
+    vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
+    vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
   }
   if (!lat_active_) {
     dy_pid_->Reset();
