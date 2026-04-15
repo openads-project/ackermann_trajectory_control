@@ -210,8 +210,10 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    * @param kappa_rate Output curvature rate computed from the measured steering-angle rate.
    * @return Current measured steering command in radians and radians per second.
    */
-  static SteeringCommand UpdateKappaFromState(const perception_msgs::msg::EgoData& ego_data, const double wheelbase,
-                                              double& kappa, double& kappa_rate);
+  static SteeringCommand UpdateKappaFromState(const perception_msgs::msg::EgoData& ego_data,
+                                              const double wheelbase,
+                                              double& kappa,
+                                              double& kappa_rate);
 
   /**
    * @brief Copies measured longitudinal state into the outgoing control message.

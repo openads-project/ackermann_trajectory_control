@@ -405,8 +405,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     CurvatureCommand curvature_command{std::tan(delta_tgt_) / wheelbase_, 0.0};
-    LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_,
-               max_curvature_rate_current_, max_curvature_accel_, last_kappa_, last_kappa_rate_);
+    LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_, max_curvature_rate_current_,
+               max_curvature_accel_, last_kappa_, last_kappa_rate_);
     const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
     vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
@@ -741,9 +741,13 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   return kappa_limited;
 }
 
-bool AckermannTrajectoryControl::LimitKappa(const double dt, double& kappa_tgt, double& kappa_rate,
-                                            const double max_curvature, const double max_curvature_rate,
-                                            const double max_curvature_accel, const double kappa_prev,
+bool AckermannTrajectoryControl::LimitKappa(const double dt,
+                                            double& kappa_tgt,
+                                            double& kappa_rate,
+                                            const double max_curvature,
+                                            const double max_curvature_rate,
+                                            const double max_curvature_accel,
+                                            const double kappa_prev,
                                             const double kappa_rate_prev) {
   bool kappa_limited = false;
   if (fabs(kappa_tgt) > max_curvature) {
