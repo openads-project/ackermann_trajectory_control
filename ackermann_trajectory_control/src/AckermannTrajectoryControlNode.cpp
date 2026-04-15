@@ -785,7 +785,7 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
     dy_pid_->Reset();
     dpsi_pid_->Reset();
   }
-  
+
   // ackermann feed-forward control (convert delta to kappa for feed-forward)
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
 
