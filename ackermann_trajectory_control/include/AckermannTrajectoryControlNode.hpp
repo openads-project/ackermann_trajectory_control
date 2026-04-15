@@ -213,8 +213,13 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    * @param kappa_rate_prev Previously commanded curvature rate.
    * @return `true` if any curvature limit became active.
    */
-  bool LimitKappa(const double dt, double& kappa_tgt, double& kappa_rate, const double max_curvature,
-                  const double max_curvature_rate, const double max_curvature_accel, const double kappa_prev,
+  bool LimitKappa(const double dt,
+                  double& kappa_tgt,
+                  double& kappa_rate,
+                  const double max_curvature,
+                  const double max_curvature_rate,
+                  const double max_curvature_accel,
+                  const double kappa_prev,
                   const double kappa_rate_prev);
 
   /**
