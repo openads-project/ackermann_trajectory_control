@@ -396,7 +396,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     double kappa_rate = 0.0;
     LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_, max_curvature_accel_, last_kappa_,
                last_kappa_rate_);
-    vhcl_ctrl_output_.drive.steering_angle = std::atan(kappa_tgt * wheelbase_);
+    vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(std::atan(kappa_tgt * wheelbase_));
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
     vhcl_ctrl_output_.drive.acceleration = 0.0;
