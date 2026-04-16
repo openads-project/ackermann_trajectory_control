@@ -394,18 +394,21 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   }
   if (!InputSanityCheck())  // some inputs are not ok
   {
-    // don't do anything
+    RCLCPP_ERROR_STREAM(get_logger(), "Input sanity check failed! Skipping control cycle...");
     return;
   }
 
   if (!TrjDataProc()) {
-    RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
+    RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed! Skipping control cycle...");
     return;
   }
 
   double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-  RCLCPP_DEBUG_STREAM(get_logger(), "dt since last control output: " << dt << " seconds");
-  if (dt <= 0.0) return;
+  if (dt <= 0.0) {
+    RCLCPP_ERROR_STREAM(get_logger(), "dt since last control output: " << std::fixed << std::setprecision(15) << dt
+                                                                       << " seconds. Skipping control cycle...");
+    return;
+  }
   // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
@@ -429,7 +432,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       const CurvatureCommand curvature_command = LateralControl(dt);
       const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
       if (std::isnan(steering_command.steering_angle)) {
-        RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN! Skipping control cycle...");
         vhcl_ctrl_output_.drive.steering_angle = 0.0;
         vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
         dy_pid_->Reset();
@@ -449,7 +452,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       const LongitudinalCommand longitudinal_command = LongitudinalControl(dt);
       vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
       if (std::isnan(longitudinal_command.acceleration) || std::isnan(longitudinal_command.jerk)) {
-        RCLCPP_ERROR_STREAM(get_logger(), "Target Longitudinal Output Value isNaN!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Target Longitudinal Output Value isNaN! Skipping control cycle...");
         vhcl_ctrl_output_.drive.acceleration = 0.0;
         vhcl_ctrl_output_.drive.jerk = 0.0;
         dv_pid_->Reset();
@@ -726,6 +729,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature rate calculation!");
   }
   if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
     if (kappa_rate >= 0.0) {
       kappa_rate = max_curvature_rate;
     } else {
@@ -734,7 +738,6 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   }
   kappa_tgt = kappa_prev + kappa_rate * dt;
   dy_pid_->ResetIntegral();
-  RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
   kappa_limited = true;
 
   double kappa_accel = 0.0;
@@ -744,6 +747,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature acceleration calculation!");
   }
   if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
     if (kappa_accel >= 0.0) {
       kappa_accel = max_curvature_accel;
     } else {
@@ -753,7 +757,6 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   kappa_rate = kappa_rate_prev + kappa_accel * dt;
   kappa_tgt = kappa_prev + kappa_rate * dt;
   dy_pid_->ResetIntegral();
-  RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
   kappa_limited = true;
 
   return kappa_limited;
