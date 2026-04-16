@@ -403,10 +403,12 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     return;
   }
 
+  double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+  RCLCPP_DEBUG_STREAM(get_logger(), "dt since last control output: " << dt << " seconds");
+  if (dt <= 0.0) return;
   // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     CurvatureCommand curvature_command{std::tan(delta_tgt_) / wheelbase_, 0.0};
     LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_, max_curvature_rate_current_,
                max_curvature_accel_, last_kappa_, last_kappa_rate_);
@@ -423,8 +425,6 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     last_kappa_rate_ = curvature_command.kappa_rate;
   } else {
     setControllerGains();
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-    if (dt <= 0.0) return;
     if (lat_active_) {
       const CurvatureCommand curvature_command = LateralControl(dt);
       const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
@@ -722,6 +722,8 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   kappa_rate = 0.0;
   if (dt > 0.0) {
     kappa_rate = (kappa_tgt - kappa_prev) / dt;
+  } else {
+    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature rate calculation!");
   }
   if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
     if (kappa_rate >= 0.0) {
@@ -729,15 +731,17 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     } else {
       kappa_rate = -max_curvature_rate;
     }
-    kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->ResetIntegral();
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
-    kappa_limited = true;
   }
+  kappa_tgt = kappa_prev + kappa_rate * dt;
+  dy_pid_->ResetIntegral();
+  RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
+  kappa_limited = true;
 
   double kappa_accel = 0.0;
   if (dt > 0.0) {
     kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
+  } else {
+    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature acceleration calculation!");
   }
   if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
     if (kappa_accel >= 0.0) {
@@ -745,12 +749,12 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     } else {
       kappa_accel = -max_curvature_accel;
     }
-    kappa_rate = kappa_rate_prev + kappa_accel * dt;
-    kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->ResetIntegral();
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
-    kappa_limited = true;
   }
+  kappa_rate = kappa_rate_prev + kappa_accel * dt;
+  kappa_tgt = kappa_prev + kappa_rate * dt;
+  dy_pid_->ResetIntegral();
+  RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+  kappa_limited = true;
 
   return kappa_limited;
 }
