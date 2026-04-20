@@ -383,10 +383,20 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     return;
   }
 
-  // Hold zero output while the trajectory explicitly requests standstill.
+  if (!TrjDataProc()) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
+    return;
+  }
+
+  // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
-    vhcl_ctrl_output_.drive.steering_angle = 0.0;
+    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+    double kappa_tgt = std::tan(delta_tgt_) / wheelbase_;
+    double kappa_rate = 0.0;
+    LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_, max_curvature_accel_, last_kappa_,
+               last_kappa_rate_);
+    vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(std::atan(kappa_tgt * wheelbase_));
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
     vhcl_ctrl_output_.drive.acceleration = 0.0;
@@ -394,13 +404,9 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
     dv_pid_->Reset();
-    last_kappa_ = 0.0;
-    last_kappa_rate_ = 0.0;
+    last_kappa_ = kappa_tgt;
+    last_kappa_rate_ = kappa_rate;
   } else {
-    if (!TrjDataProc()) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
-      return;
-    }
     setControllerGains();
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
@@ -660,6 +666,62 @@ void AckermannTrajectoryControl::UpdateLonFromState() {
   vhcl_ctrl_output_.drive.speed = static_cast<float>(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
 }
 
+bool AckermannTrajectoryControl::LimitKappa(const double dt,
+                                            double& kappa_tgt,
+                                            double& kappa_rate,
+                                            const double max_curvature,
+                                            const double max_curvature_rate,
+                                            const double max_curvature_accel,
+                                            const double kappa_prev,
+                                            const double kappa_rate_prev) {
+  bool kappa_limited = false;
+  if (fabs(kappa_tgt) > max_curvature) {
+    if (kappa_tgt >= 0.0) {
+      kappa_tgt = max_curvature;
+    } else {
+      kappa_tgt = -max_curvature;
+    }
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
+    kappa_limited = true;
+  }
+
+  kappa_rate = 0.0;
+  if (dt > 0.0) {
+    kappa_rate = (kappa_tgt - kappa_prev) / dt;
+  }
+  if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
+    if (kappa_rate >= 0.0) {
+      kappa_rate = max_curvature_rate;
+    } else {
+      kappa_rate = -max_curvature_rate;
+    }
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
+    kappa_limited = true;
+  }
+
+  double kappa_accel = 0.0;
+  if (dt > 0.0) {
+    kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
+  }
+  if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
+    if (kappa_accel >= 0.0) {
+      kappa_accel = max_curvature_accel;
+    } else {
+      kappa_accel = -max_curvature_accel;
+    }
+    kappa_rate = kappa_rate_prev + kappa_accel * dt;
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+    kappa_limited = true;
+  }
+
+  return kappa_limited;
+}
+
 double AckermannTrajectoryControl::LateralControl(const double dt) {
   // cascaded control
   double w_y = 0.0;
@@ -691,53 +753,11 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
     dpsi_pid_->Reset();
   }
 
-  bool kappa_limited = false;
-  if (fabs(kappa_tgt) > max_curvature_current_) {
-    if (kappa_tgt >= 0.0) {
-      kappa_tgt = max_curvature_current_;
-    } else {
-      kappa_tgt = -max_curvature_current_;
-    }
-    dy_pid_->ResetIntegral();
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
-    kappa_limited = true;
-  }
-
-  double kappa_prev = last_kappa_;
   double kappa_rate = 0.0;
-  if (dt > 0.0) {
-    kappa_rate = (kappa_tgt - kappa_prev) / dt;
-  }
-  if (fabs(kappa_rate) > max_curvature_rate_current_ && dt > 0.0) {
-    if (kappa_rate >= 0.0) {
-      kappa_rate = max_curvature_rate_current_;
-    } else {
-      kappa_rate = -max_curvature_rate_current_;
-    }
-    kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->ResetIntegral();
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
-    kappa_limited = true;
-  }
+  bool kappa_is_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
+                                     max_curvature_accel_, last_kappa_, last_kappa_rate_);
 
-  double kappa_accel = 0.0;
-  if (dt > 0.0) {
-    kappa_accel = (kappa_rate - last_kappa_rate_) / dt;
-  }
-  if (fabs(kappa_accel) > max_curvature_accel_ && dt > 0.0) {
-    if (kappa_accel >= 0.0) {
-      kappa_accel = max_curvature_accel_;
-    } else {
-      kappa_accel = -max_curvature_accel_;
-    }
-    kappa_rate = last_kappa_rate_ + kappa_accel * dt;
-    kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->ResetIntegral();
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
-    kappa_limited = true;
-  }
-
-  if (kappa_limited) {
+  if (kappa_is_limited) {
     if (use_back_calculation_) {
       double kappa_fb_sat = kappa_tgt - kappa_ff * feed_forward_gain_steering_angle_;
       double denom = (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
