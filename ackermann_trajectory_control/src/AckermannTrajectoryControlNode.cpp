@@ -380,7 +380,10 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
   }
   if (!lon_active_ && vehicle_state_ok) {
-    UpdateLonFromState();
+    const LongitudinalCommand longitudinal_command = UpdateLonFromState(cur_vehicle_state_);
+    vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
+    vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
+    vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
   }
   if (!lat_active_) {
     dy_pid_->Reset();
@@ -443,15 +446,23 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       vhcl_ctrl_output_.drive.steering_angle_velocity = static_cast<float>(steering_command.steering_angle_rate);
     }
     if (lon_active_) {
-      vhcl_ctrl_output_.drive.acceleration = static_cast<float>(LongitudinalControl(dt));
-      if (std::isnan(vhcl_ctrl_output_.drive.acceleration)) {
-        RCLCPP_ERROR_STREAM(get_logger(), "Target Acceleration Output Value isNaN!");
+      const LongitudinalCommand longitudinal_command = LongitudinalControl(dt);
+      vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
+      if (std::isnan(longitudinal_command.acceleration) || std::isnan(longitudinal_command.jerk)) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Target Longitudinal Output Value isNaN!");
         vhcl_ctrl_output_.drive.acceleration = 0.0;
+        vhcl_ctrl_output_.drive.jerk = 0.0;
         dv_pid_->Reset();
         return;
+      } else {
+        vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
+        vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
       }
     } else {
-      UpdateLonFromState();
+      const LongitudinalCommand longitudinal_command = UpdateLonFromState(cur_vehicle_state_);
+      vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
+      vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
+      vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
     }
   }
   vhcl_ctrl_output_.header.stamp = now();
@@ -680,9 +691,12 @@ AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKa
   return steering_command;
 }
 
-void AckermannTrajectoryControl::UpdateLonFromState() {
-  vhcl_ctrl_output_.drive.acceleration = static_cast<float>(perception_msgs::object_access::getAccLon(cur_vehicle_state_));
-  vhcl_ctrl_output_.drive.speed = static_cast<float>(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
+AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::UpdateLonFromState(
+    const perception_msgs::msg::EgoData& ego_data) {
+  LongitudinalCommand longitudinal_command;
+  longitudinal_command.speed = perception_msgs::object_access::getVelLon(ego_data);
+  longitudinal_command.acceleration = perception_msgs::object_access::getAccLon(ego_data);
+  return longitudinal_command;
 }
 
 bool AckermannTrajectoryControl::LimitKappa(const double dt,
@@ -792,7 +806,8 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
   return CurvatureCommand{kappa_tgt, kappa_rate};
 }
 
-double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
+AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::LongitudinalControl(const double dt) {
+  LongitudinalCommand longitudinal_command;
   double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   double w_v = v_tgt_;
   double e_v = w_v - velocity;
@@ -812,13 +827,17 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
   }
 
   // calculate jerk with respect to last desired acceleration
-  double jerk = (a_ctrl - vhcl_ctrl_output_.drive.acceleration) / dt;
+  double jerk = 0.0;
+  if (dt > 0.0) {
+    jerk = (a_ctrl - vhcl_ctrl_output_.drive.acceleration) / dt;
+  }
   if (fabs(jerk) > lon_max_jerk_ && dt > 0.0) {
     if (jerk >= 0.0) {
-      a_ctrl = vhcl_ctrl_output_.drive.acceleration + lon_max_jerk_ * dt;
+      jerk = lon_max_jerk_;
     } else {
-      a_ctrl = vhcl_ctrl_output_.drive.acceleration - lon_max_jerk_ * dt;
+      jerk = -lon_max_jerk_;
     }
+    a_ctrl = vhcl_ctrl_output_.drive.acceleration + jerk * dt;
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal jerk limited!");
   }
   if (a_ctrl != a_unsat) {
@@ -829,8 +848,11 @@ double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
       dv_pid_->ResetIntegral();
     }
   }
-  vhcl_ctrl_output_.drive.speed = static_cast<float>(v_tgt_);
-  return a_ctrl;
+
+  longitudinal_command.speed = v_tgt_;
+  longitudinal_command.acceleration = a_ctrl;
+  longitudinal_command.jerk = jerk;
+  return longitudinal_command;
 }
 
 /**
