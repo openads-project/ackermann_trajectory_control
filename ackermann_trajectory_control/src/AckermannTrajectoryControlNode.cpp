@@ -769,29 +769,28 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
   double psi_dot_des = 0.0;
   double kappa_pid = 0.0;
 
-  if (!vehicle_standstill) {
-    // cascaded control
-    double w_y = 0.0;
-    double e_y = w_y - dy_;
-    double w_psi = dy_pid_->Calc(e_y, dt);
-    double e_psi = w_psi - dpsi_;
-    psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
-
-    // be sure v!=0 (to avoid division by zero)
-    if (fabs(velocity) < 0.1) {
-      if (velocity < 0.0) {
-        velocity = -0.1;
-      } else {
-        velocity = 0.1;
-      }
-    }
-
-    kappa_pid = std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
-  } else {
-    // kappa_pid is zero in standstill, we reset the PID controllers in addition
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
+  if (vehicle_standstill) {
+    // we reset the PID controllers in standstill to avoid integral windup and undesired overshoot when starting from standstill
+    dy_pid_->ResetIntegral();
+    dpsi_pid_->ResetIntegral();
   }
+  // cascaded control
+  double w_y = 0.0;
+  double e_y = w_y - dy_;
+  double w_psi = dy_pid_->Calc(e_y, dt);
+  double e_psi = w_psi - dpsi_;
+  psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
+
+  // be sure v!=0 (to avoid division by zero)
+  if (fabs(velocity) < 0.1) {
+    if (velocity < 0.0) {
+      velocity = -0.1;
+    } else {
+      velocity = 0.1;
+    }
+  }
+
+  kappa_pid = std::tan(psi_dot_des * (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity) / wheelbase_;
 
   // ackermann feed-forward control (convert delta to kappa for feed-forward)
   double kappa_ff = std::tan(delta_tgt_) / wheelbase_;
