@@ -84,6 +84,18 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
 
 AckermannTrajectoryControl::~AckermannTrajectoryControl() {}
 
+AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::CurvatureToSteeringCommand(
+    const CurvatureCommand& command) const {
+  SteeringCommand steering_command;
+  steering_command.steering_angle = std::atan(command.kappa * wheelbase_);
+  if (!std::isfinite(command.kappa) || !std::isfinite(command.kappa_rate)) {
+    return steering_command;
+  }
+  const double cos_steering_angle = std::cos(steering_command.steering_angle);
+  steering_command.steering_angle_rate = command.kappa_rate * wheelbase_ * cos_steering_angle * cos_steering_angle;
+  return steering_command;
+}
+
 template <typename T>
 void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name,
                                                          T& param,
@@ -365,7 +377,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   last_time_ = now();
   bool vehicle_state_ok = VehicleStateOk();
   if (!lat_active_ && vehicle_state_ok) {
-    UpdateKappaFromState();
+    UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
   }
   if (!lon_active_ && vehicle_state_ok) {
     UpdateLonFromState();
@@ -392,11 +404,11 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-    double kappa_tgt = std::tan(delta_tgt_) / wheelbase_;
-    double kappa_rate = 0.0;
-    LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_, max_curvature_accel_, last_kappa_,
-               last_kappa_rate_);
-    vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(std::atan(kappa_tgt * wheelbase_));
+    CurvatureCommand curvature_command{std::tan(delta_tgt_) / wheelbase_, 0.0};
+    LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_, max_curvature_rate_current_,
+               max_curvature_accel_, last_kappa_, last_kappa_rate_);
+    const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
+    vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
     vhcl_ctrl_output_.drive.acceleration = 0.0;
@@ -404,26 +416,31 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
     dv_pid_->Reset();
-    last_kappa_ = kappa_tgt;
-    last_kappa_rate_ = kappa_rate;
+    last_kappa_ = curvature_command.kappa;
+    last_kappa_rate_ = curvature_command.kappa_rate;
   } else {
     setControllerGains();
     double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     if (dt <= 0.0) return;
     if (lat_active_) {
-      double kappa_tgt = LateralControl(dt);
-      double st_ang = std::atan(kappa_tgt * wheelbase_);
-      if (std::isnan(st_ang)) {
+      const CurvatureCommand curvature_command = LateralControl(dt);
+      const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
+      if (std::isnan(steering_command.steering_angle)) {
         RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
         vhcl_ctrl_output_.drive.steering_angle = 0.0;
+        vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
         dy_pid_->Reset();
         dpsi_pid_->Reset();
         return;
       }
-      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(st_ang);
+      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
+      vhcl_ctrl_output_.drive.steering_angle_velocity = static_cast<float>(steering_command.steering_angle_rate);
     } else {
-      double st_ang = UpdateKappaFromState();
-      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(st_ang);
+      const SteeringCommand steering_command =
+          UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
+      // use measured steering angle as output if lateral control is inactive
+      vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
+      vhcl_ctrl_output_.drive.steering_angle_velocity = static_cast<float>(steering_command.steering_angle_rate);
     }
     if (lon_active_) {
       vhcl_ctrl_output_.drive.acceleration = static_cast<float>(LongitudinalControl(dt));
@@ -648,17 +665,19 @@ bool AckermannTrajectoryControl::VehicleStateOk() const {
   return age <= vehicle_state_timeout_ && age >= 0.0;
 }
 
-double AckermannTrajectoryControl::UpdateKappaFromState() {
-  double st_ang = perception_msgs::object_access::getSteeringAngleAck(cur_vehicle_state_);
-  double st_rate = perception_msgs::object_access::getSteeringAngleRateAck(cur_vehicle_state_);
-  last_kappa_ = std::tan(st_ang) / wheelbase_;
-  double denom = wheelbase_ * std::cos(st_ang) * std::cos(st_ang);
+AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKappaFromState(
+    const perception_msgs::msg::EgoData& ego_data, const double wheelbase, double& kappa, double& kappa_rate) {
+  SteeringCommand steering_command;
+  steering_command.steering_angle = perception_msgs::object_access::getSteeringAngleAck(ego_data);
+  steering_command.steering_angle_rate = perception_msgs::object_access::getSteeringAngleRateAck(ego_data);
+  kappa = std::tan(steering_command.steering_angle) / wheelbase;
+  double denom = wheelbase * std::cos(steering_command.steering_angle) * std::cos(steering_command.steering_angle);
   if (fabs(denom) > 1e-6) {
-    last_kappa_rate_ = st_rate / denom;
+    kappa_rate = steering_command.steering_angle_rate / denom;
   } else {
-    last_kappa_rate_ = 0.0;
+    kappa_rate = 0.0;
   }
-  return st_ang;
+  return steering_command;
 }
 
 void AckermannTrajectoryControl::UpdateLonFromState() {
@@ -722,7 +741,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   return kappa_limited;
 }
 
-double AckermannTrajectoryControl::LateralControl(const double dt) {
+AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::LateralControl(const double dt) {
   // cascaded control
   double w_y = 0.0;
   double e_y = w_y - dy_;
@@ -770,8 +789,7 @@ double AckermannTrajectoryControl::LateralControl(const double dt) {
 
   last_kappa_ = kappa_tgt;
   last_kappa_rate_ = kappa_rate;
-
-  return kappa_tgt;
+  return CurvatureCommand{kappa_tgt, kappa_rate};
 }
 
 double AckermannTrajectoryControl::LongitudinalControl(const double dt) {
