@@ -764,8 +764,6 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
 
 AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::LateralControl(const double dt) {
   const bool vehicle_standstill = perception_msgs::object_access::getStandstill(cur_vehicle_state_);
-  double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
-
   if (vehicle_standstill) {
     // we reset the PID controllers in standstill to avoid integral windup and undesired overshoot when starting from standstill
     dy_pid_->ResetIntegral();
@@ -779,6 +777,7 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
   double e_psi = w_psi - dpsi_;
   double psi_dot_des = dpsi_pid_->Calc(e_psi, dt);
 
+  double velocity = perception_msgs::object_access::getVelLon(cur_vehicle_state_);
   // be sure v!=0 (to avoid division by zero)
   if (fabs(velocity) < 0.1) {
     if (velocity < 0.0) {
