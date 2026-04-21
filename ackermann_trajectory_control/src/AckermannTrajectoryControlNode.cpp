@@ -474,7 +474,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
   if (!VehicleStateOk()) {
-    RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
+    RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
     return false;
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
@@ -675,6 +675,11 @@ void AckermannTrajectoryControl::ResetOdometry() {
 }
 
 bool AckermannTrajectoryControl::VehicleStateOk() const {
+  try {
+    perception_msgs::object_access::sanityCheckContinuousState(cur_vehicle_state_);
+  } catch (const std::exception&) {
+    return false;
+  }
   double age = (now() - cur_vehicle_state_.header.stamp).seconds();
   return age <= vehicle_state_timeout_ && age >= 0.0;
 }
