@@ -711,8 +711,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
                                             const double kappa_prev,
                                             const double kappa_rate_prev) {
   if (dt <= 0.0) {
-    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature limiting: " << std::fixed << std::setprecision(15) << dt
-                                                                                 << " seconds. Skipping curvature limiting...");
+    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt. Skipping curvature limiting...");
     return false;
   }
 
@@ -723,8 +722,8 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     } else {
       kappa_tgt = -max_curvature;
     }
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
     dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
     kappa_limited = true;
   }
 
@@ -738,8 +737,8 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
       kappa_rate = -max_curvature_rate;
     }
     kappa_tgt = kappa_prev + kappa_rate * dt;
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
     dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
     kappa_limited = true;
   }
 
@@ -753,8 +752,8 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     }
     kappa_rate = kappa_rate_prev + kappa_accel * dt;
     kappa_tgt = kappa_prev + kappa_rate * dt;
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
     dy_pid_->ResetIntegral();
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
     kappa_limited = true;
   }
 
