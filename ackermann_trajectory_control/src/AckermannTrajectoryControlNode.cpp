@@ -272,7 +272,7 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
         tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
                                fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
-    RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
+    RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in EgoData callback. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
   ResetOdometry();
@@ -300,7 +300,7 @@ void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_ms
         tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
                                fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
-    RCLCPP_WARN(this->get_logger(), "Transformation is not available. Ex: %s", ex.what());
+    RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in Trajectory callback. Ex: %s", ex.what());
     tf_trajectory_ = subscribed_trajectory_;
   }
 }
@@ -474,7 +474,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
   if (!VehicleStateOk()) {
-    RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated!");
+    RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
     return false;
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
@@ -675,6 +675,11 @@ void AckermannTrajectoryControl::ResetOdometry() {
 }
 
 bool AckermannTrajectoryControl::VehicleStateOk() const {
+  try {
+    perception_msgs::object_access::sanityCheckContinuousState(cur_vehicle_state_);
+  } catch (const std::exception&) {
+    return false;
+  }
   double age = (now() - cur_vehicle_state_.header.stamp).seconds();
   return age <= vehicle_state_timeout_ && age >= 0.0;
 }
