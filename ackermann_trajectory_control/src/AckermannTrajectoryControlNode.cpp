@@ -710,6 +710,12 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
                                             const double max_curvature_accel,
                                             const double kappa_prev,
                                             const double kappa_rate_prev) {
+  if (dt <= 0.0) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature limiting: " << std::fixed << std::setprecision(15) << dt
+                                                                                 << " seconds. Skipping curvature limiting...");
+    return false;
+  }
+
   bool kappa_limited = false;
   if (fabs(kappa_tgt) > max_curvature) {
     if (kappa_tgt >= 0.0) {
@@ -723,41 +729,34 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   }
 
   kappa_rate = 0.0;
-  if (dt > 0.0) {
-    kappa_rate = (kappa_tgt - kappa_prev) / dt;
-  } else {
-    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature rate calculation!");
-  }
+  kappa_rate = (kappa_tgt - kappa_prev) / dt;
+
   if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
-    dy_pid_->ResetIntegral();
-    kappa_limited = true;
     if (kappa_rate >= 0.0) {
       kappa_rate = max_curvature_rate;
     } else {
       kappa_rate = -max_curvature_rate;
     }
-  }
-  kappa_tgt = kappa_prev + kappa_rate * dt;
-
-  double kappa_accel = 0.0;
-  if (dt > 0.0) {
-    kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
-  } else {
-    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt for curvature acceleration calculation!");
-  }
-  if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
-    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
     dy_pid_->ResetIntegral();
     kappa_limited = true;
+  }
+
+  double kappa_accel = 0.0;
+  kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
+  if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
     if (kappa_accel >= 0.0) {
       kappa_accel = max_curvature_accel;
     } else {
       kappa_accel = -max_curvature_accel;
     }
+    kappa_rate = kappa_rate_prev + kappa_accel * dt;
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
+    dy_pid_->ResetIntegral();
+    kappa_limited = true;
   }
-  kappa_rate = kappa_rate_prev + kappa_accel * dt;
-  kappa_tgt = kappa_prev + kappa_rate * dt;
 
   return kappa_limited;
 }
