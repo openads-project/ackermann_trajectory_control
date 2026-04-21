@@ -394,19 +394,24 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   }
   if (!InputSanityCheck())  // some inputs are not ok
   {
-    // don't do anything
+    RCLCPP_ERROR_STREAM(get_logger(), "Input sanity check failed! Skipping control cycle...");
     return;
   }
 
   if (!TrjDataProc()) {
-    RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed!");
+    RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed! Skipping control cycle...");
     return;
   }
 
+  double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+  if (dt <= 0.0) {
+    RCLCPP_ERROR_STREAM(get_logger(), "dt since last control output: " << std::fixed << std::setprecision(15) << dt
+                                                                       << " seconds. Skipping control cycle...");
+    return;
+  }
   // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
     CurvatureCommand curvature_command{std::tan(delta_tgt_) / wheelbase_, 0.0};
     LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_, max_curvature_rate_current_,
                max_curvature_accel_, last_kappa_, last_kappa_rate_);
@@ -423,13 +428,11 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     last_kappa_rate_ = curvature_command.kappa_rate;
   } else {
     setControllerGains();
-    double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
-    if (dt <= 0.0) return;
     if (lat_active_) {
       const CurvatureCommand curvature_command = LateralControl(dt);
       const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
       if (std::isnan(steering_command.steering_angle)) {
-        RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Steering Angle Output Value isNaN! Skipping control cycle...");
         vhcl_ctrl_output_.drive.steering_angle = 0.0;
         vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
         dy_pid_->Reset();
@@ -449,7 +452,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       const LongitudinalCommand longitudinal_command = LongitudinalControl(dt);
       vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
       if (std::isnan(longitudinal_command.acceleration) || std::isnan(longitudinal_command.jerk)) {
-        RCLCPP_ERROR_STREAM(get_logger(), "Target Longitudinal Output Value isNaN!");
+        RCLCPP_ERROR_STREAM(get_logger(), "Target Longitudinal Output Value isNaN! Skipping control cycle...");
         vhcl_ctrl_output_.drive.acceleration = 0.0;
         vhcl_ctrl_output_.drive.jerk = 0.0;
         dv_pid_->Reset();
@@ -707,6 +710,11 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
                                             const double max_curvature_accel,
                                             const double kappa_prev,
                                             const double kappa_rate_prev) {
+  if (dt <= 0.0) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt. Skipping curvature limiting...");
+    return false;
+  }
+
   bool kappa_limited = false;
   if (fabs(kappa_tgt) > max_curvature) {
     if (kappa_tgt >= 0.0) {
@@ -720,9 +728,8 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   }
 
   kappa_rate = 0.0;
-  if (dt > 0.0) {
-    kappa_rate = (kappa_tgt - kappa_prev) / dt;
-  }
+  kappa_rate = (kappa_tgt - kappa_prev) / dt;
+
   if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
     if (kappa_rate >= 0.0) {
       kappa_rate = max_curvature_rate;
@@ -736,9 +743,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
   }
 
   double kappa_accel = 0.0;
-  if (dt > 0.0) {
-    kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
-  }
+  kappa_accel = (kappa_rate - kappa_rate_prev) / dt;
   if (fabs(kappa_accel) > max_curvature_accel && dt > 0.0) {
     if (kappa_accel >= 0.0) {
       kappa_accel = max_curvature_accel;
@@ -756,6 +761,13 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
 }
 
 AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::LateralControl(const double dt) {
+  const bool vehicle_standstill = perception_msgs::object_access::getStandstill(cur_vehicle_state_);
+  if (vehicle_standstill) {
+    // we reset the PID controllers in standstill to avoid integral windup and undesired overshoot when starting from standstill
+    dy_pid_->ResetIntegral();
+    dpsi_pid_->ResetIntegral();
+  }
+
   // cascaded control
   double w_y = 0.0;
   double e_y = w_y - dy_;
@@ -780,17 +792,11 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
 
   double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
 
-  if (perception_msgs::object_access::getStandstill(cur_vehicle_state_))  //Standstill-Situation
-  {
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-  }
-
   double kappa_rate = 0.0;
   bool kappa_is_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
                                      max_curvature_accel_, last_kappa_, last_kappa_rate_);
 
-  if (kappa_is_limited) {
+  if (kappa_is_limited && !vehicle_standstill) {
     if (use_back_calculation_) {
       double kappa_fb_sat = kappa_tgt - kappa_ff * feed_forward_gain_steering_angle_;
       double denom = (wheelbase_ + self_st_gradient_ * velocity * velocity) / velocity;
