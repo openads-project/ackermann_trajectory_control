@@ -215,6 +215,7 @@ void AckermannTrajectoryControl::setup() {
   vhcl_ctrl_output_.drive.speed = 0.0;
   vhcl_ctrl_output_.drive.acceleration = 0.0;
   vhcl_ctrl_output_.drive.jerk = 0.0;
+  vhcl_ctrl_output_.header.stamp = this->now();
 
   ResetOdometry();
 
@@ -246,7 +247,6 @@ void AckermannTrajectoryControl::setup() {
   UpdateLateralLimitsFromVelocity(0.0);
 
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
-  last_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
                                        std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this));
 
@@ -329,6 +329,7 @@ void AckermannTrajectoryControl::ResetController() {
   vhcl_ctrl_output_.drive.speed = 0.0;
   vhcl_ctrl_output_.drive.acceleration = 0.0;
   vhcl_ctrl_output_.drive.jerk = 0.0;
+  vhcl_ctrl_output_.header.stamp = this->now();
   trajectory_planning_msgs::msg::Trajectory dummy_trj;
   subscribed_trajectory_ = dummy_trj;
   tf_trajectory_ = dummy_trj;
@@ -370,12 +371,13 @@ void AckermannTrajectoryControl::setControllerGains() {
 }
 
 void AckermannTrajectoryControl::VehicleCtrlCycle() {
-  if (last_time_ > now()) {
+  ctrl_time_ = now();
+  const rclcpp::Time output_stamp{vhcl_ctrl_output_.header.stamp, ctrl_time_.get_clock_type()};
+  if (output_stamp > ctrl_time_) {
     RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
     ResetController();
   }
-  last_time_ = now();
-  bool vehicle_state_ok = VehicleStateOk();
+  bool vehicle_state_ok = VehicleStateOk(ctrl_time_);
   if (!lat_active_ && vehicle_state_ok) {
     UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
   }
@@ -398,16 +400,19 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     return;
   }
 
-  if (!TrjDataProc()) {
+  if (!TrjDataProc(ctrl_time_)) {
     RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed! Skipping control cycle...");
     return;
   }
 
-  double dt = (now() - vhcl_ctrl_output_.header.stamp).seconds();
+  double dt = (ctrl_time_ - vhcl_ctrl_output_.header.stamp).seconds();
   if (dt <= 0.0) {
     RCLCPP_ERROR_STREAM(get_logger(), "dt since last control output: " << std::fixed << std::setprecision(15) << dt
                                                                        << " seconds. Skipping control cycle...");
     return;
+  } else if (dt > 2.0 * 1 / control_frequency_) {
+    RCLCPP_WARN_STREAM(get_logger(), "Exceeeding the configured control period! dt since last control output: "
+                                         << std::fixed << std::setprecision(15) << dt << " seconds.");
   }
   // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
@@ -468,12 +473,12 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
     }
   }
-  vhcl_ctrl_output_.header.stamp = now();
+  vhcl_ctrl_output_.header.stamp = ctrl_time_;
   vehicle_ctrl_pub_->publish(vhcl_ctrl_output_);
 }
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
-  if (!VehicleStateOk()) {
+  if (!VehicleStateOk(ctrl_time_)) {
     RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
     return false;
   }
@@ -493,7 +498,7 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
   return true;
 }
 
-bool AckermannTrajectoryControl::TrjDataProc() {
+bool AckermannTrajectoryControl::TrjDataProc(const rclcpp::Time& ctrl_time) {
   // Derive State Vectors
   std::vector<double> TIME, V, A, Y, THETA, DELTA;
   int n_samples = trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_);
@@ -513,7 +518,7 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   }
 
   // calculate desired interpolation time for longitudinal values
-  double delta_time = (now() - tf_trajectory_.header.stamp).seconds();
+  double delta_time = (ctrl_time - tf_trajectory_.header.stamp).seconds();
   // interpolate longitudinal target values
   if (!LinearInterpolation(TIME, V, delta_time + lon_t_lookahead_, v_tgt_)) return false;
   if (!LinearInterpolation(TIME, A, delta_time + lon_t_lookahead_, a_tgt_)) return false;
@@ -524,9 +529,8 @@ bool AckermannTrajectoryControl::TrjDataProc() {
   if (!LinearInterpolation(TIME, DELTA, delta_time + lat_t_lookahead_, delta_tgt_)) return false;
 
   // CalcOdometry
-  auto now = this->now();
-  double dt_ego = (now - cur_vehicle_state_.header.stamp).seconds();
-  double dt_ctrl = (now - vhcl_ctrl_output_.header.stamp).seconds();
+  double dt_ego = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
+  double dt_ctrl = (ctrl_time - vhcl_ctrl_output_.header.stamp).seconds();
   double dt = std::min(dt_ego, dt_ctrl);
   CalcOdometry(dt);  // Cyclic Control
 
@@ -674,13 +678,13 @@ void AckermannTrajectoryControl::ResetOdometry() {
   odom_dy_ = 0.0;
 }
 
-bool AckermannTrajectoryControl::VehicleStateOk() const {
+bool AckermannTrajectoryControl::VehicleStateOk(const rclcpp::Time& ctrl_time) const {
   try {
     perception_msgs::object_access::sanityCheckContinuousState(cur_vehicle_state_);
   } catch (const std::exception&) {
     return false;
   }
-  double age = (now() - cur_vehicle_state_.header.stamp).seconds();
+  double age = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
   return age <= vehicle_state_timeout_ && age >= 0.0;
 }
 

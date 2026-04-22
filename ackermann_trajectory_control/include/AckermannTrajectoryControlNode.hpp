@@ -158,7 +158,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    *
    * @return `true` if all required target values were generated successfully.
    */
-  bool TrjDataProc();
+  bool TrjDataProc(const rclcpp::Time& ctrl_time);
 
   /**
    * @brief Interpolates a sampled function at a requested x-position.
@@ -202,7 +202,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    *
    * @return `true` if the ego-state timestamp is within the configured timeout window.
    */
-  bool VehicleStateOk() const;
+  bool VehicleStateOk(const rclcpp::Time& ctrl_time) const;
 
   /**
    * @brief Derives the current steering command from the measured steering state and computes the matching curvature
@@ -308,8 +308,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   trajectory_planning_msgs::msg::Trajectory subscribed_trajectory_;
   trajectory_planning_msgs::msg::Trajectory tf_trajectory_;
 
-  /// Timestamp of the most recent controller cycle.
-  rclcpp::Time last_time_;
+  /// Timestamp of the most recent control cycle.
+  rclcpp::Time ctrl_time_;
 
   /// Registered parameters that can be applied directly at runtime.
   std::vector<std::tuple<std::string, std::function<void(const rclcpp::Parameter&)>>> auto_reconfigurable_params_;
