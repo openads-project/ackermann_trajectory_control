@@ -247,6 +247,7 @@ void AckermannTrajectoryControl::setup() {
   UpdateLateralLimitsFromVelocity(0.0);
 
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
+  last_cycle_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
                                        std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this));
 
@@ -372,11 +373,19 @@ void AckermannTrajectoryControl::setControllerGains() {
 
 void AckermannTrajectoryControl::VehicleCtrlCycle() {
   ctrl_time_ = now();
-  const rclcpp::Time output_stamp{vhcl_ctrl_output_.header.stamp, ctrl_time_.get_clock_type()};
-  if (output_stamp > ctrl_time_) {
+  if (last_cycle_time_ > ctrl_time_) {
     RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
     ResetController();
+    vhcl_ctrl_output_.header.stamp = ctrl_time_;
   }
+
+  const double cycle_dt = (ctrl_time_ - last_cycle_time_).seconds();
+  if (cycle_dt > 1.25 / control_frequency_) {
+    RCLCPP_WARN_STREAM(get_logger(), "Exceeeding the configured cycle period! dt since last timer cycle: "
+                                         << std::fixed << std::setprecision(15) << cycle_dt << " seconds.");
+  }
+  last_cycle_time_ = ctrl_time_;
+
   bool vehicle_state_ok = VehicleStateOk(ctrl_time_);
   if (!lat_active_ && vehicle_state_ok) {
     UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
@@ -410,8 +419,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     RCLCPP_ERROR_STREAM(get_logger(), "dt since last control output: " << std::fixed << std::setprecision(15) << dt
                                                                        << " seconds. Skipping control cycle...");
     return;
-  } else if (dt > 2.0 * 1 / control_frequency_) {
-    RCLCPP_WARN_STREAM(get_logger(), "Exceeeding the configured control period! dt since last control output: "
+  } else if (dt > 1.25 / control_frequency_) {
+    RCLCPP_WARN_STREAM(get_logger(), "Exceeding the expected dt since last control output! dt since last control output: "
                                          << std::fixed << std::setprecision(15) << dt << " seconds.");
   }
   // Hold zero output (except delta) while the trajectory explicitly requests standstill.

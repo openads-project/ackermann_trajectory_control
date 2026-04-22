@@ -308,8 +308,11 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   trajectory_planning_msgs::msg::Trajectory subscribed_trajectory_;
   trajectory_planning_msgs::msg::Trajectory tf_trajectory_;
 
-  /// Timestamp of the most recent control cycle.
+  /// Captured timestamp of the current control cycle.
   rclcpp::Time ctrl_time_;
+
+  /// Timestamp of the most recent control-cycle callback.
+  rclcpp::Time last_cycle_time_;
 
   /// Registered parameters that can be applied directly at runtime.
   std::vector<std::tuple<std::string, std::function<void(const rclcpp::Parameter&)>>> auto_reconfigurable_params_;
