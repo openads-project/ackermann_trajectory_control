@@ -7,6 +7,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <memory>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 
 #include <PID.hpp>
@@ -299,11 +300,28 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   /// Parameter callback handle used for runtime reconfiguration.
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_;
 
+  /// Callback groups separating input processing from the control-cycle timer.
+  rclcpp::CallbackGroup::SharedPtr input_callback_group_;
+  rclcpp::CallbackGroup::SharedPtr control_callback_group_;
+
+  /// Mutexes protecting shared input cache and controller-internal state.
+  std::mutex input_mutex_;
+  std::mutex control_mutex_;
+
   /// TF buffer and listener used to transform trajectories into the vehicle frame.
   std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
 
-  /// Latest subscribed state and trajectory data.
+  /// Latest input cache shared between input callbacks and the control cycle.
+  perception_msgs::msg::EgoData latest_vehicle_state_;
+  trajectory_planning_msgs::msg::Trajectory latest_subscribed_trajectory_;
+  trajectory_planning_msgs::msg::Trajectory latest_tf_trajectory_;
+  bool latest_lat_active_ = true;
+  bool latest_lon_active_ = true;
+  bool reset_controller_requested_ = false;
+  bool reset_odometry_requested_ = false;
+
+  /// Control-thread working copies of the subscribed state and trajectory data.
   perception_msgs::msg::EgoData cur_vehicle_state_;
   trajectory_planning_msgs::msg::Trajectory subscribed_trajectory_;
   trajectory_planning_msgs::msg::Trajectory tf_trajectory_;

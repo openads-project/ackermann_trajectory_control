@@ -9,6 +9,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <perception_msgs_utils/object_access.hpp>
+#include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <trajectory_planning_msgs_utils/trajectory_access.hpp>
 
 AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_trajectory_controller") {
@@ -171,6 +172,8 @@ void AckermannTrajectoryControl::declareAndLoadParameter(const std::string& name
 
 rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersCallback(
     const std::vector<rclcpp::Parameter>& parameters) {
+  std::lock_guard<std::mutex> control_lock(control_mutex_);
+
   for (const auto& param : parameters) {
     for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
       if (param.get_name() == std::get<0>(auto_reconfigurable_param)) {
@@ -223,15 +226,25 @@ void AckermannTrajectoryControl::setup() {
   tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf2_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf2_buffer_);
 
+  input_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  control_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+  rclcpp::SubscriptionOptions input_subscription_options;
+  input_subscription_options.callback_group = input_callback_group_;
+
   // initialize subscribers
   vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(
-      "~/ego_data", 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
+      "~/ego_data", 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1),
+      input_subscription_options);
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
-      "~/trajectory", 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
+      "~/trajectory", 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1),
+      input_subscription_options);
   lat_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      "~/lat_control_active", 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
+      "~/lat_control_active", 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1),
+      input_subscription_options);
   lon_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      "~/lon_control_active", 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
+      "~/lon_control_active", 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1),
+      input_subscription_options);
 
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("~/controls", 1);
@@ -249,7 +262,7 @@ void AckermannTrajectoryControl::setup() {
   // initialize the cyclic vehicle-control timer; the callback VehicleCtrlCycle will be called wrt. the defined control frequency
   last_cycle_time_ = now();
   vhcl_ctrl_timer_ = create_wall_timer(std::chrono::duration<double>(1.0 / control_frequency_),
-                                       std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this));
+                                       std::bind(&AckermannTrajectoryControl::VehicleCtrlCycle, this), control_callback_group_);
 
   parameters_callback_ = this->add_on_set_parameters_callback(
       std::bind(&AckermannTrajectoryControl::parametersCallback, this, std::placeholders::_1));
@@ -264,51 +277,75 @@ void AckermannTrajectoryControl::setup() {
 }
 
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
-  cur_vehicle_state_ = *msg;
-  UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
+  const perception_msgs::msg::EgoData vehicle_state = *msg;
+  trajectory_planning_msgs::msg::Trajectory subscribed_trajectory;
+  {
+    std::lock_guard<std::mutex> input_lock(input_mutex_);
+    subscribed_trajectory = latest_subscribed_trajectory_;
+  }
+
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
-    tf_trajectory_ =
-        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
-                               fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    tf_trajectory = tf2_buffer_->transform(subscribed_trajectory, vehicle_frame_id_, tf2_ros::fromMsg(vehicle_state.header.stamp),
+                                           fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
     RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in EgoData callback. Ex: %s", ex.what());
-    tf_trajectory_ = subscribed_trajectory_;
+    tf_trajectory = subscribed_trajectory;
   }
-  ResetOdometry();
+
+  std::lock_guard<std::mutex> input_lock(input_mutex_);
+  latest_vehicle_state_ = vehicle_state;
+  latest_tf_trajectory_ = tf_trajectory;
+  reset_odometry_requested_ = true;
 }
 
 void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
-  subscribed_trajectory_ = *msg;
+  const trajectory_planning_msgs::msg::Trajectory subscribed_trajectory = *msg;
+  bool reset_controller_requested = false;
+
   // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
-  if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
+  if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory) > 0) {
     // get x, y and theta of trajectory at first state
-    double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory_, 0);
-    double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
-    double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory_, 0);
+    double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory, 0);
+    double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory, 0);
+    double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory, 0);
     if (x == 0.0 && y == 0.0 && theta == 0.0) {  // high-level-initialization
-      dy_pid_->Reset();
-      dpsi_pid_->Reset();
-      dv_pid_->Reset();
+      reset_controller_requested = true;
     }
+  }
+
+  perception_msgs::msg::EgoData vehicle_state;
+  {
+    std::lock_guard<std::mutex> input_lock(input_mutex_);
+    vehicle_state = latest_vehicle_state_;
   }
 
   // transform latest trajectory to current vehicle-frame
   trajectory_planning_msgs::msg::Trajectory tf_trajectory;
   try {
-    tf_trajectory_ =
-        tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
-                               fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    tf_trajectory = tf2_buffer_->transform(subscribed_trajectory, vehicle_frame_id_, tf2_ros::fromMsg(vehicle_state.header.stamp),
+                                           fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
   } catch (tf2::TransformException& ex) {
     RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in Trajectory callback. Ex: %s", ex.what());
-    tf_trajectory_ = subscribed_trajectory_;
+    tf_trajectory = subscribed_trajectory;
   }
+
+  std::lock_guard<std::mutex> input_lock(input_mutex_);
+  latest_subscribed_trajectory_ = subscribed_trajectory;
+  latest_tf_trajectory_ = tf_trajectory;
+  reset_controller_requested_ = reset_controller_requested_ || reset_controller_requested;
 }
 
-void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) { lat_active_ = msg->data; }
+void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
+  std::lock_guard<std::mutex> input_lock(input_mutex_);
+  latest_lat_active_ = msg->data;
+}
 
-void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) { lon_active_ = msg->data; }
+void AckermannTrajectoryControl::LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
+  std::lock_guard<std::mutex> input_lock(input_mutex_);
+  latest_lon_active_ = msg->data;
+}
 
 void AckermannTrajectoryControl::ResetController() {
   a_tgt_ = 0.0;
@@ -372,6 +409,28 @@ void AckermannTrajectoryControl::setControllerGains() {
 }
 
 void AckermannTrajectoryControl::VehicleCtrlCycle() {
+  perception_msgs::msg::EgoData latest_vehicle_state;
+  trajectory_planning_msgs::msg::Trajectory latest_subscribed_trajectory;
+  trajectory_planning_msgs::msg::Trajectory latest_tf_trajectory;
+  bool latest_lat_active = true;
+  bool latest_lon_active = true;
+  bool reset_controller_requested = false;
+  bool reset_odometry_requested = false;
+
+  {
+    std::lock_guard<std::mutex> input_lock(input_mutex_);
+    latest_vehicle_state = latest_vehicle_state_;
+    latest_subscribed_trajectory = latest_subscribed_trajectory_;
+    latest_tf_trajectory = latest_tf_trajectory_;
+    latest_lat_active = latest_lat_active_;
+    latest_lon_active = latest_lon_active_;
+    reset_controller_requested = reset_controller_requested_;
+    reset_odometry_requested = reset_odometry_requested_;
+    reset_controller_requested_ = false;
+    reset_odometry_requested_ = false;
+  }
+
+  std::lock_guard<std::mutex> control_lock(control_mutex_);
   ctrl_time_ = now();
   if (last_cycle_time_ > ctrl_time_) {
     RCLCPP_WARN_STREAM(get_logger(), "Resetting controller because of Jump-Back in time!");
@@ -386,7 +445,25 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   }
   last_cycle_time_ = ctrl_time_;
 
+  cur_vehicle_state_ = latest_vehicle_state;
+  subscribed_trajectory_ = latest_subscribed_trajectory;
+  tf_trajectory_ = latest_tf_trajectory;
+  lat_active_ = latest_lat_active;
+  lon_active_ = latest_lon_active;
+
+  if (reset_odometry_requested) {
+    ResetOdometry();
+  }
+  if (reset_controller_requested) {
+    dy_pid_->Reset();
+    dpsi_pid_->Reset();
+    dv_pid_->Reset();
+  }
+
   bool vehicle_state_ok = VehicleStateOk(ctrl_time_);
+  if (vehicle_state_ok) {
+    UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
+  }
   if (!lat_active_ && vehicle_state_ok) {
     UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
   }
@@ -889,7 +966,9 @@ AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::Long
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
   auto controller = std::make_shared<AckermannTrajectoryControl>();
-  rclcpp::spin(controller);
+  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), 2);
+  executor.add_node(controller);
+  executor.spin();
   rclcpp::shutdown();
   return 0;
 }
