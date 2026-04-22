@@ -381,7 +381,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
   const double cycle_dt = (ctrl_time_ - last_cycle_time_).seconds();
   if (cycle_dt > 1.25 / control_frequency_) {
-    RCLCPP_WARN_STREAM(get_logger(), "Exceeeding the configured cycle period! dt since last timer cycle: "
+    RCLCPP_WARN_STREAM(get_logger(), "Exceeding the configured cycle period! dt since last timer cycle: "
                                          << std::fixed << std::setprecision(15) << cycle_dt << " seconds.");
   }
   last_cycle_time_ = ctrl_time_;
