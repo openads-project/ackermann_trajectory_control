@@ -12,6 +12,9 @@
     wheelbase: 3.1 # [m]
     selfsteergradient: 0.00265 # [s^2/m]
 
+    # Other controller parameters
+    standstill_request_acceleration_gain: -0.5
+
     # Control value constraints
     max_longitudinal_acceleration: 2.0 # [m/s^2]
     min_longitudinal_acceleration: -4.5 # [m/s^2]
