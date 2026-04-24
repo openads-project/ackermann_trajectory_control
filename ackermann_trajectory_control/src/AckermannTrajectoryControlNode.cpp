@@ -722,10 +722,20 @@ bool AckermannTrajectoryControl::VehicleStateOk(const rclcpp::Time& ctrl_time) c
   try {
     perception_msgs::object_access::sanityCheckContinuousState(cur_vehicle_state_);
   } catch (const std::exception&) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Sanity check for vehicle state failed!");
     return false;
   }
   double age = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
-  return age <= vehicle_state_timeout_ && age >= 0.0;
+  if (age < 0.0) {
+    RCLCPP_WARN_STREAM(get_logger(), "Vehicle state timestamp is newer than current control cycle time! Age: "
+                                         << std::fixed << std::setprecision(15) << age << " seconds.");
+  }
+  bool outdated = fabs(age) > vehicle_state_timeout_;
+  if (outdated) {
+    RCLCPP_ERROR_STREAM(get_logger(),
+                        "Vehicle state is outdated! Age: " << std::fixed << std::setprecision(15) << age << " seconds.");
+  }
+  return !outdated;
 }
 
 AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKappaFromState(
