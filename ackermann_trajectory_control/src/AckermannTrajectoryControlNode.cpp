@@ -504,11 +504,11 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
   if (!VehicleStateOk(ctrl_time_)) {
-    RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
+    RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
     return false;
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
-    RCLCPP_DEBUG_STREAM(get_logger(), "Input Trajctory is empty!");
+    RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is empty!");
     return false;
   } else {
     // get last state of trajectory
@@ -516,7 +516,7 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
         tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
     double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
     if (last_time < 2 * lookahead) {
-      RCLCPP_DEBUG_STREAM(get_logger(), "Trajectory is too short!");
+      RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is too short!");
       return false;
     }
   }
