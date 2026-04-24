@@ -509,6 +509,16 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
     RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is empty!");
+    // TODO: Remove these logs before merge
+    RCLCPP_INFO_STREAM(get_logger(), "Number of samples in tf_trajectory_: "
+                                         << trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_));
+    RCLCPP_INFO_STREAM(get_logger(),
+                       "Number of samples in subscribed_trajectory_: "
+                           << trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_));
+    RCLCPP_INFO_STREAM(get_logger(), "Stamp of tf_trajectory_: " << tf_trajectory_.header.stamp.sec << "s "
+                                                                 << tf_trajectory_.header.stamp.nanosec << "ns");
+    RCLCPP_INFO_STREAM(get_logger(), "Stamp of subscribed_trajectory_: " << subscribed_trajectory_.header.stamp.sec << "s "
+                                                                         << subscribed_trajectory_.header.stamp.nanosec << "ns");
     return false;
   } else {
     // get last state of trajectory
