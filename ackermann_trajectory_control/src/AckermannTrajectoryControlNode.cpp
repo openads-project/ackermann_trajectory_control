@@ -453,8 +453,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
-    vhcl_ctrl_output_.drive.acceleration =
-        std::min(standstill_request_acceleration_gain_ * perception_msgs::object_access::getVelLon(cur_vehicle_state_), 0.0);
+    vhcl_ctrl_output_.drive.acceleration = static_cast<float>(
+        std::min(standstill_request_acceleration_gain_ * perception_msgs::object_access::getVelLon(cur_vehicle_state_), 0.0));
     vhcl_ctrl_output_.drive.jerk = 0.0;
     dy_pid_->Reset();
     dpsi_pid_->Reset();
