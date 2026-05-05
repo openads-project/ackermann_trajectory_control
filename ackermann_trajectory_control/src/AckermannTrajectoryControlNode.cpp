@@ -456,7 +456,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     double standstill_request_acceleration =
         standstill_request_acceleration_gain_ * std::fabs(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
     standstill_request_acceleration = std::min(standstill_request_acceleration, 0.0);
-    standstill_request_acceleration = std::min(standstill_request_acceleration, lon_min_acc_);
+    standstill_request_acceleration = std::max(standstill_request_acceleration, lon_min_acc_);
     vhcl_ctrl_output_.drive.acceleration = static_cast<float>(standstill_request_acceleration);
     vhcl_ctrl_output_.drive.jerk = 0.0;
     dy_pid_->Reset();
