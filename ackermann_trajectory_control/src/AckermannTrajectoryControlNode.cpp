@@ -412,15 +412,6 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     ResetOdometry();
     UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
   }
-  if (!latest_lat_active && vehicle_state_ok) {
-    UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
-  }
-  if (!latest_lon_active && vehicle_state_ok) {
-    const LongitudinalCommand longitudinal_command = UpdateLonFromState(cur_vehicle_state_);
-    vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
-    vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
-    vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
-  }
   if (!latest_lat_active) {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
