@@ -310,10 +310,6 @@ void AckermannTrajectoryControl::ResetController() {
   vhcl_ctrl_output_.drive.acceleration = 0.0;
   vhcl_ctrl_output_.drive.jerk = 0.0;
   vhcl_ctrl_output_.header.stamp = this->now();
-  trajectory_planning_msgs::msg::Trajectory dummy_trj;
-  tf_trajectory_ = dummy_trj;
-  perception_msgs::msg::EgoData dummy_state;
-  cur_vehicle_state_ = dummy_state;
   ResetOdometry();
 }
 
@@ -398,8 +394,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     }
   }
 
-  bool vehicle_state_ok = VehicleStateOk(ctrl_time_);
-  if (vehicle_state_ok) {
+  if (VehicleStateOk(ctrl_time_)) {
     // transform latest trajectory to current vehicle-frame
     try {
       tf_trajectory_ = tf2_buffer_->transform(latest_subscribed_trajectory, vehicle_frame_id_,
