@@ -382,8 +382,6 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double dv_ = 0.0;
   double last_kappa_ = 0.0;
   double last_kappa_rate_ = 0.0;
-  bool lat_active_ = true;
-  bool lon_active_ = true;
 
   /// PID controller instances for longitudinal speed, lateral error, and heading error.
   std::unique_ptr<PID> dv_pid_;

@@ -383,8 +383,6 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
   cur_vehicle_state_ = latest_vehicle_state;
   subscribed_trajectory_ = latest_subscribed_trajectory;
-  lat_active_ = latest_lat_active;
-  lon_active_ = latest_lon_active;
 
   if (latest_trajectory_sequence != processed_trajectory_sequence_) {
     processed_trajectory_sequence_ = latest_trajectory_sequence;
@@ -416,20 +414,20 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     ResetOdometry();
     UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
   }
-  if (!lat_active_ && vehicle_state_ok) {
+  if (!latest_lat_active && vehicle_state_ok) {
     UpdateKappaFromState(cur_vehicle_state_, wheelbase_, last_kappa_, last_kappa_rate_);
   }
-  if (!lon_active_ && vehicle_state_ok) {
+  if (!latest_lon_active && vehicle_state_ok) {
     const LongitudinalCommand longitudinal_command = UpdateLonFromState(cur_vehicle_state_);
     vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
     vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
     vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
   }
-  if (!lat_active_) {
+  if (!latest_lat_active) {
     dy_pid_->Reset();
     dpsi_pid_->Reset();
   }
-  if (!lon_active_) {
+  if (!latest_lon_active) {
     dv_pid_->Reset();
   }
   if (!InputSanityCheck())  // some inputs are not ok
@@ -471,7 +469,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     last_kappa_rate_ = curvature_command.kappa_rate;
   } else {
     setControllerGains();
-    if (lat_active_) {
+    if (latest_lat_active) {
       const CurvatureCommand curvature_command = LateralControl(dt);
       const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
       if (std::isnan(steering_command.steering_angle)) {
@@ -491,7 +489,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
       vhcl_ctrl_output_.drive.steering_angle_velocity = static_cast<float>(steering_command.steering_angle_rate);
     }
-    if (lon_active_) {
+    if (latest_lon_active) {
       const LongitudinalCommand longitudinal_command = LongitudinalControl(dt);
       vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
       if (std::isnan(longitudinal_command.acceleration) || std::isnan(longitudinal_command.jerk)) {
