@@ -226,25 +226,17 @@ void AckermannTrajectoryControl::setup() {
   tf2_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf2_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf2_buffer_);
 
-  input_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   control_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-
-  rclcpp::SubscriptionOptions input_subscription_options;
-  input_subscription_options.callback_group = input_callback_group_;
 
   // initialize subscribers
   vehicle_state_sub_ = create_subscription<perception_msgs::msg::EgoData>(
-      "~/ego_data", 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1),
-      input_subscription_options);
+      "~/ego_data", 1, std::bind(&AckermannTrajectoryControl::VehicleStateCallback, this, std::placeholders::_1));
   trajectory_sub_ = create_subscription<trajectory_planning_msgs::msg::Trajectory>(
-      "~/trajectory", 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1),
-      input_subscription_options);
+      "~/trajectory", 1, std::bind(&AckermannTrajectoryControl::TrajectoryCallback, this, std::placeholders::_1));
   lat_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      "~/lat_control_active", 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1),
-      input_subscription_options);
+      "~/lat_control_active", 1, std::bind(&AckermannTrajectoryControl::LatActiveCallback, this, std::placeholders::_1));
   lon_active_sub_ = create_subscription<std_msgs::msg::Bool>(
-      "~/lon_control_active", 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1),
-      input_subscription_options);
+      "~/lon_control_active", 1, std::bind(&AckermannTrajectoryControl::LonActiveCallback, this, std::placeholders::_1));
 
   // initialize publishers
   vehicle_ctrl_pub_ = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("~/controls", 1);

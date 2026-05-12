@@ -300,8 +300,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   /// Parameter callback handle used for runtime reconfiguration.
   OnSetParametersCallbackHandle::SharedPtr parameters_callback_;
 
-  /// Callback groups separating input processing from the control-cycle timer.
-  rclcpp::CallbackGroup::SharedPtr input_callback_group_;
+  /// Callback group separating the control-cycle timer from the default input/parameter group.
   rclcpp::CallbackGroup::SharedPtr control_callback_group_;
 
   /// Mutexes protecting shared input cache and controller-internal state.
