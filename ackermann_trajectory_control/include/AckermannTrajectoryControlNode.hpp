@@ -6,6 +6,7 @@
 #include <tracetools/tracetools.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
@@ -314,11 +315,10 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   /// Latest input cache shared between input callbacks and the control cycle.
   perception_msgs::msg::EgoData latest_vehicle_state_;
   trajectory_planning_msgs::msg::Trajectory latest_subscribed_trajectory_;
-  trajectory_planning_msgs::msg::Trajectory latest_tf_trajectory_;
   bool latest_lat_active_ = true;
   bool latest_lon_active_ = true;
-  bool reset_controller_requested_ = false;
-  bool reset_odometry_requested_ = false;
+  uint64_t latest_trajectory_sequence_ = 0;
+  uint64_t processed_trajectory_sequence_ = 0;
 
   /// Control-thread working copies of the subscribed state and trajectory data.
   perception_msgs::msg::EgoData cur_vehicle_state_;

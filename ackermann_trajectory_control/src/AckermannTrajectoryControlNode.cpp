@@ -269,64 +269,14 @@ void AckermannTrajectoryControl::setup() {
 }
 
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
-  const perception_msgs::msg::EgoData vehicle_state = *msg;
-  trajectory_planning_msgs::msg::Trajectory subscribed_trajectory;
-  {
-    std::lock_guard<std::mutex> input_lock(input_mutex_);
-    subscribed_trajectory = latest_subscribed_trajectory_;
-  }
-
-  // transform latest trajectory to current vehicle-frame
-  trajectory_planning_msgs::msg::Trajectory tf_trajectory;
-  try {
-    tf_trajectory = tf2_buffer_->transform(subscribed_trajectory, vehicle_frame_id_, tf2_ros::fromMsg(vehicle_state.header.stamp),
-                                           fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
-  } catch (tf2::TransformException& ex) {
-    RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in EgoData callback. Ex: %s", ex.what());
-    tf_trajectory = subscribed_trajectory;
-  }
-
   std::lock_guard<std::mutex> input_lock(input_mutex_);
-  latest_vehicle_state_ = vehicle_state;
-  latest_tf_trajectory_ = tf_trajectory;
-  reset_odometry_requested_ = true;
+  latest_vehicle_state_ = *msg;
 }
 
 void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
-  const trajectory_planning_msgs::msg::Trajectory subscribed_trajectory = *msg;
-  bool reset_controller_requested = false;
-
-  // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
-  if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory) > 0) {
-    // get x, y and theta of trajectory at first state
-    double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory, 0);
-    double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory, 0);
-    double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory, 0);
-    if (x == 0.0 && y == 0.0 && theta == 0.0) {  // high-level-initialization
-      reset_controller_requested = true;
-    }
-  }
-
-  perception_msgs::msg::EgoData vehicle_state;
-  {
-    std::lock_guard<std::mutex> input_lock(input_mutex_);
-    vehicle_state = latest_vehicle_state_;
-  }
-
-  // transform latest trajectory to current vehicle-frame
-  trajectory_planning_msgs::msg::Trajectory tf_trajectory;
-  try {
-    tf_trajectory = tf2_buffer_->transform(subscribed_trajectory, vehicle_frame_id_, tf2_ros::fromMsg(vehicle_state.header.stamp),
-                                           fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
-  } catch (tf2::TransformException& ex) {
-    RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in Trajectory callback. Ex: %s", ex.what());
-    tf_trajectory = subscribed_trajectory;
-  }
-
   std::lock_guard<std::mutex> input_lock(input_mutex_);
-  latest_subscribed_trajectory_ = subscribed_trajectory;
-  latest_tf_trajectory_ = tf_trajectory;
-  reset_controller_requested_ = reset_controller_requested_ || reset_controller_requested;
+  latest_subscribed_trajectory_ = *msg;
+  ++latest_trajectory_sequence_;
 }
 
 void AckermannTrajectoryControl::LatActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg) {
@@ -403,23 +353,17 @@ void AckermannTrajectoryControl::setControllerGains() {
 void AckermannTrajectoryControl::VehicleCtrlCycle() {
   perception_msgs::msg::EgoData latest_vehicle_state;
   trajectory_planning_msgs::msg::Trajectory latest_subscribed_trajectory;
-  trajectory_planning_msgs::msg::Trajectory latest_tf_trajectory;
   bool latest_lat_active = true;
   bool latest_lon_active = true;
-  bool reset_controller_requested = false;
-  bool reset_odometry_requested = false;
+  uint64_t latest_trajectory_sequence = 0;
 
   {
     std::lock_guard<std::mutex> input_lock(input_mutex_);
     latest_vehicle_state = latest_vehicle_state_;
     latest_subscribed_trajectory = latest_subscribed_trajectory_;
-    latest_tf_trajectory = latest_tf_trajectory_;
     latest_lat_active = latest_lat_active_;
     latest_lon_active = latest_lon_active_;
-    reset_controller_requested = reset_controller_requested_;
-    reset_odometry_requested = reset_odometry_requested_;
-    reset_controller_requested_ = false;
-    reset_odometry_requested_ = false;
+    latest_trajectory_sequence = latest_trajectory_sequence_;
   }
 
   std::lock_guard<std::mutex> control_lock(control_mutex_);
@@ -439,21 +383,37 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
   cur_vehicle_state_ = latest_vehicle_state;
   subscribed_trajectory_ = latest_subscribed_trajectory;
-  tf_trajectory_ = latest_tf_trajectory;
   lat_active_ = latest_lat_active;
   lon_active_ = latest_lon_active;
 
-  if (reset_odometry_requested) {
-    ResetOdometry();
-  }
-  if (reset_controller_requested) {
-    dy_pid_->Reset();
-    dpsi_pid_->Reset();
-    dv_pid_->Reset();
+  if (latest_trajectory_sequence != processed_trajectory_sequence_) {
+    processed_trajectory_sequence_ = latest_trajectory_sequence;
+    // check needs to be performed before any transformation because x=0, y=0, theta=0 is indicating a high-level-initialization
+    if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(subscribed_trajectory_) > 0) {
+      // get x, y and theta of trajectory at first state
+      double x = trajectory_planning_msgs::trajectory_access::getX(subscribed_trajectory_, 0);
+      double y = trajectory_planning_msgs::trajectory_access::getY(subscribed_trajectory_, 0);
+      double theta = trajectory_planning_msgs::trajectory_access::getTheta(subscribed_trajectory_, 0);
+      if (x == 0.0 && y == 0.0 && theta == 0.0) {  // high-level-initialization
+        dy_pid_->Reset();
+        dpsi_pid_->Reset();
+        dv_pid_->Reset();
+      }
+    }
   }
 
   bool vehicle_state_ok = VehicleStateOk(ctrl_time_);
   if (vehicle_state_ok) {
+    // transform latest trajectory to current vehicle-frame
+    try {
+      tf_trajectory_ =
+          tf2_buffer_->transform(subscribed_trajectory_, vehicle_frame_id_, tf2_ros::fromMsg(cur_vehicle_state_.header.stamp),
+                                 fixed_over_time_frame_id_, tf2::durationFromSec(0.01));
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_WARN(this->get_logger(), "Failed transforming trajectory in control cycle. Ex: %s", ex.what());
+      tf_trajectory_ = subscribed_trajectory_;
+    }
+    ResetOdometry();
     UpdateLateralLimitsFromVelocity(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
   }
   if (!lat_active_ && vehicle_state_ok) {
