@@ -322,7 +322,6 @@ class AckermannTrajectoryControl : public rclcpp::Node {
 
   /// Control-thread working copies of the subscribed state and trajectory data.
   perception_msgs::msg::EgoData cur_vehicle_state_;
-  trajectory_planning_msgs::msg::Trajectory subscribed_trajectory_;
   trajectory_planning_msgs::msg::Trajectory tf_trajectory_;
 
   /// Captured timestamp of the current control cycle.
