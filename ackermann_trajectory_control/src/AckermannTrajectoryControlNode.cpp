@@ -721,15 +721,16 @@ bool AckermannTrajectoryControl::VehicleStateOk(const rclcpp::Time& ctrl_time) c
   }
   double age = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
   if (age < 0.0) {
-    RCLCPP_WARN_STREAM(get_logger(), "Vehicle state timestamp is newer than current control cycle time! Age: "
+    RCLCPP_ERROR_STREAM(get_logger(), "Vehicle state timestamp is newer than current control cycle time! Age: "
                                          << std::fixed << std::setprecision(15) << age << " seconds.");
-  }
-  bool outdated = fabs(age) > vehicle_state_timeout_;
-  if (outdated) {
+    return false;
+  } else if (age > vehicle_state_timeout_) {
     RCLCPP_ERROR_STREAM(get_logger(),
                         "Vehicle state is outdated! Age: " << std::fixed << std::setprecision(15) << age << " seconds.");
+    return false;
+  } else {
+    return true;
   }
-  return !outdated;
 }
 
 AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKappaFromState(
