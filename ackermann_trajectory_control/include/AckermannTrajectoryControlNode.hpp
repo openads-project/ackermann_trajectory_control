@@ -207,7 +207,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    *
    * @return `true` if the ego-state timestamp is within the configured timeout window.
    */
-  bool VehicleStateOk(const rclcpp::Time& ctrl_time) const;
+  bool VehicleStateOk(const rclcpp::Time& ctrl_time);
 
   /**
    * @brief Derives the current steering command from the measured steering state and computes the matching curvature
