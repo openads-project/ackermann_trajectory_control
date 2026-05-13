@@ -23,6 +23,7 @@
     max_curvature_acceleration: 0.75 # [1/(m*s^2)]
     anti_windup_gain: 1.0 # [1/s]
     use_back_calculation: false
+    use_odom: true
 
     # Gain scheduling lookup tables
     velocity_lookup: # [m/s]

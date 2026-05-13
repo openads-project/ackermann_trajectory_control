@@ -54,6 +54,7 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
   this->declareAndLoadParameter("anti_windup_gain", anti_windup_gain_, "Anti-windup back-calculation gain", true, false, false,
                                 0.0, 100.0, 0.1);
   this->declareAndLoadParameter("use_back_calculation", use_back_calculation_, "Enable anti-windup back-calculation", true);
+  this->declareAndLoadParameter("use_odom", use_odom_, "Enable controller-internal odometry integration", true);
   this->declareAndLoadParameter("velocity_lookup", gain_scheduling_velocity_lookup_,
                                 "List of velocities in m/s for which the following gains are defined", false);
   this->declareAndLoadParameter("feed_forward_acceleration_gain", vec_feed_forward_gain_acceleration_,
@@ -177,9 +178,13 @@ rcl_interfaces::msg::SetParametersResult AckermannTrajectoryControl::parametersC
   for (const auto& param : parameters) {
     for (auto& auto_reconfigurable_param : auto_reconfigurable_params_) {
       if (param.get_name() == std::get<0>(auto_reconfigurable_param)) {
+        const bool old_use_odom = use_odom_;
         std::get<1>(auto_reconfigurable_param)(param);
         RCLCPP_INFO(this->get_logger(), "Reconfigured parameter '%s' to: %s", param.get_name().c_str(),
                     param.value_to_string().c_str());
+        if (param.get_name() == "use_odom" && use_odom_ != old_use_odom) {
+          ResetOdometry();
+        }
         break;
       }
     }
@@ -499,11 +504,15 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
   if (!VehicleStateOk(ctrl_time_)) {
-    RCLCPP_DEBUG_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
+    RCLCPP_ERROR_STREAM(get_logger(), "EgoState-Data outdated or invalid!");
     return false;
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
-    RCLCPP_DEBUG_STREAM(get_logger(), "Input Trajctory is empty!");
+    RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is empty!");
+    RCLCPP_DEBUG_STREAM(get_logger(), "Number of samples in tf_trajectory_: "
+                                          << trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_));
+    RCLCPP_DEBUG_STREAM(get_logger(), "Stamp of tf_trajectory_: " << tf_trajectory_.header.stamp.sec << "s "
+                                                                  << tf_trajectory_.header.stamp.nanosec << "ns");
     return false;
   } else {
     // get last state of trajectory
@@ -511,7 +520,7 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
         tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
     double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
     if (last_time < 2 * lookahead) {
-      RCLCPP_DEBUG_STREAM(get_logger(), "Trajectory is too short!");
+      RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is too short!");
       return false;
     }
   }
@@ -548,14 +557,19 @@ bool AckermannTrajectoryControl::TrjDataProc(const rclcpp::Time& ctrl_time) {
   if (!LinearInterpolation(TIME, THETA, delta_time + lat_t_lookahead_, psi_tgt_)) return false;
   if (!LinearInterpolation(TIME, DELTA, delta_time + lat_t_lookahead_, delta_tgt_)) return false;
 
-  // CalcOdometry
-  double dt_ego = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
-  double dt_ctrl = (ctrl_time - vhcl_ctrl_output_.header.stamp).seconds();
-  double dt = std::min(dt_ego, dt_ctrl);
-  CalcOdometry(dt);  // Cyclic Control
+  if (use_odom_) {
+    // CalcOdometry
+    double dt_ego = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
+    double dt_ctrl = (ctrl_time - vhcl_ctrl_output_.header.stamp).seconds();
+    double dt = std::min(dt_ego, dt_ctrl);
+    CalcOdometry(dt);  // Cyclic Control
 
-  dy_ = odom_dy_ - y_tgt_;
-  dpsi_ = odom_dpsi_ - psi_tgt_;
+    dy_ = odom_dy_ - y_tgt_;
+    dpsi_ = odom_dpsi_ - psi_tgt_;
+  } else {
+    dy_ = -y_tgt_;
+    dpsi_ = -psi_tgt_;
+  }
   return true;
 }
 
@@ -702,10 +716,21 @@ bool AckermannTrajectoryControl::VehicleStateOk(const rclcpp::Time& ctrl_time) c
   try {
     perception_msgs::object_access::sanityCheckContinuousState(cur_vehicle_state_);
   } catch (const std::exception&) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Sanity check for vehicle state failed!");
     return false;
   }
   double age = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
-  return age <= vehicle_state_timeout_ && age >= 0.0;
+  if (age < 0.0) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Vehicle state timestamp is newer than current control cycle time! Age: "
+                                          << std::fixed << std::setprecision(15) << age << " seconds.");
+    return false;
+  } else if (age > vehicle_state_timeout_) {
+    RCLCPP_ERROR_STREAM(get_logger(),
+                        "Vehicle state is outdated! Age: " << std::fixed << std::setprecision(15) << age << " seconds.");
+    return false;
+  } else {
+    return true;
+  }
 }
 
 AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKappaFromState(

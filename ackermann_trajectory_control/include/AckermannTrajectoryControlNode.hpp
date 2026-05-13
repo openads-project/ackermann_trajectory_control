@@ -355,6 +355,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double max_curvature_rate_current_ = 0.0;
   double anti_windup_gain_ = 1.0;
   bool use_back_calculation_ = false;
+  bool use_odom_ = true;
   bool use_speed_dependent_lateral_limits_ = false;
   bool lateral_limits_loaded_ = false;
   std::string lateral_limits_csv_path_ =
