@@ -509,7 +509,6 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
     RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is empty!");
-    // TODO: Remove these logs before merge
     RCLCPP_DEBUG_STREAM(get_logger(), "Number of samples in tf_trajectory_: "
                                           << trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_));
     RCLCPP_DEBUG_STREAM(get_logger(), "Stamp of tf_trajectory_: " << tf_trajectory_.header.stamp.sec << "s "
