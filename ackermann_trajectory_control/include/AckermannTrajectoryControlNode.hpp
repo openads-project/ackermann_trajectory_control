@@ -13,6 +13,9 @@
 
 #include <PID.hpp>
 
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
+
 // Input Messages
 #include <perception_msgs/msg/ego_data.hpp>
 #include <std_msgs/msg/bool.hpp>
@@ -286,6 +289,18 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    */
   void ResetController();
 
+  /**
+   * @brief Function called by diagnostic updater to populate diagnostics status
+   */
+  void health(diagnostic_updater::DiagnosticStatusWrapper& stat);
+
+  /**
+   * @brief Sets the health information
+   */
+  void setHealth(const unsigned char status,
+                 const std::string& msg,
+                 const std::map<std::string, std::string>& key_value_pairs = {});
+
   /// Subscribers for ego-state, trajectory, and controller activation messages.
   rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;
   rclcpp::Subscription<trajectory_planning_msgs::msg::Trajectory>::SharedPtr trajectory_sub_;
@@ -419,5 +434,17 @@ class AckermannTrajectoryControl : public rclcpp::Node {
 
   /// Other internal state variables
   double standstill_request_acceleration_gain_ = 0.0;
+
+  /// Diagnostics
+  diagnostic_updater::Updater diagnostic_updater_{this};
+
+  /**
+   * @brief Diagnostic status indicating node health
+   */
+  struct DiagnosticStatus {
+    unsigned char status = diagnostic_msgs::msg::DiagnosticStatus::STALE;
+    std::string message = "";
+    std::map<std::string, std::string> key_value_pairs = {};
+  } health_;
 
 };  // Class AckermannTrajectoryControl

@@ -276,6 +276,27 @@ void AckermannTrajectoryControl::setup() {
   std::vector<const void*> link_pubs;
   link_pubs.push_back(static_cast<const void*>(vehicle_ctrl_pub_->get_publisher_handle().get()));
   TRACETOOLS_TRACEPOINT(message_link_periodic_async, link_subs.data(), link_subs.size(), link_pubs.data(), link_pubs.size());
+
+  // setup diagnostic updater
+  diagnostic_updater_.setHardwareID(this->get_name());
+  diagnostic_updater_.add("Health", this, &AckermannTrajectoryControl::health);
+  setHealth(diagnostic_msgs::msg::DiagnosticStatus::STALE, "AckermannTrajectoryControl initialized", {{}});
+  diagnostic_updater_.force_update();
+}
+
+void AckermannTrajectoryControl::health(diagnostic_updater::DiagnosticStatusWrapper& stat) {
+  stat.summary(health_.status, health_.message);
+  for (const auto& [key, value] : health_.key_value_pairs) {
+    stat.add(key, value);
+  }
+}
+
+void AckermannTrajectoryControl::setHealth(const unsigned char status,
+                                           const std::string& msg,
+                                           const std::map<std::string, std::string>& key_value_pairs) {
+  health_.status = status;
+  health_.message = msg;
+  health_.key_value_pairs = key_value_pairs;
 }
 
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
@@ -427,11 +448,13 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (!InputSanityCheck())  // some inputs are not ok
   {
     RCLCPP_ERROR_STREAM(get_logger(), "Input sanity check failed! Skipping control cycle...");
+    diagnostic_updater_.force_update();
     return;
   }
 
   if (!TrjDataProc(ctrl_time_)) {
     RCLCPP_ERROR_STREAM(get_logger(), "Processing of input Trajectory failed! Skipping control cycle...");
+    diagnostic_updater_.force_update();
     return;
   }
 
@@ -439,6 +462,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (dt <= 0.0) {
     RCLCPP_ERROR_STREAM(get_logger(), "dt since last control output: " << std::fixed << std::setprecision(15) << dt
                                                                        << " seconds. Skipping control cycle...");
+    diagnostic_updater_.force_update();
     return;
   } else if (dt > 1.25 / control_frequency_) {
     RCLCPP_WARN_STREAM(get_logger(), "Exceeding the expected dt since last control output! dt since last control output: "
@@ -476,6 +500,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
         dy_pid_->Reset();
         dpsi_pid_->Reset();
+        diagnostic_updater_.force_update();
         return;
       }
       vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
@@ -495,6 +520,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         vhcl_ctrl_output_.drive.acceleration = 0.0;
         vhcl_ctrl_output_.drive.jerk = 0.0;
         dv_pid_->Reset();
+        diagnostic_updater_.force_update();
         return;
       } else {
         vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
@@ -509,6 +535,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   }
   vhcl_ctrl_output_.header.stamp = ctrl_time_;
   vehicle_ctrl_pub_->publish(vhcl_ctrl_output_);
+  diagnostic_updater_.force_update();
 }
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
