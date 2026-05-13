@@ -80,6 +80,10 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
                                 "List of integral gains for the heading deviation controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
       "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)", true);
+  this->declareAndLoadParameter(
+      "standstill_request_acceleration_gain", standstill_request_acceleration_gain_,
+      "Gain for calculating a small deceleration request at standstill based on the current speed, to improve standing behavior",
+      true, false, false, -5.0, 0.0, 0.1);
 
   this->setup();
 }
@@ -449,7 +453,11 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
-    vhcl_ctrl_output_.drive.acceleration = 0.0;
+    double standstill_request_acceleration =
+        standstill_request_acceleration_gain_ * std::fabs(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
+    standstill_request_acceleration = std::min(standstill_request_acceleration, 0.0);
+    standstill_request_acceleration = std::max(standstill_request_acceleration, lon_min_acc_);
+    vhcl_ctrl_output_.drive.acceleration = static_cast<float>(standstill_request_acceleration);
     vhcl_ctrl_output_.drive.jerk = 0.0;
     dy_pid_->Reset();
     dpsi_pid_->Reset();
