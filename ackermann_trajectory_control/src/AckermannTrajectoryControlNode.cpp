@@ -280,11 +280,11 @@ void AckermannTrajectoryControl::setup() {
   // setup diagnostic updater
   diagnostic_updater_.setHardwareID(this->get_name());
   diagnostic_updater_.add("Health", this, &AckermannTrajectoryControl::health);
-  setHealth(diagnostic_msgs::msg::DiagnosticStatus::STALE, "AckermannTrajectoryControl initialized", {{}});
-  diagnostic_updater_.force_update();
+  setHealth(diagnostic_msgs::msg::DiagnosticStatus::STALE, "AckermannTrajectoryControl initialized");
 }
 
 void AckermannTrajectoryControl::health(diagnostic_updater::DiagnosticStatusWrapper& stat) {
+  std::lock_guard<std::mutex> diagnostics_lock(diagnostics_mutex_);
   stat.summary(health_.status, health_.message);
   for (const auto& [key, value] : health_.key_value_pairs) {
     stat.add(key, value);
@@ -294,9 +294,34 @@ void AckermannTrajectoryControl::health(diagnostic_updater::DiagnosticStatusWrap
 void AckermannTrajectoryControl::setHealth(const unsigned char status,
                                            const std::string& msg,
                                            const std::map<std::string, std::string>& key_value_pairs) {
+  std::lock_guard<std::mutex> diagnostics_lock(diagnostics_mutex_);
   health_.status = status;
   health_.message = msg;
   health_.key_value_pairs = key_value_pairs;
+}
+
+void AckermannTrajectoryControl::resetCycleHealth() {
+  cycle_health_status_ = diagnostic_msgs::msg::DiagnosticStatus::OK;
+  cycle_health_message_ = "Control cycle completed successfully";
+  cycle_health_key_value_pairs_.clear();
+}
+
+void AckermannTrajectoryControl::reportCycleHealth(const unsigned char status, const std::string& msg) {
+  if (status >= cycle_health_status_) {
+    cycle_health_status_ = status;
+    cycle_health_message_ = msg;
+  }
+}
+
+void AckermannTrajectoryControl::addCycleHealthKeyValue(const std::string& key, const std::string& value) {
+  cycle_health_key_value_pairs_.insert_or_assign(key, value);
+}
+
+void AckermannTrajectoryControl::publishCycleHealth(const bool force_update) {
+  setHealth(cycle_health_status_, cycle_health_message_, cycle_health_key_value_pairs_);
+  if (force_update) {
+    diagnostic_updater_.force_update();
+  }
 }
 
 void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg::EgoData::ConstSharedPtr msg) {
@@ -393,14 +418,13 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   }
 
   std::lock_guard<std::mutex> control_lock(control_mutex_);
-  health_.key_value_pairs.clear();
+  resetCycleHealth();
   ctrl_time_ = now();
   if (last_cycle_time_ > ctrl_time_) {
     std::string msg = "Resetting controller because of Jump-Back in time";
     RCLCPP_WARN_STREAM(get_logger(), msg);
-    health_.key_value_pairs.insert_or_assign("Jump-Back in time",
-                                             std::to_string((last_cycle_time_ - ctrl_time_).seconds()) + " s");
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg, health_.key_value_pairs);
+    addCycleHealthKeyValue("Jump-Back in time", std::to_string((last_cycle_time_ - ctrl_time_).seconds()) + " s");
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg);
     ResetController();
     vhcl_ctrl_output_.header.stamp = ctrl_time_;
   }
@@ -410,8 +434,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     std::string msg = "Exceeding the expected cycle period";
     RCLCPP_WARN_STREAM(get_logger(),
                        msg + ". dt since last timer cycle: " << std::fixed << std::setprecision(15) << cycle_dt << " seconds.");
-    health_.key_value_pairs.insert_or_assign("Cycle period", std::to_string(cycle_dt) + " s");
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg, health_.key_value_pairs);
+    addCycleHealthKeyValue("Cycle period", std::to_string(cycle_dt) + " s");
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg);
   }
   last_cycle_time_ = ctrl_time_;
 
@@ -426,7 +450,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       double y = trajectory_planning_msgs::trajectory_access::getY(latest_subscribed_trajectory, 0);
       double theta = trajectory_planning_msgs::trajectory_access::getTheta(latest_subscribed_trajectory, 0);
       if (x == 0.0 && y == 0.0 && theta == 0.0) {  // high-level-initialization
-        health_.key_value_pairs.insert_or_assign("High-Level Initialization", "true");
+        addCycleHealthKeyValue("High-Level Initialization", "true");
         dy_pid_->Reset();
         dpsi_pid_->Reset();
         dv_pid_->Reset();
@@ -443,8 +467,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     } catch (tf2::TransformException& ex) {
       std::string msg = "Failed transforming trajectory in control cycle.";
       RCLCPP_WARN_STREAM(this->get_logger(), msg << "Exception: " << ex.what());
-      health_.key_value_pairs.insert_or_assign("TF Transform Exception", msg);
-      setHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg, health_.key_value_pairs);
+      addCycleHealthKeyValue("TF Transform Exception", ex.what());
+      reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg);
       tf_trajectory_ = latest_subscribed_trajectory;
     }
     ResetOdometry();
@@ -461,16 +485,16 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   {
     std::string msg = "Input sanity check failed! Skipping control cycle.";
     RCLCPP_ERROR_STREAM(get_logger(), msg);
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-    diagnostic_updater_.force_update();
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+    publishCycleHealth(true);
     return;
   }
 
   if (!TrjDataProc(ctrl_time_)) {
     std::string msg = "Processing of input Trajectory failed! Skipping control cycle.";
     RCLCPP_ERROR_STREAM(get_logger(), msg);
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-    diagnostic_updater_.force_update();
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+    publishCycleHealth(true);
     return;
   }
 
@@ -478,15 +502,15 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
   if (dt <= 0.0) {
     std::string msg = "Non-positive dt since last control output! Skipping control cycle.";
     RCLCPP_ERROR_STREAM(get_logger(), msg << " dt: " << std::fixed << std::setprecision(15) << dt << " seconds.");
-    health_.key_value_pairs.insert_or_assign("Control publish dt", std::to_string(dt) + " s");
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-    diagnostic_updater_.force_update();
+    addCycleHealthKeyValue("Control publish dt", std::to_string(dt) + " s");
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+    publishCycleHealth(true);
     return;
   } else if (dt > 1.25 / control_frequency_) {
     std::string msg = "Exceeding the expected dt since last control output!";
     RCLCPP_WARN_STREAM(get_logger(), msg << " dt: " << std::fixed << std::setprecision(15) << dt << " seconds.");
-    health_.key_value_pairs.insert_or_assign("Control publish dt", std::to_string(dt) + " s");
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg, health_.key_value_pairs);
+    addCycleHealthKeyValue("Control publish dt", std::to_string(dt) + " s");
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::WARN, msg);
   }
   // Hold zero output (except delta) while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
@@ -509,7 +533,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     dv_pid_->Reset();
     last_kappa_ = curvature_command.kappa;
     last_kappa_rate_ = curvature_command.kappa_rate;
-    health_.key_value_pairs.insert_or_assign("Standstill Request", "true");
+    addCycleHealthKeyValue("Standstill Request", "true");
   } else {
     setControllerGains();
     if (latest_lat_active) {
@@ -522,8 +546,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
         dy_pid_->Reset();
         dpsi_pid_->Reset();
-        setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-        diagnostic_updater_.force_update();
+        reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+        publishCycleHealth(true);
         return;
       }
       vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
@@ -534,7 +558,7 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       // use measured steering angle as output if lateral control is inactive
       vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
       vhcl_ctrl_output_.drive.steering_angle_velocity = static_cast<float>(steering_command.steering_angle_rate);
-      health_.key_value_pairs.insert_or_assign("Lateral Control Inactive", "true");
+      addCycleHealthKeyValue("Lateral Control Inactive", "true");
     }
     if (latest_lon_active) {
       const LongitudinalCommand longitudinal_command = LongitudinalControl(dt);
@@ -545,8 +569,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         vhcl_ctrl_output_.drive.acceleration = 0.0;
         vhcl_ctrl_output_.drive.jerk = 0.0;
         dv_pid_->Reset();
-        setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-        diagnostic_updater_.force_update();
+        reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+        publishCycleHealth(true);
         return;
       } else {
         vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
@@ -557,13 +581,12 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
       vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
       vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
       vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
-      health_.key_value_pairs.insert_or_assign("Longitudinal Control Inactive", "true");
+      addCycleHealthKeyValue("Longitudinal Control Inactive", "true");
     }
   }
   vhcl_ctrl_output_.header.stamp = ctrl_time_;
   vehicle_ctrl_pub_->publish(vhcl_ctrl_output_);
-  setHealth(diagnostic_msgs::msg::DiagnosticStatus::OK, "Control cycle completed successfully", health_.key_value_pairs);
-  diagnostic_updater_.force_update();
+  publishCycleHealth();
 }
 
 bool AckermannTrajectoryControl::InputSanityCheck() {
@@ -572,7 +595,7 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
     return false;
   }
   if (trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) == 0) {
-    health_.key_value_pairs.insert_or_assign("Trajectory Sample Point Size", "0");
+    addCycleHealthKeyValue("Trajectory Sample Point Size", "0");
     RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is empty!");
     RCLCPP_DEBUG_STREAM(get_logger(), "Number of samples in tf_trajectory_: "
                                           << trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_));
@@ -586,8 +609,7 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
     double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
     if (last_time < 2 * lookahead) {
       RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is too short!");
-      health_.key_value_pairs.insert_or_assign("Remaining time on input trajectory is too short",
-                                               std::to_string(last_time) + " s");
+      addCycleHealthKeyValue("Remaining time on input trajectory is too short", std::to_string(last_time) + " s");
       return false;
     }
   }
@@ -609,7 +631,7 @@ bool AckermannTrajectoryControl::TrjDataProc(const rclcpp::Time& ctrl_time) {
     } else {
       RCLCPP_ERROR_STREAM(get_logger(),
                           "Unsupported trajectory type. Only trajectory_planning_msgs::DRIVABLE is currently supported.");
-      health_.key_value_pairs.insert_or_assign("Unsupported Trajectory Type", std::to_string(tf_trajectory_.type_id));
+      addCycleHealthKeyValue("Unsupported Trajectory Type", std::to_string(tf_trajectory_.type_id));
       return false;
     }
   }
@@ -647,13 +669,13 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
                                                      double& output_y) {
   if (desired_x < *min_element(X.begin(), X.end()) || desired_x > *max_element(X.begin(), X.end())) {
     RCLCPP_ERROR_STREAM(get_logger(), "Desired x value is outside the range covered by the input vector.");
-    health_.key_value_pairs.insert_or_assign("Desired x value for interpolation is outside the range", std::to_string(desired_x));
+    addCycleHealthKeyValue("Desired x value for interpolation is outside the range", std::to_string(desired_x));
     return false;
   }
   if (X.size() != Y.size()) {
     RCLCPP_ERROR_STREAM(get_logger(), "Input vectors don't have the same length!");
-    health_.key_value_pairs.insert_or_assign("Input vectors for interpolation have different lengths",
-                                             std::to_string(X.size()) + " vs. " + std::to_string(Y.size()));
+    addCycleHealthKeyValue("Input vectors for interpolation have different lengths",
+                           std::to_string(X.size()) + " vs. " + std::to_string(Y.size()));
     return false;
   }
 
@@ -788,21 +810,20 @@ bool AckermannTrajectoryControl::VehicleStateOk(const rclcpp::Time& ctrl_time) {
     perception_msgs::object_access::sanityCheckContinuousState(cur_vehicle_state_);
   } catch (const std::exception&) {
     RCLCPP_ERROR_STREAM(get_logger(), "Sanity check for vehicle state failed!");
-    health_.key_value_pairs.insert_or_assign("Vehicle State Sanity Check", "false");
+    addCycleHealthKeyValue("Vehicle State Sanity Check", "false");
     return false;
   }
   double age = (ctrl_time - cur_vehicle_state_.header.stamp).seconds();
   if (age < 0.0) {
     std::string msg = "Vehicle state timestamp is newer than current control cycle time!";
     RCLCPP_ERROR_STREAM(get_logger(), msg << " Age: " << std::fixed << std::setprecision(15) << age << " seconds.");
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-    health_.key_value_pairs.insert_or_assign("Vehicle State Age", std::to_string(age));
-    return false;
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+    addCycleHealthKeyValue("Vehicle State Age", std::to_string(age));
   } else if (age > vehicle_state_timeout_) {
     std::string msg = "Vehicle state is outdated!";
     RCLCPP_ERROR_STREAM(get_logger(), msg << " Age: " << std::fixed << std::setprecision(15) << age << " seconds.");
-    setHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg, health_.key_value_pairs);
-    health_.key_value_pairs.insert_or_assign("Vehicle State Age", std::to_string(age));
+    reportCycleHealth(diagnostic_msgs::msg::DiagnosticStatus::ERROR, msg);
+    addCycleHealthKeyValue("Vehicle State Age", std::to_string(age));
     return false;
   } else {
     return true;
@@ -854,7 +875,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     }
     dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
-    health_.key_value_pairs.insert_or_assign("Curvature Limited", "true");
+    addCycleHealthKeyValue("Curvature Limited", "true");
     kappa_limited = true;
   }
 
@@ -870,7 +891,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     kappa_tgt = kappa_prev + kappa_rate * dt;
     dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
-    health_.key_value_pairs.insert_or_assign("Curvature Rate Limited", "true");
+    addCycleHealthKeyValue("Curvature Rate Limited", "true");
     kappa_limited = true;
   }
 
@@ -886,7 +907,7 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     kappa_tgt = kappa_prev + kappa_rate * dt;
     dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
-    health_.key_value_pairs.insert_or_assign("Curvature Acceleration Limited", "true");
+    addCycleHealthKeyValue("Curvature Acceleration Limited", "true");
     kappa_limited = true;
   }
 
@@ -960,11 +981,11 @@ AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::Long
   if (a_ctrl > lon_max_acc_) {
     a_ctrl = lon_max_acc_;
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
-    health_.key_value_pairs.insert_or_assign("Longitudinal Acceleration Limited (upper bound)", "true");
+    addCycleHealthKeyValue("Longitudinal Acceleration Limited (upper bound)", "true");
   } else if (a_ctrl < lon_min_acc_) {
     a_ctrl = lon_min_acc_;
     RCLCPP_WARN_STREAM(get_logger(), "Longitudinal acceleration limited!");
-    health_.key_value_pairs.insert_or_assign("Longitudinal Acceleration Limited (lower bound)", "true");
+    addCycleHealthKeyValue("Longitudinal Acceleration Limited (lower bound)", "true");
   }
 
   // calculate jerk with respect to last desired acceleration
@@ -979,7 +1000,7 @@ AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::Long
       jerk = -lon_max_jerk_;
     }
     a_ctrl = vhcl_ctrl_output_.drive.acceleration + jerk * dt;
-    health_.key_value_pairs.insert_or_assign("Longitudinal Jerk Limited", "true");
+    addCycleHealthKeyValue("Longitudinal Jerk Limited", "true");
   }
   if (a_ctrl != a_unsat) {
     if (use_back_calculation_) {

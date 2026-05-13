@@ -301,6 +301,26 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                  const std::string& msg,
                  const std::map<std::string, std::string>& key_value_pairs = {});
 
+  /**
+   * @brief Resets diagnostic data collected during one control cycle.
+   */
+  void resetCycleHealth();
+
+  /**
+   * @brief Raises the diagnostic status collected during one control cycle.
+   */
+  void reportCycleHealth(const unsigned char status, const std::string& msg);
+
+  /**
+   * @brief Adds a diagnostic key-value pair to the current control cycle.
+   */
+  void addCycleHealthKeyValue(const std::string& key, const std::string& value);
+
+  /**
+   * @brief Publishes the diagnostic data collected during one control cycle into the shared health snapshot.
+   */
+  void publishCycleHealth(const bool force_update = false);
+
   /// Subscribers for ego-state, trajectory, and controller activation messages.
   rclcpp::Subscription<perception_msgs::msg::EgoData>::SharedPtr vehicle_state_sub_;
   rclcpp::Subscription<trajectory_planning_msgs::msg::Trajectory>::SharedPtr trajectory_sub_;
@@ -319,9 +339,10 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   /// Callback group separating the control-cycle timer from the default input/parameter group.
   rclcpp::CallbackGroup::SharedPtr control_callback_group_;
 
-  /// Mutexes protecting shared input cache and controller-internal state.
+  /// Mutexes protecting shared input cache, controller-internal state, and diagnostic snapshots.
   std::mutex input_mutex_;
   std::mutex control_mutex_;
+  std::mutex diagnostics_mutex_;
 
   /// TF buffer and listener used to transform trajectories into the vehicle frame.
   std::unique_ptr<tf2_ros::Buffer> tf2_buffer_;
@@ -437,6 +458,11 @@ class AckermannTrajectoryControl : public rclcpp::Node {
 
   /// Diagnostics
   diagnostic_updater::Updater diagnostic_updater_{this};
+
+  /// Diagnostic data collected during the current control cycle.
+  unsigned char cycle_health_status_ = diagnostic_msgs::msg::DiagnosticStatus::OK;
+  std::string cycle_health_message_ = "Control cycle completed successfully";
+  std::map<std::string, std::string> cycle_health_key_value_pairs_ = {};
 
   /**
    * @brief Diagnostic status indicating node health
