@@ -82,7 +82,8 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
       "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
       "standstill_request_acceleration_gain", standstill_request_acceleration_gain_,
-      "Gain for calculating a small deceleration request at standstill based on the current speed, to improve standing behavior",
+      "Gain for the deceleration request when the input trajectory signals standstill. Speed and jerk commands stay zero; "
+      "acceleration is calculated from current speed and clamped by min_longitudinal_acceleration.",
       true, false, false, -5.0, 0.0, 0.1);
 
   this->setup();

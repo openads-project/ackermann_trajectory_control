@@ -67,7 +67,7 @@ flowchart LR
 | `dpsi_p` | `float[]` | `[0.0, 0.0]` | List of proportional gains for the heading deviation controller (mapping to velocity_lookup) |
 | `dpsi_i` | `float[]` | `[0.0, 0.0]` | List of integral gains for the heading deviation controller (mapping to velocity_lookup) |
 | `dpsi_d` | `float[]` | `[0.0, 0.0]` | List of derivative gains for the heading deviation controller (mapping to velocity_lookup) |
-| `standstill_request_acceleration_gain` | `float` | `0.0` | Gain for calculating a small deceleration request at standstill based on the current speed, to improve standing behavior |
+| `standstill_request_acceleration_gain` | `float` | `0.0` | Gain for the deceleration request when the input trajectory signals standstill. Speed and jerk commands stay zero; acceleration is calculated from current speed and clamped by min_longitudinal_acceleration. |
 
 ## Launch Files
 
