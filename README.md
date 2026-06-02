@@ -7,6 +7,7 @@
   <a href="https://github.com/openads-project/ackermann_trajectory_control/blob/main/LICENSE"><img src="https://img.shields.io/github/license/openads-project/ackermann_trajectory_control"/></a>
   <br>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docker-ros.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docker-ros.yml/badge.svg"/></a>
+  <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/compose-oci.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/compose-oci.yml/badge.svg"/></a>
   <a href="https://openads-project.github.io/ackermann_trajectory_control"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docs.yml/badge.svg"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml/badge.svg"/></a>
 </p>
