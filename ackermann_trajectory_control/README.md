@@ -54,6 +54,7 @@ flowchart LR
 | `lateral_limits_csv` | `string` | `ament_index_cpp::get_package_share_directory("ackermann_trajectory_control") + "/config/example-limits.csv"` | CSV file path for speed-dependent curvature limits |
 | `anti_windup_gain` | `float` | `1.0` | Anti-windup back-calculation gain |
 | `use_back_calculation` | `bool` | `false` | Enable anti-windup back-calculation |
+| `use_odom` | `bool` | `true` | Enable controller-internal odometry integration |
 | `velocity_lookup` | `float[]` | `[-30.0, 30.0]` | List of velocities in m/s for which the following gains are defined |
 | `feed_forward_acceleration_gain` | `float[]` | `[0.0, 0.0]` | List of feed-forward gains for the acceleration controller (mapping to velocity_lookup) |
 | `feed_forward_steering_angle_gain` | `float[]` | `[0.0, 0.0]` | List of feed-forward gains for the steering-angle controller (mapping to velocity_lookup) |
@@ -66,6 +67,7 @@ flowchart LR
 | `dpsi_p` | `float[]` | `[0.0, 0.0]` | List of proportional gains for the heading deviation controller (mapping to velocity_lookup) |
 | `dpsi_i` | `float[]` | `[0.0, 0.0]` | List of integral gains for the heading deviation controller (mapping to velocity_lookup) |
 | `dpsi_d` | `float[]` | `[0.0, 0.0]` | List of derivative gains for the heading deviation controller (mapping to velocity_lookup) |
+| `standstill_request_acceleration_gain` | `float` | `0.0` | Gain for the deceleration request when the input trajectory signals standstill. Speed and jerk commands stay zero; acceleration is calculated from current speed and clamped by min_longitudinal_acceleration. |
 
 ## Launch Files
 
