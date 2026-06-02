@@ -34,9 +34,6 @@ This controller is designed to be used in the context of the the *Open Automated
 
 ## 🚀 Quick Start
 
-> [!NOTE]
-> Example only: replace this section with repository-specific quick start instructions.
-
 1. Start a container of the pre-built runtime image.
     ```bash
     docker run --rm -it ghcr.io/openads-project/ackermann_trajectory_control:latest bash
