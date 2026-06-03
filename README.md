@@ -22,11 +22,12 @@ The control loop is executed at a configurable frequency and consists of a casca
 - **Principle of Bi-Level-Stabilization**: The controller supports the principle of bi-level-stabilization according to [Werling](https://publikationen.bibliothek.kit.edu/1000021738).
 - **Velocity-Dependent Gain-Scheduling**: PID gains are scheduled based on the current velocity of the vehicle to improve control performance across a wide range of operating conditions.
 
-This controller is designed to be used in the context of the the *Open Automated Driving Stack* and well tested in combination with the [`trajectory_optimization`](https://github.com/openads-project/trajectory_optimization).
+This controller is designed to be used in the context of the the *Open Automated Driving Stack* and particularly in combination with the [`trajectory_optimization`](https://github.com/openads-project/trajectory_optimization).
 
 <p align="center">
   <strong>🚀 <a href="#-quick-start">Quick Start</a></strong> • <strong>💻 <a href="#-development">Development</a></strong> • <strong>📝 <a href="#-documentation">Documentation</a></strong>
 </p>
+
 
 > [!IMPORTANT]
 > This repository is part of [***OpenADS***](https://github.com/openads-project), the *Open Automated Driving Stack*. *OpenADS* and its modules have been initiated and are currently being maintained by the [**Institute for Automotive Engineering (ika) at RWTH Aachen University**](https://www.ika.rwth-aachen.de/de/).
