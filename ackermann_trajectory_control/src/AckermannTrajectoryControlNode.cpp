@@ -440,7 +440,8 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     RCLCPP_ERROR_STREAM(get_logger(), "dt since last control output: " << std::fixed << std::setprecision(15) << dt
                                                                        << " seconds. Skipping control cycle...");
     return;
-  } else if (dt > 1.25 / control_frequency_) {
+  }
+  if (dt > 1.25 / control_frequency_) {
     RCLCPP_WARN_STREAM(get_logger(), "Exceeding the expected dt since last control output! dt since last control output: "
                                          << std::fixed << std::setprecision(15) << dt << " seconds.");
   }
@@ -496,10 +497,9 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
         vhcl_ctrl_output_.drive.jerk = 0.0;
         dv_pid_->Reset();
         return;
-      } else {
-        vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
-        vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
       }
+      vhcl_ctrl_output_.drive.acceleration = static_cast<float>(longitudinal_command.acceleration);
+      vhcl_ctrl_output_.drive.jerk = static_cast<float>(longitudinal_command.jerk);
     } else {
       const LongitudinalCommand longitudinal_command = UpdateLonFromState(cur_vehicle_state_);
       vhcl_ctrl_output_.drive.speed = static_cast<float>(longitudinal_command.speed);
@@ -523,15 +523,14 @@ bool AckermannTrajectoryControl::InputSanityCheck() {
     RCLCPP_DEBUG_STREAM(get_logger(), "Stamp of tf_trajectory_: " << tf_trajectory_.header.stamp.sec << "s "
                                                                   << tf_trajectory_.header.stamp.nanosec << "ns");
     return false;
-  } else {
-    // get last state of trajectory
-    double last_time = trajectory_planning_msgs::trajectory_access::getT(
-        tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
-    double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
-    if (last_time < 2 * lookahead) {
-      RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is too short!");
-      return false;
-    }
+  }
+  // get last state of trajectory
+  double last_time = trajectory_planning_msgs::trajectory_access::getT(
+      tf_trajectory_, trajectory_planning_msgs::trajectory_access::getSamplePointSize(tf_trajectory_) - 1);
+  double lookahead = std::max(lon_t_lookahead_, lat_t_lookahead_);
+  if (last_time < 2 * lookahead) {
+    RCLCPP_ERROR_STREAM(get_logger(), "Input trajectory is too short!");
+    return false;
   }
   return true;
 }
@@ -600,12 +599,12 @@ bool AckermannTrajectoryControl::LinearInterpolation(const std::vector<double>& 
   for (i = 0; i < X.size(); i++) {
     if (X[i] < desired_x) {
       continue;
-    } else if (X[i] == desired_x) {
+    }
+    if (X[i] == desired_x) {
       output_y = Y[i];
       return true;
-    } else {
-      break;
     }
+    break;
   }
   output_y = Y[i - 1] + ((Y[i] - Y[i - 1]) / (X[i] - X[i - 1])) * (desired_x - X[i - 1]);
   return true;
@@ -733,13 +732,13 @@ bool AckermannTrajectoryControl::VehicleStateOk(const rclcpp::Time& ctrl_time) c
     RCLCPP_ERROR_STREAM(get_logger(), "Vehicle state timestamp is newer than current control cycle time! Age: "
                                           << std::fixed << std::setprecision(15) << age << " seconds.");
     return false;
-  } else if (age > vehicle_state_timeout_) {
+  }
+  if (age > vehicle_state_timeout_) {
     RCLCPP_ERROR_STREAM(get_logger(),
                         "Vehicle state is outdated! Age: " << std::fixed << std::setprecision(15) << age << " seconds.");
     return false;
-  } else {
-    return true;
   }
+  return true;
 }
 
 AckermannTrajectoryControl::SteeringCommand AckermannTrajectoryControl::UpdateKappaFromState(
