@@ -26,7 +26,7 @@ jobs:
         with:
           platform: amd64
           target: dev,run
-          base-image: gitlab.ika.rwth-aachen.de:5050/fb-fi/ops/docker-ros-ml-images/ros2:rmw-zenoh_jazzy-ros-base_ci-amd64
+          base-image: gitlab.ika.rwth-aachen.de:5050/fb-fi/ops/docker-ros-ml-images/ros2:rmw-zenoh_jazzy-ros-base-zenoh_ci-amd64
           command: ros2 launch ackermann_trajectory_control ackermann_trajectory_control.launch.py
           enable-industrial-ci: true
           label-maintainer: Institute for Automotive Engineering (ika), RWTH Aachen University <opensource@ika.rwth-aachen.de>
