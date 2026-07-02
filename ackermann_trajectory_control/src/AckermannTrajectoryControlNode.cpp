@@ -646,19 +646,18 @@ bool AckermannTrajectoryControl::LoadLateralLimitsCsv() {
       header = false;
       continue;
     }
-    std::replace(line.begin(), line.end(), ',', '.');
     std::stringstream ss(line);
     std::string token;
     std::vector<std::string> cols;
-    while (std::getline(ss, token, ';')) {
+    while (std::getline(ss, token, ',')) {
       cols.push_back(token);
     }
-    if (cols.size() < 4) continue;
+    if (cols.size() < 3) continue;
 
     try {
-      double v_ms = std::stod(cols[1]);
-      double kappa_max = std::stod(cols[2]);
-      double kappa_rate_max = std::stod(cols[3]);
+      double v_ms = std::stod(cols[0]) / 3.6;  // Convert km/h to m/s
+      double kappa_max = std::stod(cols[1]);
+      double kappa_rate_max = std::stod(cols[2]);
       lateral_limits_velocity_.push_back(v_ms);
       lateral_limits_kappa_max_.push_back(kappa_max);
       lateral_limits_kappa_rate_max_.push_back(kappa_rate_max);
