@@ -28,7 +28,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">ackermann_trajectory_control<span id="projectnumber">&#160;v1.4.0</span>
+   <div id="projectname">ackermann_trajectory_control<span id="projectnumber">&#160;v1.5.0</span>
    </div>
   </td>
  </tr>
@@ -596,13 +596,13 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00712">712</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  712</span>                                                             {</div>
-<div class="line"><span class="lineno">  713</span>  <span class="keywordtype">double</span> yawRate = perception_msgs::object_access::getYawRate(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
-<div class="line"><span class="lineno">  714</span>  <span class="keywordtype">double</span> velocity = perception_msgs::object_access::getVelLon(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
-<div class="line"><span class="lineno">  715</span>  <a class="code hl_variable" href="#af1dcbf05ce71b33862a12eb9deb11a0d">odom_dy_</a> += sin(<a class="code hl_variable" href="#a8d5809a84d15463decea8c256fac767b">odom_dpsi_</a> + yawRate * 0.5 * dt) * velocity * dt;</div>
-<div class="line"><span class="lineno">  716</span>  <a class="code hl_variable" href="#a8d5809a84d15463decea8c256fac767b">odom_dpsi_</a> += yawRate * dt;</div>
-<div class="line"><span class="lineno">  717</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00711">711</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  711</span>                                                             {</div>
+<div class="line"><span class="lineno">  712</span>  <span class="keywordtype">double</span> yawRate = perception_msgs::object_access::getYawRate(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
+<div class="line"><span class="lineno">  713</span>  <span class="keywordtype">double</span> velocity = perception_msgs::object_access::getVelLon(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
+<div class="line"><span class="lineno">  714</span>  <a class="code hl_variable" href="#af1dcbf05ce71b33862a12eb9deb11a0d">odom_dy_</a> += sin(<a class="code hl_variable" href="#a8d5809a84d15463decea8c256fac767b">odom_dpsi_</a> + yawRate * 0.5 * dt) * velocity * dt;</div>
+<div class="line"><span class="lineno">  715</span>  <a class="code hl_variable" href="#a8d5809a84d15463decea8c256fac767b">odom_dpsi_</a> += yawRate * dt;</div>
+<div class="line"><span class="lineno">  716</span>}</div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a8d5809a84d15463decea8c256fac767b"><div class="ttname"><a href="#a8d5809a84d15463decea8c256fac767b">AckermannTrajectoryControl::odom_dpsi_</a></div><div class="ttdeci">double odom_dpsi_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00418">AckermannTrajectoryControlNode.hpp:418</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_aa87d6b068f84ac89ce476ac497c3cf82"><div class="ttname"><a href="#aa87d6b068f84ac89ce476ac497c3cf82">AckermannTrajectoryControl::cur_vehicle_state_</a></div><div class="ttdeci">perception_msgs::msg::EgoData cur_vehicle_state_</div><div class="ttdoc">Control-thread working copies of the subscribed state and trajectory data.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00324">AckermannTrajectoryControlNode.hpp:324</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_af1dcbf05ce71b33862a12eb9deb11a0d"><div class="ttname"><a href="#af1dcbf05ce71b33862a12eb9deb11a0d">AckermannTrajectoryControl::odom_dy_</a></div><div class="ttdeci">double odom_dy_</div><div class="ttdoc">Integrated lateral and heading deviations since the last trajectory transform.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00417">AckermannTrajectoryControlNode.hpp:417</a></div></div>
@@ -868,7 +868,7 @@ template&lt;typename T &gt; </div>
 <div class="line"><span class="lineno">  537</span>}</div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a0da075bf80e18fee8a7d807c1c960972"><div class="ttname"><a href="#a0da075bf80e18fee8a7d807c1c960972">AckermannTrajectoryControl::tf_trajectory_</a></div><div class="ttdeci">trajectory_planning_msgs::msg::Trajectory tf_trajectory_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00325">AckermannTrajectoryControlNode.hpp:325</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a696f980ce917e413b1b2f49c2acbb29e"><div class="ttname"><a href="#a696f980ce917e413b1b2f49c2acbb29e">AckermannTrajectoryControl::ctrl_time_</a></div><div class="ttdeci">rclcpp::Time ctrl_time_</div><div class="ttdoc">Captured timestamp of the current control cycle.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00328">AckermannTrajectoryControlNode.hpp:328</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_aa4464c87f77c845e58855ad785637b96"><div class="ttname"><a href="#aa4464c87f77c845e58855ad785637b96">AckermannTrajectoryControl::VehicleStateOk</a></div><div class="ttdeci">bool VehicleStateOk(const rclcpp::Time &amp;ctrl_time) const</div><div class="ttdoc">Checks whether the current ego-state sample is fresh enough to be used.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00724">AckermannTrajectoryControlNode.cpp:724</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_aa4464c87f77c845e58855ad785637b96"><div class="ttname"><a href="#aa4464c87f77c845e58855ad785637b96">AckermannTrajectoryControl::VehicleStateOk</a></div><div class="ttdeci">bool VehicleStateOk(const rclcpp::Time &amp;ctrl_time) const</div><div class="ttdoc">Checks whether the current ego-state sample is fresh enough to be used.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00723">AckermannTrajectoryControlNode.cpp:723</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -945,58 +945,58 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Target curvature command in inverse meters and inverse meters per second. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00826">826</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  826</span>                                                                                                     {</div>
-<div class="line"><span class="lineno">  827</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> vehicle_standstill = perception_msgs::object_access::getStandstill(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
-<div class="line"><span class="lineno">  828</span>  <span class="keywordflow">if</span> (vehicle_standstill) {</div>
-<div class="line"><span class="lineno">  829</span>    <span class="comment">// we reset the PID controllers in standstill to avoid integral windup and undesired overshoot when starting from standstill</span></div>
-<div class="line"><span class="lineno">  830</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  831</span>    <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  832</span>  }</div>
-<div class="line"><span class="lineno">  833</span> </div>
-<div class="line"><span class="lineno">  834</span>  <span class="comment">// cascaded control</span></div>
-<div class="line"><span class="lineno">  835</span>  <span class="keywordtype">double</span> w_y = 0.0;</div>
-<div class="line"><span class="lineno">  836</span>  <span class="keywordtype">double</span> e_y = w_y - <a class="code hl_variable" href="#ada83231c049b4663bb8de871c3fb41e6">dy_</a>;</div>
-<div class="line"><span class="lineno">  837</span>  <span class="keywordtype">double</span> w_psi = <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;Calc(e_y, dt);</div>
-<div class="line"><span class="lineno">  838</span>  <span class="keywordtype">double</span> e_psi = w_psi - <a class="code hl_variable" href="#aec7877beda50ea0e43885603db8f8488">dpsi_</a>;</div>
-<div class="line"><span class="lineno">  839</span>  <span class="keywordtype">double</span> psi_dot_des = <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;Calc(e_psi, dt);</div>
-<div class="line"><span class="lineno">  840</span> </div>
-<div class="line"><span class="lineno">  841</span>  <span class="keywordtype">double</span> velocity = perception_msgs::object_access::getVelLon(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
-<div class="line"><span class="lineno">  842</span>  <span class="comment">// be sure v!=0 (to avoid division by zero)</span></div>
-<div class="line"><span class="lineno">  843</span>  <span class="keywordflow">if</span> (fabs(velocity) &lt; 0.1) {</div>
-<div class="line"><span class="lineno">  844</span>    <span class="keywordflow">if</span> (velocity &lt; 0.0) {</div>
-<div class="line"><span class="lineno">  845</span>      velocity = -0.1;</div>
-<div class="line"><span class="lineno">  846</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  847</span>      velocity = 0.1;</div>
-<div class="line"><span class="lineno">  848</span>    }</div>
-<div class="line"><span class="lineno">  849</span>  }</div>
-<div class="line"><span class="lineno">  850</span> </div>
-<div class="line"><span class="lineno">  851</span>  <span class="keywordtype">double</span> kappa_pid = std::tan(psi_dot_des * (<a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a> + <a class="code hl_variable" href="#abf718e15016f8e2670ed6a162711700b">self_st_gradient_</a> * velocity * velocity) / velocity) / <a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a>;</div>
-<div class="line"><span class="lineno">  852</span> </div>
-<div class="line"><span class="lineno">  853</span>  <span class="comment">// ackermann feed-forward control (convert delta to kappa for feed-forward)</span></div>
-<div class="line"><span class="lineno">  854</span>  <span class="keywordtype">double</span> kappa_ff = std::tan(<a class="code hl_variable" href="#a7331f1e9f4bd1fbcd1c11d828ac7dc5f">delta_tgt_</a>) / <a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a>;</div>
-<div class="line"><span class="lineno">  855</span> </div>
-<div class="line"><span class="lineno">  856</span>  <span class="keywordtype">double</span> kappa_tgt = kappa_pid + kappa_ff * <a class="code hl_variable" href="#a5e02d5cd67367d1d56519452d303d856">feed_forward_gain_steering_angle_</a>;</div>
-<div class="line"><span class="lineno">  857</span> </div>
-<div class="line"><span class="lineno">  858</span>  <span class="keywordtype">double</span> kappa_rate = 0.0;</div>
-<div class="line"><span class="lineno">  859</span>  <span class="keywordtype">bool</span> kappa_is_limited = <a class="code hl_function" href="#ac718ec61d0636695793a3ae723d52e1f">LimitKappa</a>(dt, kappa_tgt, kappa_rate, <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a>, <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a>,</div>
-<div class="line"><span class="lineno">  860</span>                                     <a class="code hl_variable" href="#a54cca5e74655d735fc956ba0b8694d5c">max_curvature_accel_</a>, <a class="code hl_variable" href="#a6711df91133caac41cddf70858b3ab7a">last_kappa_</a>, <a class="code hl_variable" href="#a9d3f7ab40596759e816ae0ad8b8d9232">last_kappa_rate_</a>);</div>
-<div class="line"><span class="lineno">  861</span> </div>
-<div class="line"><span class="lineno">  862</span>  <span class="keywordflow">if</span> (kappa_is_limited &amp;&amp; !vehicle_standstill) {</div>
-<div class="line"><span class="lineno">  863</span>    <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a34bf830c37edbca2a7e9dcbc37e4f2d6">use_back_calculation_</a>) {</div>
-<div class="line"><span class="lineno">  864</span>      <span class="keywordtype">double</span> kappa_fb_sat = kappa_tgt - kappa_ff * <a class="code hl_variable" href="#a5e02d5cd67367d1d56519452d303d856">feed_forward_gain_steering_angle_</a>;</div>
-<div class="line"><span class="lineno">  865</span>      <span class="keywordtype">double</span> denom = (<a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a> + <a class="code hl_variable" href="#abf718e15016f8e2670ed6a162711700b">self_st_gradient_</a> * velocity * velocity) / velocity;</div>
-<div class="line"><span class="lineno">  866</span>      <span class="keywordtype">double</span> psi_dot_sat = std::atan(kappa_fb_sat * <a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a>) / denom;</div>
-<div class="line"><span class="lineno">  867</span>      <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;BackCalculate(psi_dot_des, psi_dot_sat, dt, <a class="code hl_variable" href="#a531466889f83047abed318a84f6b76b0">anti_windup_gain_</a>);</div>
-<div class="line"><span class="lineno">  868</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  869</span>      <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  870</span>    }</div>
-<div class="line"><span class="lineno">  871</span>  }</div>
-<div class="line"><span class="lineno">  872</span> </div>
-<div class="line"><span class="lineno">  873</span>  <a class="code hl_variable" href="#a6711df91133caac41cddf70858b3ab7a">last_kappa_</a> = kappa_tgt;</div>
-<div class="line"><span class="lineno">  874</span>  <a class="code hl_variable" href="#a9d3f7ab40596759e816ae0ad8b8d9232">last_kappa_rate_</a> = kappa_rate;</div>
-<div class="line"><span class="lineno">  875</span>  <span class="keywordflow">return</span> CurvatureCommand{kappa_tgt, kappa_rate};</div>
-<div class="line"><span class="lineno">  876</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00825">825</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  825</span>                                                                                                     {</div>
+<div class="line"><span class="lineno">  826</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> vehicle_standstill = perception_msgs::object_access::getStandstill(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
+<div class="line"><span class="lineno">  827</span>  <span class="keywordflow">if</span> (vehicle_standstill) {</div>
+<div class="line"><span class="lineno">  828</span>    <span class="comment">// we reset the PID controllers in standstill to avoid integral windup and undesired overshoot when starting from standstill</span></div>
+<div class="line"><span class="lineno">  829</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  830</span>    <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  831</span>  }</div>
+<div class="line"><span class="lineno">  832</span> </div>
+<div class="line"><span class="lineno">  833</span>  <span class="comment">// cascaded control</span></div>
+<div class="line"><span class="lineno">  834</span>  <span class="keywordtype">double</span> w_y = 0.0;</div>
+<div class="line"><span class="lineno">  835</span>  <span class="keywordtype">double</span> e_y = w_y - <a class="code hl_variable" href="#ada83231c049b4663bb8de871c3fb41e6">dy_</a>;</div>
+<div class="line"><span class="lineno">  836</span>  <span class="keywordtype">double</span> w_psi = <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;Calc(e_y, dt);</div>
+<div class="line"><span class="lineno">  837</span>  <span class="keywordtype">double</span> e_psi = w_psi - <a class="code hl_variable" href="#aec7877beda50ea0e43885603db8f8488">dpsi_</a>;</div>
+<div class="line"><span class="lineno">  838</span>  <span class="keywordtype">double</span> psi_dot_des = <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;Calc(e_psi, dt);</div>
+<div class="line"><span class="lineno">  839</span> </div>
+<div class="line"><span class="lineno">  840</span>  <span class="keywordtype">double</span> velocity = perception_msgs::object_access::getVelLon(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
+<div class="line"><span class="lineno">  841</span>  <span class="comment">// be sure v!=0 (to avoid division by zero)</span></div>
+<div class="line"><span class="lineno">  842</span>  <span class="keywordflow">if</span> (fabs(velocity) &lt; 0.1) {</div>
+<div class="line"><span class="lineno">  843</span>    <span class="keywordflow">if</span> (velocity &lt; 0.0) {</div>
+<div class="line"><span class="lineno">  844</span>      velocity = -0.1;</div>
+<div class="line"><span class="lineno">  845</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  846</span>      velocity = 0.1;</div>
+<div class="line"><span class="lineno">  847</span>    }</div>
+<div class="line"><span class="lineno">  848</span>  }</div>
+<div class="line"><span class="lineno">  849</span> </div>
+<div class="line"><span class="lineno">  850</span>  <span class="keywordtype">double</span> kappa_pid = std::tan(psi_dot_des * (<a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a> + <a class="code hl_variable" href="#abf718e15016f8e2670ed6a162711700b">self_st_gradient_</a> * velocity * velocity) / velocity) / <a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a>;</div>
+<div class="line"><span class="lineno">  851</span> </div>
+<div class="line"><span class="lineno">  852</span>  <span class="comment">// ackermann feed-forward control (convert delta to kappa for feed-forward)</span></div>
+<div class="line"><span class="lineno">  853</span>  <span class="keywordtype">double</span> kappa_ff = std::tan(<a class="code hl_variable" href="#a7331f1e9f4bd1fbcd1c11d828ac7dc5f">delta_tgt_</a>) / <a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a>;</div>
+<div class="line"><span class="lineno">  854</span> </div>
+<div class="line"><span class="lineno">  855</span>  <span class="keywordtype">double</span> kappa_tgt = kappa_pid + kappa_ff * <a class="code hl_variable" href="#a5e02d5cd67367d1d56519452d303d856">feed_forward_gain_steering_angle_</a>;</div>
+<div class="line"><span class="lineno">  856</span> </div>
+<div class="line"><span class="lineno">  857</span>  <span class="keywordtype">double</span> kappa_rate = 0.0;</div>
+<div class="line"><span class="lineno">  858</span>  <span class="keywordtype">bool</span> kappa_is_limited = <a class="code hl_function" href="#ac718ec61d0636695793a3ae723d52e1f">LimitKappa</a>(dt, kappa_tgt, kappa_rate, <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a>, <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a>,</div>
+<div class="line"><span class="lineno">  859</span>                                     <a class="code hl_variable" href="#a54cca5e74655d735fc956ba0b8694d5c">max_curvature_accel_</a>, <a class="code hl_variable" href="#a6711df91133caac41cddf70858b3ab7a">last_kappa_</a>, <a class="code hl_variable" href="#a9d3f7ab40596759e816ae0ad8b8d9232">last_kappa_rate_</a>);</div>
+<div class="line"><span class="lineno">  860</span> </div>
+<div class="line"><span class="lineno">  861</span>  <span class="keywordflow">if</span> (kappa_is_limited &amp;&amp; !vehicle_standstill) {</div>
+<div class="line"><span class="lineno">  862</span>    <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a34bf830c37edbca2a7e9dcbc37e4f2d6">use_back_calculation_</a>) {</div>
+<div class="line"><span class="lineno">  863</span>      <span class="keywordtype">double</span> kappa_fb_sat = kappa_tgt - kappa_ff * <a class="code hl_variable" href="#a5e02d5cd67367d1d56519452d303d856">feed_forward_gain_steering_angle_</a>;</div>
+<div class="line"><span class="lineno">  864</span>      <span class="keywordtype">double</span> denom = (<a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a> + <a class="code hl_variable" href="#abf718e15016f8e2670ed6a162711700b">self_st_gradient_</a> * velocity * velocity) / velocity;</div>
+<div class="line"><span class="lineno">  865</span>      <span class="keywordtype">double</span> psi_dot_sat = std::atan(kappa_fb_sat * <a class="code hl_variable" href="#a1b928d3e8f752bdb2c2bbd50b88fc5c4">wheelbase_</a>) / denom;</div>
+<div class="line"><span class="lineno">  866</span>      <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;BackCalculate(psi_dot_des, psi_dot_sat, dt, <a class="code hl_variable" href="#a531466889f83047abed318a84f6b76b0">anti_windup_gain_</a>);</div>
+<div class="line"><span class="lineno">  867</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  868</span>      <a class="code hl_variable" href="#ac0065f8f3a84511e7ea650594a35197a">dpsi_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  869</span>    }</div>
+<div class="line"><span class="lineno">  870</span>  }</div>
+<div class="line"><span class="lineno">  871</span> </div>
+<div class="line"><span class="lineno">  872</span>  <a class="code hl_variable" href="#a6711df91133caac41cddf70858b3ab7a">last_kappa_</a> = kappa_tgt;</div>
+<div class="line"><span class="lineno">  873</span>  <a class="code hl_variable" href="#a9d3f7ab40596759e816ae0ad8b8d9232">last_kappa_rate_</a> = kappa_rate;</div>
+<div class="line"><span class="lineno">  874</span>  <span class="keywordflow">return</span> CurvatureCommand{kappa_tgt, kappa_rate};</div>
+<div class="line"><span class="lineno">  875</span>}</div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a592e77eb6e12146f3f1623040acf4584"><div class="ttname"><a href="#a592e77eb6e12146f3f1623040acf4584">AckermannTrajectoryControl::dy_pid_</a></div><div class="ttdeci">std::unique_ptr&lt; PID &gt; dy_pid_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00388">AckermannTrajectoryControlNode.hpp:388</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a5e02d5cd67367d1d56519452d303d856"><div class="ttname"><a href="#a5e02d5cd67367d1d56519452d303d856">AckermannTrajectoryControl::feed_forward_gain_steering_angle_</a></div><div class="ttdeci">double feed_forward_gain_steering_angle_</div><div class="ttdoc">Feed-forward gains selected for the current speed.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00410">AckermannTrajectoryControlNode.hpp:410</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a6711df91133caac41cddf70858b3ab7a"><div class="ttname"><a href="#a6711df91133caac41cddf70858b3ab7a">AckermannTrajectoryControl::last_kappa_</a></div><div class="ttdeci">double last_kappa_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00383">AckermannTrajectoryControlNode.hpp:383</a></div></div>
@@ -1005,7 +1005,7 @@ template&lt;typename T &gt; </div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a9bb4adf64bee365e0acf539563a41295"><div class="ttname"><a href="#a9bb4adf64bee365e0acf539563a41295">AckermannTrajectoryControl::max_curvature_current_</a></div><div class="ttdeci">double max_curvature_current_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00354">AckermannTrajectoryControlNode.hpp:354</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a9d3f7ab40596759e816ae0ad8b8d9232"><div class="ttname"><a href="#a9d3f7ab40596759e816ae0ad8b8d9232">AckermannTrajectoryControl::last_kappa_rate_</a></div><div class="ttdeci">double last_kappa_rate_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00384">AckermannTrajectoryControlNode.hpp:384</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_ac0065f8f3a84511e7ea650594a35197a"><div class="ttname"><a href="#ac0065f8f3a84511e7ea650594a35197a">AckermannTrajectoryControl::dpsi_pid_</a></div><div class="ttdeci">std::unique_ptr&lt; PID &gt; dpsi_pid_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00389">AckermannTrajectoryControlNode.hpp:389</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_ac718ec61d0636695793a3ae723d52e1f"><div class="ttname"><a href="#ac718ec61d0636695793a3ae723d52e1f">AckermannTrajectoryControl::LimitKappa</a></div><div class="ttdeci">bool LimitKappa(const double dt, double &amp;kappa_tgt, double &amp;kappa_rate, const double max_curvature, const double max_curvature_rate, const double max_curvature_accel, const double kappa_prev, const double kappa_rate_prev)</div><div class="ttdoc">Applies curvature, curvature-rate, and curvature-acceleration limits to the requested target curvatur...</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00768">AckermannTrajectoryControlNode.cpp:768</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_ac718ec61d0636695793a3ae723d52e1f"><div class="ttname"><a href="#ac718ec61d0636695793a3ae723d52e1f">AckermannTrajectoryControl::LimitKappa</a></div><div class="ttdeci">bool LimitKappa(const double dt, double &amp;kappa_tgt, double &amp;kappa_rate, const double max_curvature, const double max_curvature_rate, const double max_curvature_accel, const double kappa_prev, const double kappa_rate_prev)</div><div class="ttdoc">Applies curvature, curvature-rate, and curvature-acceleration limits to the requested target curvatur...</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00767">AckermannTrajectoryControlNode.cpp:767</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_ada83231c049b4663bb8de871c3fb41e6"><div class="ttname"><a href="#ada83231c049b4663bb8de871c3fb41e6">AckermannTrajectoryControl::dy_</a></div><div class="ttdeci">double dy_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00381">AckermannTrajectoryControlNode.hpp:381</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_aec7877beda50ea0e43885603db8f8488"><div class="ttname"><a href="#aec7877beda50ea0e43885603db8f8488">AckermannTrajectoryControl::dpsi_</a></div><div class="ttdeci">double dpsi_</div><div class="ttdoc">Current control deviations and cached curvature state.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00380">AckermannTrajectoryControlNode.hpp:380</a></div></div>
 </div><!-- fragment -->
@@ -1084,57 +1084,57 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if any curvature limit became active. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00768">768</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  775</span>                                                                          {</div>
-<div class="line"><span class="lineno">  776</span>  <span class="keywordflow">if</span> (dt &lt;= 0.0) {</div>
-<div class="line"><span class="lineno">  777</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;Non-positive dt. Skipping curvature limiting...&quot;</span>);</div>
-<div class="line"><span class="lineno">  778</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  779</span>  }</div>
-<div class="line"><span class="lineno">  780</span> </div>
-<div class="line"><span class="lineno">  781</span>  <span class="keywordtype">bool</span> kappa_limited = <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  782</span>  <span class="keywordflow">if</span> (fabs(kappa_tgt) &gt; max_curvature) {</div>
-<div class="line"><span class="lineno">  783</span>    <span class="keywordflow">if</span> (kappa_tgt &gt;= 0.0) {</div>
-<div class="line"><span class="lineno">  784</span>      kappa_tgt = max_curvature;</div>
-<div class="line"><span class="lineno">  785</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  786</span>      kappa_tgt = -max_curvature;</div>
-<div class="line"><span class="lineno">  787</span>    }</div>
-<div class="line"><span class="lineno">  788</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  789</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Curvature limited!&quot;</span>);</div>
-<div class="line"><span class="lineno">  790</span>    kappa_limited = <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  791</span>  }</div>
-<div class="line"><span class="lineno">  792</span> </div>
-<div class="line"><span class="lineno">  793</span>  kappa_rate = 0.0;</div>
-<div class="line"><span class="lineno">  794</span>  kappa_rate = (kappa_tgt - kappa_prev) / dt;</div>
-<div class="line"><span class="lineno">  795</span> </div>
-<div class="line"><span class="lineno">  796</span>  <span class="keywordflow">if</span> (fabs(kappa_rate) &gt; max_curvature_rate &amp;&amp; dt &gt; 0.0) {</div>
-<div class="line"><span class="lineno">  797</span>    <span class="keywordflow">if</span> (kappa_rate &gt;= 0.0) {</div>
-<div class="line"><span class="lineno">  798</span>      kappa_rate = max_curvature_rate;</div>
-<div class="line"><span class="lineno">  799</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  800</span>      kappa_rate = -max_curvature_rate;</div>
-<div class="line"><span class="lineno">  801</span>    }</div>
-<div class="line"><span class="lineno">  802</span>    kappa_tgt = kappa_prev + kappa_rate * dt;</div>
-<div class="line"><span class="lineno">  803</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  804</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Curvature-rate limited!&quot;</span>);</div>
-<div class="line"><span class="lineno">  805</span>    kappa_limited = <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  806</span>  }</div>
-<div class="line"><span class="lineno">  807</span> </div>
-<div class="line"><span class="lineno">  808</span>  <span class="keywordtype">double</span> kappa_accel = 0.0;</div>
-<div class="line"><span class="lineno">  809</span>  kappa_accel = (kappa_rate - kappa_rate_prev) / dt;</div>
-<div class="line"><span class="lineno">  810</span>  <span class="keywordflow">if</span> (fabs(kappa_accel) &gt; max_curvature_accel &amp;&amp; dt &gt; 0.0) {</div>
-<div class="line"><span class="lineno">  811</span>    <span class="keywordflow">if</span> (kappa_accel &gt;= 0.0) {</div>
-<div class="line"><span class="lineno">  812</span>      kappa_accel = max_curvature_accel;</div>
-<div class="line"><span class="lineno">  813</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  814</span>      kappa_accel = -max_curvature_accel;</div>
-<div class="line"><span class="lineno">  815</span>    }</div>
-<div class="line"><span class="lineno">  816</span>    kappa_rate = kappa_rate_prev + kappa_accel * dt;</div>
-<div class="line"><span class="lineno">  817</span>    kappa_tgt = kappa_prev + kappa_rate * dt;</div>
-<div class="line"><span class="lineno">  818</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  819</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Curvature-acceleration limited!&quot;</span>);</div>
-<div class="line"><span class="lineno">  820</span>    kappa_limited = <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  821</span>  }</div>
-<div class="line"><span class="lineno">  822</span> </div>
-<div class="line"><span class="lineno">  823</span>  <span class="keywordflow">return</span> kappa_limited;</div>
-<div class="line"><span class="lineno">  824</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00767">767</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  774</span>                                                                          {</div>
+<div class="line"><span class="lineno">  775</span>  <span class="keywordflow">if</span> (dt &lt;= 0.0) {</div>
+<div class="line"><span class="lineno">  776</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;Non-positive dt. Skipping curvature limiting...&quot;</span>);</div>
+<div class="line"><span class="lineno">  777</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  778</span>  }</div>
+<div class="line"><span class="lineno">  779</span> </div>
+<div class="line"><span class="lineno">  780</span>  <span class="keywordtype">bool</span> kappa_limited = <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  781</span>  <span class="keywordflow">if</span> (fabs(kappa_tgt) &gt; max_curvature) {</div>
+<div class="line"><span class="lineno">  782</span>    <span class="keywordflow">if</span> (kappa_tgt &gt;= 0.0) {</div>
+<div class="line"><span class="lineno">  783</span>      kappa_tgt = max_curvature;</div>
+<div class="line"><span class="lineno">  784</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  785</span>      kappa_tgt = -max_curvature;</div>
+<div class="line"><span class="lineno">  786</span>    }</div>
+<div class="line"><span class="lineno">  787</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  788</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Curvature limited!&quot;</span>);</div>
+<div class="line"><span class="lineno">  789</span>    kappa_limited = <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  790</span>  }</div>
+<div class="line"><span class="lineno">  791</span> </div>
+<div class="line"><span class="lineno">  792</span>  kappa_rate = 0.0;</div>
+<div class="line"><span class="lineno">  793</span>  kappa_rate = (kappa_tgt - kappa_prev) / dt;</div>
+<div class="line"><span class="lineno">  794</span> </div>
+<div class="line"><span class="lineno">  795</span>  <span class="keywordflow">if</span> (fabs(kappa_rate) &gt; max_curvature_rate &amp;&amp; dt &gt; 0.0) {</div>
+<div class="line"><span class="lineno">  796</span>    <span class="keywordflow">if</span> (kappa_rate &gt;= 0.0) {</div>
+<div class="line"><span class="lineno">  797</span>      kappa_rate = max_curvature_rate;</div>
+<div class="line"><span class="lineno">  798</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  799</span>      kappa_rate = -max_curvature_rate;</div>
+<div class="line"><span class="lineno">  800</span>    }</div>
+<div class="line"><span class="lineno">  801</span>    kappa_tgt = kappa_prev + kappa_rate * dt;</div>
+<div class="line"><span class="lineno">  802</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  803</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Curvature-rate limited!&quot;</span>);</div>
+<div class="line"><span class="lineno">  804</span>    kappa_limited = <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  805</span>  }</div>
+<div class="line"><span class="lineno">  806</span> </div>
+<div class="line"><span class="lineno">  807</span>  <span class="keywordtype">double</span> kappa_accel = 0.0;</div>
+<div class="line"><span class="lineno">  808</span>  kappa_accel = (kappa_rate - kappa_rate_prev) / dt;</div>
+<div class="line"><span class="lineno">  809</span>  <span class="keywordflow">if</span> (fabs(kappa_accel) &gt; max_curvature_accel &amp;&amp; dt &gt; 0.0) {</div>
+<div class="line"><span class="lineno">  810</span>    <span class="keywordflow">if</span> (kappa_accel &gt;= 0.0) {</div>
+<div class="line"><span class="lineno">  811</span>      kappa_accel = max_curvature_accel;</div>
+<div class="line"><span class="lineno">  812</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  813</span>      kappa_accel = -max_curvature_accel;</div>
+<div class="line"><span class="lineno">  814</span>    }</div>
+<div class="line"><span class="lineno">  815</span>    kappa_rate = kappa_rate_prev + kappa_accel * dt;</div>
+<div class="line"><span class="lineno">  816</span>    kappa_tgt = kappa_prev + kappa_rate * dt;</div>
+<div class="line"><span class="lineno">  817</span>    <a class="code hl_variable" href="#a592e77eb6e12146f3f1623040acf4584">dy_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  818</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Curvature-acceleration limited!&quot;</span>);</div>
+<div class="line"><span class="lineno">  819</span>    kappa_limited = <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  820</span>  }</div>
+<div class="line"><span class="lineno">  821</span> </div>
+<div class="line"><span class="lineno">  822</span>  <span class="keywordflow">return</span> kappa_limited;</div>
+<div class="line"><span class="lineno">  823</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1278,37 +1278,36 @@ template&lt;typename T &gt; </div>
 <div class="line"><span class="lineno">  646</span>      header = <span class="keyword">false</span>;</div>
 <div class="line"><span class="lineno">  647</span>      <span class="keywordflow">continue</span>;</div>
 <div class="line"><span class="lineno">  648</span>    }</div>
-<div class="line"><span class="lineno">  649</span>    std::replace(line.begin(), line.end(), <span class="charliteral">&#39;,&#39;</span>, <span class="charliteral">&#39;.&#39;</span>);</div>
-<div class="line"><span class="lineno">  650</span>    std::stringstream ss(line);</div>
-<div class="line"><span class="lineno">  651</span>    std::string token;</div>
-<div class="line"><span class="lineno">  652</span>    std::vector&lt;std::string&gt; cols;</div>
-<div class="line"><span class="lineno">  653</span>    <span class="keywordflow">while</span> (std::getline(ss, token, <span class="charliteral">&#39;;&#39;</span>)) {</div>
-<div class="line"><span class="lineno">  654</span>      cols.push_back(token);</div>
-<div class="line"><span class="lineno">  655</span>    }</div>
-<div class="line"><span class="lineno">  656</span>    <span class="keywordflow">if</span> (cols.size() &lt; 4) <span class="keywordflow">continue</span>;</div>
-<div class="line"><span class="lineno">  657</span> </div>
-<div class="line"><span class="lineno">  658</span>    <span class="keywordflow">try</span> {</div>
-<div class="line"><span class="lineno">  659</span>      <span class="keywordtype">double</span> v_ms = std::stod(cols[1]);</div>
-<div class="line"><span class="lineno">  660</span>      <span class="keywordtype">double</span> kappa_max = std::stod(cols[2]);</div>
-<div class="line"><span class="lineno">  661</span>      <span class="keywordtype">double</span> kappa_rate_max = std::stod(cols[3]);</div>
-<div class="line"><span class="lineno">  662</span>      <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.push_back(v_ms);</div>
-<div class="line"><span class="lineno">  663</span>      <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.push_back(kappa_max);</div>
-<div class="line"><span class="lineno">  664</span>      <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.push_back(kappa_rate_max);</div>
-<div class="line"><span class="lineno">  665</span>    } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::exception&amp; ex) {</div>
-<div class="line"><span class="lineno">  666</span>      RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;CSV parse error: &quot;</span> &lt;&lt; ex.what());</div>
-<div class="line"><span class="lineno">  667</span>      <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  668</span>    }</div>
-<div class="line"><span class="lineno">  669</span>  }</div>
-<div class="line"><span class="lineno">  670</span> </div>
-<div class="line"><span class="lineno">  671</span>  <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.empty() || <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.size() != <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.size() ||</div>
-<div class="line"><span class="lineno">  672</span>      <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.size() != <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.size()) {</div>
-<div class="line"><span class="lineno">  673</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;CSV contains no valid lateral limit data.&quot;</span>);</div>
-<div class="line"><span class="lineno">  674</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  675</span>  }</div>
-<div class="line"><span class="lineno">  676</span> </div>
-<div class="line"><span class="lineno">  677</span>  RCLCPP_INFO_STREAM(get_logger(), <span class="stringliteral">&quot;Loaded lateral limits from CSV with &quot;</span> &lt;&lt; <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.size() &lt;&lt; <span class="stringliteral">&quot; entries.&quot;</span>);</div>
-<div class="line"><span class="lineno">  678</span>  <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  679</span>}</div>
+<div class="line"><span class="lineno">  649</span>    std::stringstream ss(line);</div>
+<div class="line"><span class="lineno">  650</span>    std::string token;</div>
+<div class="line"><span class="lineno">  651</span>    std::vector&lt;std::string&gt; cols;</div>
+<div class="line"><span class="lineno">  652</span>    <span class="keywordflow">while</span> (std::getline(ss, token, <span class="charliteral">&#39;,&#39;</span>)) {</div>
+<div class="line"><span class="lineno">  653</span>      cols.push_back(token);</div>
+<div class="line"><span class="lineno">  654</span>    }</div>
+<div class="line"><span class="lineno">  655</span>    <span class="keywordflow">if</span> (cols.size() &lt; 3) <span class="keywordflow">continue</span>;</div>
+<div class="line"><span class="lineno">  656</span> </div>
+<div class="line"><span class="lineno">  657</span>    <span class="keywordflow">try</span> {</div>
+<div class="line"><span class="lineno">  658</span>      <span class="keywordtype">double</span> v_ms = std::stod(cols[0]) / 3.6;  <span class="comment">// Convert km/h to m/s</span></div>
+<div class="line"><span class="lineno">  659</span>      <span class="keywordtype">double</span> kappa_max = std::stod(cols[1]);</div>
+<div class="line"><span class="lineno">  660</span>      <span class="keywordtype">double</span> kappa_rate_max = std::stod(cols[2]);</div>
+<div class="line"><span class="lineno">  661</span>      <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.push_back(v_ms);</div>
+<div class="line"><span class="lineno">  662</span>      <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.push_back(kappa_max);</div>
+<div class="line"><span class="lineno">  663</span>      <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.push_back(kappa_rate_max);</div>
+<div class="line"><span class="lineno">  664</span>    } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::exception&amp; ex) {</div>
+<div class="line"><span class="lineno">  665</span>      RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;CSV parse error: &quot;</span> &lt;&lt; ex.what());</div>
+<div class="line"><span class="lineno">  666</span>      <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  667</span>    }</div>
+<div class="line"><span class="lineno">  668</span>  }</div>
+<div class="line"><span class="lineno">  669</span> </div>
+<div class="line"><span class="lineno">  670</span>  <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.empty() || <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.size() != <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.size() ||</div>
+<div class="line"><span class="lineno">  671</span>      <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.size() != <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.size()) {</div>
+<div class="line"><span class="lineno">  672</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;CSV contains no valid lateral limit data.&quot;</span>);</div>
+<div class="line"><span class="lineno">  673</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  674</span>  }</div>
+<div class="line"><span class="lineno">  675</span> </div>
+<div class="line"><span class="lineno">  676</span>  RCLCPP_INFO_STREAM(get_logger(), <span class="stringliteral">&quot;Loaded lateral limits from CSV with &quot;</span> &lt;&lt; <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.size() &lt;&lt; <span class="stringliteral">&quot; entries.&quot;</span>);</div>
+<div class="line"><span class="lineno">  677</span>  <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  678</span>}</div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a2593ee9e192561dbc7448a05397f5457"><div class="ttname"><a href="#a2593ee9e192561dbc7448a05397f5457">AckermannTrajectoryControl::lateral_limits_kappa_max_</a></div><div class="ttdeci">std::vector&lt; double &gt; lateral_limits_kappa_max_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00403">AckermannTrajectoryControlNode.hpp:403</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a7efc7302f84ae05871bd249ac27f9b74"><div class="ttname"><a href="#a7efc7302f84ae05871bd249ac27f9b74">AckermannTrajectoryControl::lateral_limits_kappa_rate_max_</a></div><div class="ttdeci">std::vector&lt; double &gt; lateral_limits_kappa_rate_max_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00404">AckermannTrajectoryControlNode.hpp:404</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a95e95f15f510e2f6f88bd0c871bb0bfa"><div class="ttname"><a href="#a95e95f15f510e2f6f88bd0c871bb0bfa">AckermannTrajectoryControl::lateral_limits_velocity_</a></div><div class="ttdeci">std::vector&lt; double &gt; lateral_limits_velocity_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00402">AckermannTrajectoryControlNode.hpp:402</a></div></div>
@@ -1387,55 +1386,55 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Target longitudinal command in meters per second, meters per second squared, and meters per second cubed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00878">878</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  878</span>                                                                                                             {</div>
-<div class="line"><span class="lineno">  879</span>  LongitudinalCommand longitudinal_command;</div>
-<div class="line"><span class="lineno">  880</span>  <span class="keywordtype">double</span> velocity = perception_msgs::object_access::getVelLon(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
-<div class="line"><span class="lineno">  881</span>  <span class="keywordtype">double</span> w_v = <a class="code hl_variable" href="#af1f3bf39fb9d6171d4f28a099961e5e6">v_tgt_</a>;</div>
-<div class="line"><span class="lineno">  882</span>  <span class="keywordtype">double</span> e_v = w_v - velocity;</div>
-<div class="line"><span class="lineno">  883</span>  <span class="keywordtype">double</span> a_fb_v = <a class="code hl_variable" href="#a561b68788e3f8a88c4b9465e5d5bd242">dv_pid_</a>-&gt;Calc(e_v, dt);</div>
-<div class="line"><span class="lineno">  884</span> </div>
-<div class="line"><span class="lineno">  885</span>  <span class="keywordtype">double</span> a_ff = <a class="code hl_variable" href="#ab01e7bf11e1d36960725a4fe8c9e103e">a_tgt_</a> * <a class="code hl_variable" href="#abed091bca7be3b10e4ee8dbccf1857bc">feed_forward_gain_acceleration_</a>;</div>
-<div class="line"><span class="lineno">  886</span>  <span class="keywordtype">double</span> a_ctrl = a_fb_v + a_ff;</div>
-<div class="line"><span class="lineno">  887</span>  <span class="keywordtype">double</span> a_unsat = a_ctrl;</div>
-<div class="line"><span class="lineno">  888</span> </div>
-<div class="line"><span class="lineno">  889</span>  <span class="comment">// limit desired acceleration</span></div>
-<div class="line"><span class="lineno">  890</span>  <span class="keywordflow">if</span> (a_ctrl &gt; <a class="code hl_variable" href="#ae9e3054e0bd079c854c9d797f882ec80">lon_max_acc_</a>) {</div>
-<div class="line"><span class="lineno">  891</span>    a_ctrl = <a class="code hl_variable" href="#ae9e3054e0bd079c854c9d797f882ec80">lon_max_acc_</a>;</div>
-<div class="line"><span class="lineno">  892</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Longitudinal acceleration limited!&quot;</span>);</div>
-<div class="line"><span class="lineno">  893</span>  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (a_ctrl &lt; <a class="code hl_variable" href="#ac2e4d0eade89259e20ac3bd112f93614">lon_min_acc_</a>) {</div>
-<div class="line"><span class="lineno">  894</span>    a_ctrl = <a class="code hl_variable" href="#ac2e4d0eade89259e20ac3bd112f93614">lon_min_acc_</a>;</div>
-<div class="line"><span class="lineno">  895</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Longitudinal acceleration limited!&quot;</span>);</div>
-<div class="line"><span class="lineno">  896</span>  }</div>
-<div class="line"><span class="lineno">  897</span> </div>
-<div class="line"><span class="lineno">  898</span>  <span class="comment">// calculate jerk with respect to last desired acceleration</span></div>
-<div class="line"><span class="lineno">  899</span>  <span class="keywordtype">double</span> jerk = 0.0;</div>
-<div class="line"><span class="lineno">  900</span>  <span class="keywordflow">if</span> (dt &gt; 0.0) {</div>
-<div class="line"><span class="lineno">  901</span>    jerk = (a_ctrl - <a class="code hl_variable" href="#a583e0f4868878db5797c38105f80777e">vhcl_ctrl_output_</a>.drive.acceleration) / dt;</div>
-<div class="line"><span class="lineno">  902</span>  }</div>
-<div class="line"><span class="lineno">  903</span>  <span class="keywordflow">if</span> (fabs(jerk) &gt; <a class="code hl_variable" href="#a13919cbe9b1aef699f0e4875268decba">lon_max_jerk_</a> &amp;&amp; dt &gt; 0.0) {</div>
-<div class="line"><span class="lineno">  904</span>    <span class="keywordflow">if</span> (jerk &gt;= 0.0) {</div>
-<div class="line"><span class="lineno">  905</span>      jerk = <a class="code hl_variable" href="#a13919cbe9b1aef699f0e4875268decba">lon_max_jerk_</a>;</div>
-<div class="line"><span class="lineno">  906</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  907</span>      jerk = -<a class="code hl_variable" href="#a13919cbe9b1aef699f0e4875268decba">lon_max_jerk_</a>;</div>
-<div class="line"><span class="lineno">  908</span>    }</div>
-<div class="line"><span class="lineno">  909</span>    a_ctrl = <a class="code hl_variable" href="#a583e0f4868878db5797c38105f80777e">vhcl_ctrl_output_</a>.drive.acceleration + jerk * dt;</div>
-<div class="line"><span class="lineno">  910</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Longitudinal jerk limited!&quot;</span>);</div>
-<div class="line"><span class="lineno">  911</span>  }</div>
-<div class="line"><span class="lineno">  912</span>  <span class="keywordflow">if</span> (a_ctrl != a_unsat) {</div>
-<div class="line"><span class="lineno">  913</span>    <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a34bf830c37edbca2a7e9dcbc37e4f2d6">use_back_calculation_</a>) {</div>
-<div class="line"><span class="lineno">  914</span>      <span class="keywordtype">double</span> a_fb_sat = a_ctrl - a_ff;</div>
-<div class="line"><span class="lineno">  915</span>      <a class="code hl_variable" href="#a561b68788e3f8a88c4b9465e5d5bd242">dv_pid_</a>-&gt;BackCalculate(a_fb_v, a_fb_sat, dt, <a class="code hl_variable" href="#a531466889f83047abed318a84f6b76b0">anti_windup_gain_</a>);</div>
-<div class="line"><span class="lineno">  916</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  917</span>      <a class="code hl_variable" href="#a561b68788e3f8a88c4b9465e5d5bd242">dv_pid_</a>-&gt;ResetIntegral();</div>
-<div class="line"><span class="lineno">  918</span>    }</div>
-<div class="line"><span class="lineno">  919</span>  }</div>
-<div class="line"><span class="lineno">  920</span> </div>
-<div class="line"><span class="lineno">  921</span>  longitudinal_command.speed = <a class="code hl_variable" href="#af1f3bf39fb9d6171d4f28a099961e5e6">v_tgt_</a>;</div>
-<div class="line"><span class="lineno">  922</span>  longitudinal_command.acceleration = a_ctrl;</div>
-<div class="line"><span class="lineno">  923</span>  longitudinal_command.jerk = jerk;</div>
-<div class="line"><span class="lineno">  924</span>  <span class="keywordflow">return</span> longitudinal_command;</div>
-<div class="line"><span class="lineno">  925</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00877">877</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  877</span>                                                                                                             {</div>
+<div class="line"><span class="lineno">  878</span>  LongitudinalCommand longitudinal_command;</div>
+<div class="line"><span class="lineno">  879</span>  <span class="keywordtype">double</span> velocity = perception_msgs::object_access::getVelLon(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
+<div class="line"><span class="lineno">  880</span>  <span class="keywordtype">double</span> w_v = <a class="code hl_variable" href="#af1f3bf39fb9d6171d4f28a099961e5e6">v_tgt_</a>;</div>
+<div class="line"><span class="lineno">  881</span>  <span class="keywordtype">double</span> e_v = w_v - velocity;</div>
+<div class="line"><span class="lineno">  882</span>  <span class="keywordtype">double</span> a_fb_v = <a class="code hl_variable" href="#a561b68788e3f8a88c4b9465e5d5bd242">dv_pid_</a>-&gt;Calc(e_v, dt);</div>
+<div class="line"><span class="lineno">  883</span> </div>
+<div class="line"><span class="lineno">  884</span>  <span class="keywordtype">double</span> a_ff = <a class="code hl_variable" href="#ab01e7bf11e1d36960725a4fe8c9e103e">a_tgt_</a> * <a class="code hl_variable" href="#abed091bca7be3b10e4ee8dbccf1857bc">feed_forward_gain_acceleration_</a>;</div>
+<div class="line"><span class="lineno">  885</span>  <span class="keywordtype">double</span> a_ctrl = a_fb_v + a_ff;</div>
+<div class="line"><span class="lineno">  886</span>  <span class="keywordtype">double</span> a_unsat = a_ctrl;</div>
+<div class="line"><span class="lineno">  887</span> </div>
+<div class="line"><span class="lineno">  888</span>  <span class="comment">// limit desired acceleration</span></div>
+<div class="line"><span class="lineno">  889</span>  <span class="keywordflow">if</span> (a_ctrl &gt; <a class="code hl_variable" href="#ae9e3054e0bd079c854c9d797f882ec80">lon_max_acc_</a>) {</div>
+<div class="line"><span class="lineno">  890</span>    a_ctrl = <a class="code hl_variable" href="#ae9e3054e0bd079c854c9d797f882ec80">lon_max_acc_</a>;</div>
+<div class="line"><span class="lineno">  891</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Longitudinal acceleration limited!&quot;</span>);</div>
+<div class="line"><span class="lineno">  892</span>  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (a_ctrl &lt; <a class="code hl_variable" href="#ac2e4d0eade89259e20ac3bd112f93614">lon_min_acc_</a>) {</div>
+<div class="line"><span class="lineno">  893</span>    a_ctrl = <a class="code hl_variable" href="#ac2e4d0eade89259e20ac3bd112f93614">lon_min_acc_</a>;</div>
+<div class="line"><span class="lineno">  894</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Longitudinal acceleration limited!&quot;</span>);</div>
+<div class="line"><span class="lineno">  895</span>  }</div>
+<div class="line"><span class="lineno">  896</span> </div>
+<div class="line"><span class="lineno">  897</span>  <span class="comment">// calculate jerk with respect to last desired acceleration</span></div>
+<div class="line"><span class="lineno">  898</span>  <span class="keywordtype">double</span> jerk = 0.0;</div>
+<div class="line"><span class="lineno">  899</span>  <span class="keywordflow">if</span> (dt &gt; 0.0) {</div>
+<div class="line"><span class="lineno">  900</span>    jerk = (a_ctrl - <a class="code hl_variable" href="#a583e0f4868878db5797c38105f80777e">vhcl_ctrl_output_</a>.drive.acceleration) / dt;</div>
+<div class="line"><span class="lineno">  901</span>  }</div>
+<div class="line"><span class="lineno">  902</span>  <span class="keywordflow">if</span> (fabs(jerk) &gt; <a class="code hl_variable" href="#a13919cbe9b1aef699f0e4875268decba">lon_max_jerk_</a> &amp;&amp; dt &gt; 0.0) {</div>
+<div class="line"><span class="lineno">  903</span>    <span class="keywordflow">if</span> (jerk &gt;= 0.0) {</div>
+<div class="line"><span class="lineno">  904</span>      jerk = <a class="code hl_variable" href="#a13919cbe9b1aef699f0e4875268decba">lon_max_jerk_</a>;</div>
+<div class="line"><span class="lineno">  905</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  906</span>      jerk = -<a class="code hl_variable" href="#a13919cbe9b1aef699f0e4875268decba">lon_max_jerk_</a>;</div>
+<div class="line"><span class="lineno">  907</span>    }</div>
+<div class="line"><span class="lineno">  908</span>    a_ctrl = <a class="code hl_variable" href="#a583e0f4868878db5797c38105f80777e">vhcl_ctrl_output_</a>.drive.acceleration + jerk * dt;</div>
+<div class="line"><span class="lineno">  909</span>    RCLCPP_WARN_STREAM(get_logger(), <span class="stringliteral">&quot;Longitudinal jerk limited!&quot;</span>);</div>
+<div class="line"><span class="lineno">  910</span>  }</div>
+<div class="line"><span class="lineno">  911</span>  <span class="keywordflow">if</span> (a_ctrl != a_unsat) {</div>
+<div class="line"><span class="lineno">  912</span>    <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a34bf830c37edbca2a7e9dcbc37e4f2d6">use_back_calculation_</a>) {</div>
+<div class="line"><span class="lineno">  913</span>      <span class="keywordtype">double</span> a_fb_sat = a_ctrl - a_ff;</div>
+<div class="line"><span class="lineno">  914</span>      <a class="code hl_variable" href="#a561b68788e3f8a88c4b9465e5d5bd242">dv_pid_</a>-&gt;BackCalculate(a_fb_v, a_fb_sat, dt, <a class="code hl_variable" href="#a531466889f83047abed318a84f6b76b0">anti_windup_gain_</a>);</div>
+<div class="line"><span class="lineno">  915</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  916</span>      <a class="code hl_variable" href="#a561b68788e3f8a88c4b9465e5d5bd242">dv_pid_</a>-&gt;ResetIntegral();</div>
+<div class="line"><span class="lineno">  917</span>    }</div>
+<div class="line"><span class="lineno">  918</span>  }</div>
+<div class="line"><span class="lineno">  919</span> </div>
+<div class="line"><span class="lineno">  920</span>  longitudinal_command.speed = <a class="code hl_variable" href="#af1f3bf39fb9d6171d4f28a099961e5e6">v_tgt_</a>;</div>
+<div class="line"><span class="lineno">  921</span>  longitudinal_command.acceleration = a_ctrl;</div>
+<div class="line"><span class="lineno">  922</span>  longitudinal_command.jerk = jerk;</div>
+<div class="line"><span class="lineno">  923</span>  <span class="keywordflow">return</span> longitudinal_command;</div>
+<div class="line"><span class="lineno">  924</span>}</div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a561b68788e3f8a88c4b9465e5d5bd242"><div class="ttname"><a href="#a561b68788e3f8a88c4b9465e5d5bd242">AckermannTrajectoryControl::dv_pid_</a></div><div class="ttdeci">std::unique_ptr&lt; PID &gt; dv_pid_</div><div class="ttdoc">PID controller instances for longitudinal speed, lateral error, and heading error.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00387">AckermannTrajectoryControlNode.hpp:387</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a583e0f4868878db5797c38105f80777e"><div class="ttname"><a href="#a583e0f4868878db5797c38105f80777e">AckermannTrajectoryControl::vhcl_ctrl_output_</a></div><div class="ttdeci">ackermann_msgs::msg::AckermannDriveStamped vhcl_ctrl_output_</div><div class="ttdoc">Most recently published control command.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00414">AckermannTrajectoryControlNode.hpp:414</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_ab01e7bf11e1d36960725a4fe8c9e103e"><div class="ttname"><a href="#ab01e7bf11e1d36960725a4fe8c9e103e">AckermannTrajectoryControl::a_tgt_</a></div><div class="ttdeci">double a_tgt_</div><div class="ttdoc">Target values extracted from the reference trajectory.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00372">AckermannTrajectoryControlNode.hpp:372</a></div></div>
@@ -1511,7 +1510,7 @@ template&lt;typename T &gt; </div>
 <div class="line"><span class="lineno">  211</span> </div>
 <div class="line"><span class="lineno">  212</span>  <span class="keywordflow">return</span> result;</div>
 <div class="line"><span class="lineno">  213</span>}</div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_a326a2f46676f60164233838db1b0c4eb"><div class="ttname"><a href="#a326a2f46676f60164233838db1b0c4eb">AckermannTrajectoryControl::ResetOdometry</a></div><div class="ttdeci">void ResetOdometry()</div><div class="ttdoc">Resets the internally integrated lateral and heading odometry error.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00719">AckermannTrajectoryControlNode.cpp:719</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_a326a2f46676f60164233838db1b0c4eb"><div class="ttname"><a href="#a326a2f46676f60164233838db1b0c4eb">AckermannTrajectoryControl::ResetOdometry</a></div><div class="ttdeci">void ResetOdometry()</div><div class="ttdoc">Resets the internally integrated lateral and heading odometry error.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00718">AckermannTrajectoryControlNode.cpp:718</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a90fc27e486152136cd91a369f0dfc2c4"><div class="ttname"><a href="#a90fc27e486152136cd91a369f0dfc2c4">AckermannTrajectoryControl::control_mutex_</a></div><div class="ttdeci">std::mutex control_mutex_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00309">AckermannTrajectoryControlNode.hpp:309</a></div></div>
 </div><!-- fragment -->
 </div>
@@ -1597,11 +1596,11 @@ template&lt;typename T &gt; </div>
 
 <p>Resets the internally integrated lateral and heading odometry error. </p>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00719">719</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  719</span>                                               {</div>
-<div class="line"><span class="lineno">  720</span>  <a class="code hl_variable" href="#a8d5809a84d15463decea8c256fac767b">odom_dpsi_</a> = 0.0;</div>
-<div class="line"><span class="lineno">  721</span>  <a class="code hl_variable" href="#af1dcbf05ce71b33862a12eb9deb11a0d">odom_dy_</a> = 0.0;</div>
-<div class="line"><span class="lineno">  722</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00718">718</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  718</span>                                               {</div>
+<div class="line"><span class="lineno">  719</span>  <a class="code hl_variable" href="#a8d5809a84d15463decea8c256fac767b">odom_dpsi_</a> = 0.0;</div>
+<div class="line"><span class="lineno">  720</span>  <a class="code hl_variable" href="#af1dcbf05ce71b33862a12eb9deb11a0d">odom_dy_</a> = 0.0;</div>
+<div class="line"><span class="lineno">  721</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1765,7 +1764,7 @@ template&lt;typename T &gt; </div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a5ae208f28d2af95b05e7c9cdeb5779d0"><div class="ttname"><a href="#a5ae208f28d2af95b05e7c9cdeb5779d0">AckermannTrajectoryControl::LonActiveCallback</a></div><div class="ttdeci">void LonActiveCallback(const std_msgs::msg::Bool::ConstSharedPtr msg)</div><div class="ttdoc">Callback to identify whether longitudinal control is active or not on the actuator side.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00297">AckermannTrajectoryControlNode.cpp:297</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a648a6e2dab7ef6b9c9d77628179cc48b"><div class="ttname"><a href="#a648a6e2dab7ef6b9c9d77628179cc48b">AckermannTrajectoryControl::control_callback_group_</a></div><div class="ttdeci">rclcpp::CallbackGroup::SharedPtr control_callback_group_</div><div class="ttdoc">Callback group separating the control-cycle timer from the default input/parameter group.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00305">AckermannTrajectoryControlNode.hpp:305</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a7897749fbf428a8c228385991318fbfb"><div class="ttname"><a href="#a7897749fbf428a8c228385991318fbfb">AckermannTrajectoryControl::vehicle_ctrl_pub_</a></div><div class="ttdeci">rclcpp::Publisher&lt; ackermann_msgs::msg::AckermannDriveStamped &gt;::SharedPtr vehicle_ctrl_pub_</div><div class="ttdoc">Publisher for the computed Ackermann control command.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00296">AckermannTrajectoryControlNode.hpp:296</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_a9143a4508a7b4c5102010c2e0ba0ba15"><div class="ttname"><a href="#a9143a4508a7b4c5102010c2e0ba0ba15">AckermannTrajectoryControl::UpdateLateralLimitsFromVelocity</a></div><div class="ttdeci">void UpdateLateralLimitsFromVelocity(const double velocity)</div><div class="ttdoc">Updates active curvature limits for the current longitudinal speed.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00681">AckermannTrajectoryControlNode.cpp:681</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_a9143a4508a7b4c5102010c2e0ba0ba15"><div class="ttname"><a href="#a9143a4508a7b4c5102010c2e0ba0ba15">AckermannTrajectoryControl::UpdateLateralLimitsFromVelocity</a></div><div class="ttdeci">void UpdateLateralLimitsFromVelocity(const double velocity)</div><div class="ttdoc">Updates active curvature limits for the current longitudinal speed.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00680">AckermannTrajectoryControlNode.cpp:680</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a92fd8dc5db875f6717e1944a0d720071"><div class="ttname"><a href="#a92fd8dc5db875f6717e1944a0d720071">AckermannTrajectoryControl::vhcl_ctrl_timer_</a></div><div class="ttdeci">rclcpp::TimerBase::SharedPtr vhcl_ctrl_timer_</div><div class="ttdoc">Periodic timer that drives the controller loop.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00299">AckermannTrajectoryControlNode.hpp:299</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a97451c0efd7ef948bb10143d7ca02320"><div class="ttname"><a href="#a97451c0efd7ef948bb10143d7ca02320">AckermannTrajectoryControl::VehicleCtrlCycle</a></div><div class="ttdeci">void VehicleCtrlCycle()</div><div class="ttdoc">Executes one control-loop iteration and publishes the resulting Ackermann command....</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00358">AckermannTrajectoryControlNode.cpp:358</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a97f10d889d6c90a59dd58c24704c8b73"><div class="ttname"><a href="#a97f10d889d6c90a59dd58c24704c8b73">AckermannTrajectoryControl::LoadLateralLimitsCsv</a></div><div class="ttdeci">bool LoadLateralLimitsCsv()</div><div class="ttdoc">Loads speed-dependent curvature limits from a CSV file.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00614">AckermannTrajectoryControlNode.cpp:614</a></div></div>
@@ -1894,7 +1893,7 @@ template&lt;typename T &gt; </div>
 <div class="line"><span class="lineno">  581</span>  }</div>
 <div class="line"><span class="lineno">  582</span>  <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line"><span class="lineno">  583</span>}</div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_a37f189f03a4cb1539b22152b4fce38e6"><div class="ttname"><a href="#a37f189f03a4cb1539b22152b4fce38e6">AckermannTrajectoryControl::CalcOdometry</a></div><div class="ttdeci">void CalcOdometry(const double dt)</div><div class="ttdoc">Integrates lateral and heading deviation from the measured vehicle motion.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00712">AckermannTrajectoryControlNode.cpp:712</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_a37f189f03a4cb1539b22152b4fce38e6"><div class="ttname"><a href="#a37f189f03a4cb1539b22152b4fce38e6">AckermannTrajectoryControl::CalcOdometry</a></div><div class="ttdeci">void CalcOdometry(const double dt)</div><div class="ttdoc">Integrates lateral and heading deviation from the measured vehicle motion.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00711">AckermannTrajectoryControlNode.cpp:711</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1948,20 +1947,20 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Current measured steering command in radians and radians per second. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00745">745</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  746</span>                                                                                                          {</div>
-<div class="line"><span class="lineno">  747</span>  SteeringCommand steering_command;</div>
-<div class="line"><span class="lineno">  748</span>  steering_command.steering_angle = perception_msgs::object_access::getSteeringAngleAck(ego_data);</div>
-<div class="line"><span class="lineno">  749</span>  steering_command.steering_angle_rate = perception_msgs::object_access::getSteeringAngleRateAck(ego_data);</div>
-<div class="line"><span class="lineno">  750</span>  kappa = std::tan(steering_command.steering_angle) / wheelbase;</div>
-<div class="line"><span class="lineno">  751</span>  <span class="keywordtype">double</span> denom = wheelbase * std::cos(steering_command.steering_angle) * std::cos(steering_command.steering_angle);</div>
-<div class="line"><span class="lineno">  752</span>  <span class="keywordflow">if</span> (fabs(denom) &gt; 1e-6) {</div>
-<div class="line"><span class="lineno">  753</span>    kappa_rate = steering_command.steering_angle_rate / denom;</div>
-<div class="line"><span class="lineno">  754</span>  } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  755</span>    kappa_rate = 0.0;</div>
-<div class="line"><span class="lineno">  756</span>  }</div>
-<div class="line"><span class="lineno">  757</span>  <span class="keywordflow">return</span> steering_command;</div>
-<div class="line"><span class="lineno">  758</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00744">744</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  745</span>                                                                                                          {</div>
+<div class="line"><span class="lineno">  746</span>  SteeringCommand steering_command;</div>
+<div class="line"><span class="lineno">  747</span>  steering_command.steering_angle = perception_msgs::object_access::getSteeringAngleAck(ego_data);</div>
+<div class="line"><span class="lineno">  748</span>  steering_command.steering_angle_rate = perception_msgs::object_access::getSteeringAngleRateAck(ego_data);</div>
+<div class="line"><span class="lineno">  749</span>  kappa = std::tan(steering_command.steering_angle) / wheelbase;</div>
+<div class="line"><span class="lineno">  750</span>  <span class="keywordtype">double</span> denom = wheelbase * std::cos(steering_command.steering_angle) * std::cos(steering_command.steering_angle);</div>
+<div class="line"><span class="lineno">  751</span>  <span class="keywordflow">if</span> (fabs(denom) &gt; 1e-6) {</div>
+<div class="line"><span class="lineno">  752</span>    kappa_rate = steering_command.steering_angle_rate / denom;</div>
+<div class="line"><span class="lineno">  753</span>  } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  754</span>    kappa_rate = 0.0;</div>
+<div class="line"><span class="lineno">  755</span>  }</div>
+<div class="line"><span class="lineno">  756</span>  <span class="keywordflow">return</span> steering_command;</div>
+<div class="line"><span class="lineno">  757</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1996,37 +1995,37 @@ template&lt;typename T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00681">681</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  681</span>                                                                                      {</div>
-<div class="line"><span class="lineno">  682</span>  <span class="keywordflow">if</span> (!<a class="code hl_variable" href="#abaf1535f3ca1474ec268b176746d776c">use_speed_dependent_lateral_limits_</a> || !<a class="code hl_variable" href="#ad9e618510c9dd38817dd7f242b02e650">lateral_limits_loaded_</a>) {</div>
-<div class="line"><span class="lineno">  683</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#ae8f8afa418aa8fefbea04baf80616d4a">max_curvature_</a>;</div>
-<div class="line"><span class="lineno">  684</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#aa8e132f1d6f27b3a7953ba28a95ef596">max_curvature_rate_</a>;</div>
-<div class="line"><span class="lineno">  685</span>    <span class="keywordflow">return</span>;</div>
-<div class="line"><span class="lineno">  686</span>  }</div>
-<div class="line"><span class="lineno">  687</span>  <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.empty()) {</div>
-<div class="line"><span class="lineno">  688</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#ae8f8afa418aa8fefbea04baf80616d4a">max_curvature_</a>;</div>
-<div class="line"><span class="lineno">  689</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#aa8e132f1d6f27b3a7953ba28a95ef596">max_curvature_rate_</a>;</div>
-<div class="line"><span class="lineno">  690</span>    <span class="keywordflow">return</span>;</div>
-<div class="line"><span class="lineno">  691</span>  }</div>
-<div class="line"><span class="lineno">  692</span> </div>
-<div class="line"><span class="lineno">  693</span>  <span class="keywordtype">double</span> v = velocity;</div>
-<div class="line"><span class="lineno">  694</span>  <span class="keywordflow">if</span> (v &lt;= <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.front()) {</div>
-<div class="line"><span class="lineno">  695</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.front();</div>
-<div class="line"><span class="lineno">  696</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.front();</div>
-<div class="line"><span class="lineno">  697</span>    <span class="keywordflow">return</span>;</div>
-<div class="line"><span class="lineno">  698</span>  }</div>
-<div class="line"><span class="lineno">  699</span>  <span class="keywordflow">if</span> (v &gt;= <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.back()) {</div>
-<div class="line"><span class="lineno">  700</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.back();</div>
-<div class="line"><span class="lineno">  701</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.back();</div>
-<div class="line"><span class="lineno">  702</span>    <span class="keywordflow">return</span>;</div>
-<div class="line"><span class="lineno">  703</span>  }</div>
-<div class="line"><span class="lineno">  704</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="#aea1490279c14feda591fae30af648f6f">LinearInterpolation</a>(<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>, <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>, v, <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a>)) {</div>
-<div class="line"><span class="lineno">  705</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#ae8f8afa418aa8fefbea04baf80616d4a">max_curvature_</a>;</div>
-<div class="line"><span class="lineno">  706</span>  }</div>
-<div class="line"><span class="lineno">  707</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="#aea1490279c14feda591fae30af648f6f">LinearInterpolation</a>(<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>, <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>, v, <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a>)) {</div>
-<div class="line"><span class="lineno">  708</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#aa8e132f1d6f27b3a7953ba28a95ef596">max_curvature_rate_</a>;</div>
-<div class="line"><span class="lineno">  709</span>  }</div>
-<div class="line"><span class="lineno">  710</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00680">680</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  680</span>                                                                                      {</div>
+<div class="line"><span class="lineno">  681</span>  <span class="keywordflow">if</span> (!<a class="code hl_variable" href="#abaf1535f3ca1474ec268b176746d776c">use_speed_dependent_lateral_limits_</a> || !<a class="code hl_variable" href="#ad9e618510c9dd38817dd7f242b02e650">lateral_limits_loaded_</a>) {</div>
+<div class="line"><span class="lineno">  682</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#ae8f8afa418aa8fefbea04baf80616d4a">max_curvature_</a>;</div>
+<div class="line"><span class="lineno">  683</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#aa8e132f1d6f27b3a7953ba28a95ef596">max_curvature_rate_</a>;</div>
+<div class="line"><span class="lineno">  684</span>    <span class="keywordflow">return</span>;</div>
+<div class="line"><span class="lineno">  685</span>  }</div>
+<div class="line"><span class="lineno">  686</span>  <span class="keywordflow">if</span> (<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.empty()) {</div>
+<div class="line"><span class="lineno">  687</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#ae8f8afa418aa8fefbea04baf80616d4a">max_curvature_</a>;</div>
+<div class="line"><span class="lineno">  688</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#aa8e132f1d6f27b3a7953ba28a95ef596">max_curvature_rate_</a>;</div>
+<div class="line"><span class="lineno">  689</span>    <span class="keywordflow">return</span>;</div>
+<div class="line"><span class="lineno">  690</span>  }</div>
+<div class="line"><span class="lineno">  691</span> </div>
+<div class="line"><span class="lineno">  692</span>  <span class="keywordtype">double</span> v = velocity;</div>
+<div class="line"><span class="lineno">  693</span>  <span class="keywordflow">if</span> (v &lt;= <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.front()) {</div>
+<div class="line"><span class="lineno">  694</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.front();</div>
+<div class="line"><span class="lineno">  695</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.front();</div>
+<div class="line"><span class="lineno">  696</span>    <span class="keywordflow">return</span>;</div>
+<div class="line"><span class="lineno">  697</span>  }</div>
+<div class="line"><span class="lineno">  698</span>  <span class="keywordflow">if</span> (v &gt;= <a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>.back()) {</div>
+<div class="line"><span class="lineno">  699</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>.back();</div>
+<div class="line"><span class="lineno">  700</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>.back();</div>
+<div class="line"><span class="lineno">  701</span>    <span class="keywordflow">return</span>;</div>
+<div class="line"><span class="lineno">  702</span>  }</div>
+<div class="line"><span class="lineno">  703</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="#aea1490279c14feda591fae30af648f6f">LinearInterpolation</a>(<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>, <a class="code hl_variable" href="#a2593ee9e192561dbc7448a05397f5457">lateral_limits_kappa_max_</a>, v, <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a>)) {</div>
+<div class="line"><span class="lineno">  704</span>    <a class="code hl_variable" href="#a9bb4adf64bee365e0acf539563a41295">max_curvature_current_</a> = <a class="code hl_variable" href="#ae8f8afa418aa8fefbea04baf80616d4a">max_curvature_</a>;</div>
+<div class="line"><span class="lineno">  705</span>  }</div>
+<div class="line"><span class="lineno">  706</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="#aea1490279c14feda591fae30af648f6f">LinearInterpolation</a>(<a class="code hl_variable" href="#a95e95f15f510e2f6f88bd0c871bb0bfa">lateral_limits_velocity_</a>, <a class="code hl_variable" href="#a7efc7302f84ae05871bd249ac27f9b74">lateral_limits_kappa_rate_max_</a>, v, <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a>)) {</div>
+<div class="line"><span class="lineno">  707</span>    <a class="code hl_variable" href="#a93b410561ac8064588ab1b190fcc7f58">max_curvature_rate_current_</a> = <a class="code hl_variable" href="#aa8e132f1d6f27b3a7953ba28a95ef596">max_curvature_rate_</a>;</div>
+<div class="line"><span class="lineno">  708</span>  }</div>
+<div class="line"><span class="lineno">  709</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2063,13 +2062,13 @@ template&lt;typename T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Current measured longitudinal command in meters per second, meters per second squared, and meters per second cubed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00760">760</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  761</span>                                               {</div>
-<div class="line"><span class="lineno">  762</span>  LongitudinalCommand longitudinal_command;</div>
-<div class="line"><span class="lineno">  763</span>  longitudinal_command.speed = perception_msgs::object_access::getVelLon(ego_data);</div>
-<div class="line"><span class="lineno">  764</span>  longitudinal_command.acceleration = perception_msgs::object_access::getAccLon(ego_data);</div>
-<div class="line"><span class="lineno">  765</span>  <span class="keywordflow">return</span> longitudinal_command;</div>
-<div class="line"><span class="lineno">  766</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00759">759</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  760</span>                                               {</div>
+<div class="line"><span class="lineno">  761</span>  LongitudinalCommand longitudinal_command;</div>
+<div class="line"><span class="lineno">  762</span>  longitudinal_command.speed = perception_msgs::object_access::getVelLon(ego_data);</div>
+<div class="line"><span class="lineno">  763</span>  longitudinal_command.acceleration = perception_msgs::object_access::getAccLon(ego_data);</div>
+<div class="line"><span class="lineno">  764</span>  <span class="keywordflow">return</span> longitudinal_command;</div>
+<div class="line"><span class="lineno">  765</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2256,14 +2255,14 @@ template&lt;typename T &gt; </div>
 <div class="line"><span class="lineno">  512</span>}</div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a0ed6692a6c6d0bb5f0ca01f834e4a7e4"><div class="ttname"><a href="#a0ed6692a6c6d0bb5f0ca01f834e4a7e4">AckermannTrajectoryControl::setControllerGains</a></div><div class="ttdeci">void setControllerGains()</div><div class="ttdoc">Updates controller and feed-forward gains from the current vehicle speed.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00326">AckermannTrajectoryControlNode.cpp:326</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_a1a3a3ef8866e21b0da90224d126294af"><div class="ttname"><a href="#a1a3a3ef8866e21b0da90224d126294af">AckermannTrajectoryControl::CurvatureToSteeringCommand</a></div><div class="ttdeci">SteeringCommand CurvatureToSteeringCommand(const CurvatureCommand &amp;command) const</div><div class="ttdoc">Converts curvature-domain commands into steering-domain commands for the current vehicle geometry.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00094">AckermannTrajectoryControlNode.cpp:94</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_aa6aec394f3b4115f2fb9ca6cb3ce0529"><div class="ttname"><a href="#aa6aec394f3b4115f2fb9ca6cb3ce0529">AckermannTrajectoryControl::UpdateLonFromState</a></div><div class="ttdeci">static LongitudinalCommand UpdateLonFromState(const perception_msgs::msg::EgoData &amp;ego_data)</div><div class="ttdoc">Derives the current longitudinal command from the measured longitudinal state.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00760">AckermannTrajectoryControlNode.cpp:760</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_aaed97e1378fdd83d695a8a2ab34f6254"><div class="ttname"><a href="#aaed97e1378fdd83d695a8a2ab34f6254">AckermannTrajectoryControl::UpdateKappaFromState</a></div><div class="ttdeci">static SteeringCommand UpdateKappaFromState(const perception_msgs::msg::EgoData &amp;ego_data, const double wheelbase, double &amp;kappa, double &amp;kappa_rate)</div><div class="ttdoc">Derives the current steering command from the measured steering state and computes the matching curva...</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00745">AckermannTrajectoryControlNode.cpp:745</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_aba3809f0cef02381ad88d90184881a7d"><div class="ttname"><a href="#aba3809f0cef02381ad88d90184881a7d">AckermannTrajectoryControl::LongitudinalControl</a></div><div class="ttdeci">LongitudinalCommand LongitudinalControl(const double dt)</div><div class="ttdoc">Computes the target longitudinal command for the current control step.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00878">AckermannTrajectoryControlNode.cpp:878</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_aa6aec394f3b4115f2fb9ca6cb3ce0529"><div class="ttname"><a href="#aa6aec394f3b4115f2fb9ca6cb3ce0529">AckermannTrajectoryControl::UpdateLonFromState</a></div><div class="ttdeci">static LongitudinalCommand UpdateLonFromState(const perception_msgs::msg::EgoData &amp;ego_data)</div><div class="ttdoc">Derives the current longitudinal command from the measured longitudinal state.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00759">AckermannTrajectoryControlNode.cpp:759</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_aaed97e1378fdd83d695a8a2ab34f6254"><div class="ttname"><a href="#aaed97e1378fdd83d695a8a2ab34f6254">AckermannTrajectoryControl::UpdateKappaFromState</a></div><div class="ttdeci">static SteeringCommand UpdateKappaFromState(const perception_msgs::msg::EgoData &amp;ego_data, const double wheelbase, double &amp;kappa, double &amp;kappa_rate)</div><div class="ttdoc">Derives the current steering command from the measured steering state and computes the matching curva...</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00744">AckermannTrajectoryControlNode.cpp:744</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_aba3809f0cef02381ad88d90184881a7d"><div class="ttname"><a href="#aba3809f0cef02381ad88d90184881a7d">AckermannTrajectoryControl::LongitudinalControl</a></div><div class="ttdeci">LongitudinalCommand LongitudinalControl(const double dt)</div><div class="ttdoc">Computes the target longitudinal command for the current control step.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00877">AckermannTrajectoryControlNode.cpp:877</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_acb56f9c45179406077238c09ffcee365"><div class="ttname"><a href="#acb56f9c45179406077238c09ffcee365">AckermannTrajectoryControl::processed_trajectory_sequence_</a></div><div class="ttdeci">uint64_t processed_trajectory_sequence_</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00321">AckermannTrajectoryControlNode.hpp:321</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_ad73ea80a68497eaf77184f814e3175ca"><div class="ttname"><a href="#ad73ea80a68497eaf77184f814e3175ca">AckermannTrajectoryControl::ResetController</a></div><div class="ttdeci">void ResetController()</div><div class="ttdoc">Resets controller state, cached outputs, and stored input messages.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00302">AckermannTrajectoryControlNode.cpp:302</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_addf770135c2351f9d2c1f652b63b43b5"><div class="ttname"><a href="#addf770135c2351f9d2c1f652b63b43b5">AckermannTrajectoryControl::latest_vehicle_state_</a></div><div class="ttdeci">perception_msgs::msg::EgoData latest_vehicle_state_</div><div class="ttdoc">Latest input cache shared between input callbacks and the control cycle.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8hpp_source.html#l00316">AckermannTrajectoryControlNode.hpp:316</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_adf696c5ae73b7e5d018388f37247ff46"><div class="ttname"><a href="#adf696c5ae73b7e5d018388f37247ff46">AckermannTrajectoryControl::TrjDataProc</a></div><div class="ttdeci">bool TrjDataProc(const rclcpp::Time &amp;ctrl_time)</div><div class="ttdoc">Extracts target values from the transformed trajectory and updates control deviations.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00539">AckermannTrajectoryControlNode.cpp:539</a></div></div>
-<div class="ttc" id="aclassAckermannTrajectoryControl_html_ae0302ad825b48b0fc4d036b8d0ed1869"><div class="ttname"><a href="#ae0302ad825b48b0fc4d036b8d0ed1869">AckermannTrajectoryControl::LateralControl</a></div><div class="ttdeci">CurvatureCommand LateralControl(const double dt)</div><div class="ttdoc">Computes the target curvature for the current control step.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00826">AckermannTrajectoryControlNode.cpp:826</a></div></div>
+<div class="ttc" id="aclassAckermannTrajectoryControl_html_ae0302ad825b48b0fc4d036b8d0ed1869"><div class="ttname"><a href="#ae0302ad825b48b0fc4d036b8d0ed1869">AckermannTrajectoryControl::LateralControl</a></div><div class="ttdeci">CurvatureCommand LateralControl(const double dt)</div><div class="ttdoc">Computes the target curvature for the current control step.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00825">AckermannTrajectoryControlNode.cpp:825</a></div></div>
 <div class="ttc" id="aclassAckermannTrajectoryControl_html_ae81d7e0c5a0864908ede43e078023bdf"><div class="ttname"><a href="#ae81d7e0c5a0864908ede43e078023bdf">AckermannTrajectoryControl::InputSanityCheck</a></div><div class="ttdeci">bool InputSanityCheck()</div><div class="ttdoc">Validates that current state and trajectory inputs are usable for control.</div><div class="ttdef"><b>Definition</b> <a href="AckermannTrajectoryControlNode_8cpp_source.html#l00514">AckermannTrajectoryControlNode.cpp:514</a></div></div>
 </div><!-- fragment -->
 </div>
@@ -2333,27 +2332,27 @@ template&lt;typename T &gt; </div>
 <p>Checks whether the current ego-state sample is fresh enough to be used. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the ego-state timestamp is within the configured timeout window. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00724">724</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  724</span>                                                                                 {</div>
-<div class="line"><span class="lineno">  725</span>  <span class="keywordflow">try</span> {</div>
-<div class="line"><span class="lineno">  726</span>    perception_msgs::object_access::sanityCheckContinuousState(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
-<div class="line"><span class="lineno">  727</span>  } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::exception&amp;) {</div>
-<div class="line"><span class="lineno">  728</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;Sanity check for vehicle state failed!&quot;</span>);</div>
-<div class="line"><span class="lineno">  729</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  730</span>  }</div>
-<div class="line"><span class="lineno">  731</span>  <span class="keywordtype">double</span> age = (ctrl_time - <a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>.header.stamp).seconds();</div>
-<div class="line"><span class="lineno">  732</span>  <span class="keywordflow">if</span> (age &lt; 0.0) {</div>
-<div class="line"><span class="lineno">  733</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;Vehicle state timestamp is newer than current control cycle time! Age: &quot;</span></div>
-<div class="line"><span class="lineno">  734</span>                                          &lt;&lt; std::fixed &lt;&lt; std::setprecision(15) &lt;&lt; age &lt;&lt; <span class="stringliteral">&quot; seconds.&quot;</span>);</div>
-<div class="line"><span class="lineno">  735</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  736</span>  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (age &gt; <a class="code hl_variable" href="#a3259013cc06146b64c4282d037f0749c">vehicle_state_timeout_</a>) {</div>
-<div class="line"><span class="lineno">  737</span>    RCLCPP_ERROR_STREAM(get_logger(),</div>
-<div class="line"><span class="lineno">  738</span>                        <span class="stringliteral">&quot;Vehicle state is outdated! Age: &quot;</span> &lt;&lt; std::fixed &lt;&lt; std::setprecision(15) &lt;&lt; age &lt;&lt; <span class="stringliteral">&quot; seconds.&quot;</span>);</div>
-<div class="line"><span class="lineno">  739</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><span class="lineno">  740</span>  } <span class="keywordflow">else</span> {</div>
-<div class="line"><span class="lineno">  741</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><span class="lineno">  742</span>  }</div>
-<div class="line"><span class="lineno">  743</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00723">723</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  723</span>                                                                                 {</div>
+<div class="line"><span class="lineno">  724</span>  <span class="keywordflow">try</span> {</div>
+<div class="line"><span class="lineno">  725</span>    perception_msgs::object_access::sanityCheckContinuousState(<a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>);</div>
+<div class="line"><span class="lineno">  726</span>  } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::exception&amp;) {</div>
+<div class="line"><span class="lineno">  727</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;Sanity check for vehicle state failed!&quot;</span>);</div>
+<div class="line"><span class="lineno">  728</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  729</span>  }</div>
+<div class="line"><span class="lineno">  730</span>  <span class="keywordtype">double</span> age = (ctrl_time - <a class="code hl_variable" href="#aa87d6b068f84ac89ce476ac497c3cf82">cur_vehicle_state_</a>.header.stamp).seconds();</div>
+<div class="line"><span class="lineno">  731</span>  <span class="keywordflow">if</span> (age &lt; 0.0) {</div>
+<div class="line"><span class="lineno">  732</span>    RCLCPP_ERROR_STREAM(get_logger(), <span class="stringliteral">&quot;Vehicle state timestamp is newer than current control cycle time! Age: &quot;</span></div>
+<div class="line"><span class="lineno">  733</span>                                          &lt;&lt; std::fixed &lt;&lt; std::setprecision(15) &lt;&lt; age &lt;&lt; <span class="stringliteral">&quot; seconds.&quot;</span>);</div>
+<div class="line"><span class="lineno">  734</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  735</span>  } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (age &gt; <a class="code hl_variable" href="#a3259013cc06146b64c4282d037f0749c">vehicle_state_timeout_</a>) {</div>
+<div class="line"><span class="lineno">  736</span>    RCLCPP_ERROR_STREAM(get_logger(),</div>
+<div class="line"><span class="lineno">  737</span>                        <span class="stringliteral">&quot;Vehicle state is outdated! Age: &quot;</span> &lt;&lt; std::fixed &lt;&lt; std::setprecision(15) &lt;&lt; age &lt;&lt; <span class="stringliteral">&quot; seconds.&quot;</span>);</div>
+<div class="line"><span class="lineno">  738</span>    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><span class="lineno">  739</span>  } <span class="keywordflow">else</span> {</div>
+<div class="line"><span class="lineno">  740</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><span class="lineno">  741</span>  }</div>
+<div class="line"><span class="lineno">  742</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>

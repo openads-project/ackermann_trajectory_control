@@ -28,7 +28,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">ackermann_trajectory_control<span id="projectnumber">&#160;v1.4.0</span>
+   <div id="projectname">ackermann_trajectory_control<span id="projectnumber">&#160;v1.5.0</span>
    </div>
   </td>
  </tr>
@@ -149,16 +149,16 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Exit status code reported to the operating system. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00934">934</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">  934</span>                                 {</div>
-<div class="line"><span class="lineno">  935</span>  rclcpp::init(argc, argv);</div>
-<div class="line"><span class="lineno">  936</span>  <span class="keyword">auto</span> controller = std::make_shared&lt;AckermannTrajectoryControl&gt;();</div>
-<div class="line"><span class="lineno">  937</span>  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), 2);</div>
-<div class="line"><span class="lineno">  938</span>  executor.add_node(controller);</div>
-<div class="line"><span class="lineno">  939</span>  executor.spin();</div>
-<div class="line"><span class="lineno">  940</span>  rclcpp::shutdown();</div>
-<div class="line"><span class="lineno">  941</span>  <span class="keywordflow">return</span> 0;</div>
-<div class="line"><span class="lineno">  942</span>}</div>
+<p class="definition">Definition at line <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html#l00933">933</a> of file <a class="el" href="AckermannTrajectoryControlNode_8cpp_source.html">AckermannTrajectoryControlNode.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">  933</span>                                 {</div>
+<div class="line"><span class="lineno">  934</span>  rclcpp::init(argc, argv);</div>
+<div class="line"><span class="lineno">  935</span>  <span class="keyword">auto</span> controller = std::make_shared&lt;AckermannTrajectoryControl&gt;();</div>
+<div class="line"><span class="lineno">  936</span>  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), 2);</div>
+<div class="line"><span class="lineno">  937</span>  executor.add_node(controller);</div>
+<div class="line"><span class="lineno">  938</span>  executor.spin();</div>
+<div class="line"><span class="lineno">  939</span>  rclcpp::shutdown();</div>
+<div class="line"><span class="lineno">  940</span>  <span class="keywordflow">return</span> 0;</div>
+<div class="line"><span class="lineno">  941</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
