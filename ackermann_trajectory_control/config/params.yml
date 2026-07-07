@@ -28,6 +28,11 @@
     use_back_calculation: false
     use_odom: true
 
+    # diagnostic parameters
+    diagnostic_updater:
+      period: 1.0
+      use_fqn: false
+
     # Gain scheduling lookup tables
     velocity_lookup: # [m/s]
       - -2.78
