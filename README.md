@@ -1,7 +1,7 @@
 # ackermann_trajectory_control
 
 <p align="center">
-  <a href="https://github.com/openads-project"><img src="https://img.shields.io/badge/OpenADS-f5ff01"/></a>
+  <a href="https://openads-project.github.io"><img src="https://img.shields.io/badge/OpenADS-f5ff01"/></a>
   <a href="https://www.ros.org"><img src="https://img.shields.io/badge/ROS 2-jazzy-22314e"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/releases/latest"><img src="https://img.shields.io/github/v/release/openads-project/ackermann_trajectory_control"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/blob/main/LICENSE"><img src="https://img.shields.io/github/license/openads-project/ackermann_trajectory_control"/></a>
@@ -30,7 +30,7 @@ This controller is designed to be used in the context of the the *Open Automated
 
 
 > [!IMPORTANT]
-> This repository is part of [***OpenADS***](https://github.com/openads-project), the *Open Automated Driving Stack*. *OpenADS* and its modules have been initiated and are currently being maintained by the [**Institute for Automotive Engineering (ika) at RWTH Aachen University**](https://www.ika.rwth-aachen.de/de/).
+> This repository is part of [***OpenADS***](https://openads-project.github.io/), the *Open Automated Driving Systems* project. *OpenADS* and its modules have been initiated and are currently being maintained by the [**Institute for Automotive Engineering (ika) at RWTH Aachen University**](https://www.ika.rwth-aachen.de/de/).
 
 
 ## 🚀 Quick Start
