@@ -1,0 +1,9 @@
+apiVersion: v2
+name: ackermann-trajectory-control
+version: 1.5.0
+appVersion: 1.5.0
+description: Cascaded ROS 2 PID Controller for Ackermann steered vehicles
+dependencies:
+  - repository: oci://ghcr.io/openads-project/openads-helm
+    name: openadservice
+    version: 1.0.0

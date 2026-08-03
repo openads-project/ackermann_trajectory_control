@@ -1,13 +1,14 @@
 # ackermann_trajectory_control
 
 <p align="center">
-  <a href="https://openads-project.github.io"><img src="https://img.shields.io/badge/OpenADS-f5ff01"/></a>
+  <a href="https://openads-project.github.io"><img src="https://img.shields.io/badge/OpenADS-45ccc6"/></a>
   <a href="https://www.ros.org"><img src="https://img.shields.io/badge/ROS 2-jazzy-22314e"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/releases/latest"><img src="https://img.shields.io/github/v/release/openads-project/ackermann_trajectory_control"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/blob/main/LICENSE"><img src="https://img.shields.io/github/license/openads-project/ackermann_trajectory_control"/></a>
   <br>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docker-ros.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docker-ros.yml/badge.svg"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/compose-oci.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/compose-oci.yml/badge.svg"/></a>
+  <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/helm-oci.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/helm-oci.yml/badge.svg"/></a>
   <a href="https://openads-project.github.io/ackermann_trajectory_control"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/docs.yml/badge.svg"/></a>
   <a href="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml"><img src="https://github.com/openads-project/ackermann_trajectory_control/actions/workflows/consistency.yml/badge.svg"/></a>
 </p>
