@@ -16,7 +16,7 @@ openadservice:
     LOG_LEVEL: info
     USE_SIM_TIME: false
     PARAMS: /docker-ros/ws/install/ackermann_trajectory_control/share/ackermann_trajectory_control/config/params.yml
-    TRACE: False
+    ROS_TRACING: False
   args:
   - /bin/bash
   - -ic
@@ -27,7 +27,7 @@ openadservice:
       log_level:=${LOG_LEVEL} \
       use_sim_time:=${USE_SIM_TIME} \
       params:=${PARAMS} \
-      trace:=${TRACE} \
+      ros_tracing:=${ROS_TRACING} \
       ego_data_topic:=${EGO_DATA_TOPIC} \
       trajectory_topic:=${TRAJECTORY_TOPIC} \
       lat_control_active_topic:=${LAT_CONTROL_ACTIVE_TOPIC} \

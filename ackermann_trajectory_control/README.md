@@ -85,4 +85,4 @@ flowchart LR
 | `params` | `os.path.join(get_package_share_directory("ackermann_trajectory_control"), "config", "params.yml")` | Path to the parameter file |
 | `log_level` | `"info"` | ROS logging level (debug, info, warn, error, fatal) |
 | `use_sim_time` | `"false"` | Use simulation clock |
-| `trace` | `"False"` | Enable tracing |
+| `ros_tracing` | `"False"` | Enable tracing |
