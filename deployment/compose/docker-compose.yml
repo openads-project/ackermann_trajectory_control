@@ -16,7 +16,7 @@ services:
       # --- other -----
       LOG_LEVEL: ${LOG_LEVEL:-info}
       USE_SIM_TIME: ${USE_SIM_TIME:-false}
-      PARAMS: ${PARAMS:-/docker-ros/ws/install/ackermann_trajectory_control/share/ackermann_trajectory_control/config/params.yml}
+      PARAMS: /docker-ros/ws/install/ackermann_trajectory_control/share/ackermann_trajectory_control/config/params.yml
       ROS_TRACING: ${ROS_TRACING:-False}
     command:
       - /bin/bash

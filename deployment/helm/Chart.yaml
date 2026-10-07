@@ -6,4 +6,4 @@ description: Cascaded ROS 2 PID Controller for Ackermann steered vehicles
 dependencies:
   - repository: oci://ghcr.io/openads-project/openads-helm
     name: openadservice
-    version: 1.0.0
+    version: 1.2.0
