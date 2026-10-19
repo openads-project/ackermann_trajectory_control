@@ -13,6 +13,8 @@
   
   <depend>ackermann_msgs</depend>
   <depend>ament_index_cpp</depend>
+  <depend>diagnostic_msgs</depend>
+  <depend>diagnostic_updater</depend>
   <depend>perception_msgs_utils</depend>
   <depend>perception_msgs</depend>
   <depend>rclcpp</depend>
