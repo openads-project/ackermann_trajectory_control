@@ -15,10 +15,16 @@ void PID::SetParameters(double Kp, double Ki, double Kd) {
 
 void PID::Reset() {
   i_val_ = 0.0;
+  pre_i_val_ = 0.0;
   pre_e_ = nan("");
 }
 
-void PID::ResetIntegral() { i_val_ = 0.0; }
+void PID::ResetIntegral() {
+  i_val_ = 0.0;
+  pre_i_val_ = 0.0;
+}
+
+void PID::RestoreIntegral() { i_val_ = pre_i_val_; }
 
 void PID::BackCalculate(double u_unsat, double u_sat, double dt, double kaw) {
   if (dt <= 0.0 || kaw <= 0.0 || Ki_ == 0.0) return;
@@ -26,6 +32,7 @@ void PID::BackCalculate(double u_unsat, double u_sat, double dt, double kaw) {
 }
 
 double PID::Calc(double e, double dt) {
+  pre_i_val_ = i_val_;
   i_val_ += e * dt;
   double d_val = 0.0;
   if (std::isnan(pre_e_)) {
