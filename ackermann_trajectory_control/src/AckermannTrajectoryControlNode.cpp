@@ -784,7 +784,6 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     } else {
       kappa_tgt = -max_curvature;
     }
-    dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature limited!");
     kappa_limited = true;
   }
@@ -799,7 +798,6 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
       kappa_rate = -max_curvature_rate;
     }
     kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited!");
     kappa_limited = true;
   }
@@ -814,7 +812,6 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
     }
     kappa_rate = kappa_rate_prev + kappa_accel * dt;
     kappa_tgt = kappa_prev + kappa_rate * dt;
-    dy_pid_->ResetIntegral();
     RCLCPP_WARN_STREAM(get_logger(), "Curvature-acceleration limited!");
     kappa_limited = true;
   }
@@ -857,6 +854,15 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
   double kappa_rate = 0.0;
   bool kappa_is_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
                                      max_curvature_accel_, last_kappa_, last_kappa_rate_);
+
+  if (kappa_is_limited) {
+    if (use_back_calculation_) {
+      // freeze the outer integrator since the limited inner loop cannot follow its setpoint
+      dy_pid_->RestoreIntegral();
+    } else {
+      dy_pid_->ResetIntegral();
+    }
+  }
 
   if (kappa_is_limited && !vehicle_standstill) {
     if (use_back_calculation_) {

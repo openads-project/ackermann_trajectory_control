@@ -35,6 +35,11 @@ class PID {
   void ResetIntegral();
 
   /**
+   * @brief Restores the integral term from before the last update.
+   */
+  void RestoreIntegral();
+
+  /**
    * @brief Applies anti-windup back-calculation after output saturation.
    *
    * @param u_unsat Unsaturated controller output.
@@ -67,6 +72,7 @@ class PID {
   double Ki_ = 0.0;         ///< Integral gain.
   double Kd_ = 0.0;         ///< Derivative gain.
   double i_val_ = 0.0;      ///< Accumulated integral term.
+  double pre_i_val_ = 0.0;  ///< Integral term before the last update.
   double pre_e_ = nan("");  ///< Previously processed error, NaN before the first update.
 
 };  // class PID
