@@ -28,7 +28,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">ackermann_trajectory_control<span id="projectnumber">&#160;v1.5.2</span>
+   <div id="projectname">ackermann_trajectory_control<span id="projectnumber">&#160;v1.5.3</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9df529d68fd507ac158fac573fe2e1f0" id="r_a9df529d68fd507ac158fac573fe2e1f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9df529d68fd507ac158fac573fe2e1f0">ResetIntegral</a> ()</td></tr>
 <tr class="memdesc:a9df529d68fd507ac158fac573fe2e1f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clears only the accumulated integral term.  <br /></td></tr>
 <tr class="separator:a9df529d68fd507ac158fac573fe2e1f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa71aad4a57e7565a4aa55b1e59d72c5d" id="r_aa71aad4a57e7565a4aa55b1e59d72c5d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa71aad4a57e7565a4aa55b1e59d72c5d">RestoreIntegral</a> ()</td></tr>
+<tr class="memdesc:aa71aad4a57e7565a4aa55b1e59d72c5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restores the integral term from before the last update.  <br /></td></tr>
+<tr class="separator:aa71aad4a57e7565a4aa55b1e59d72c5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6dea96d6e1fe992103e6fc7664205a2" id="r_ab6dea96d6e1fe992103e6fc7664205a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab6dea96d6e1fe992103e6fc7664205a2">BackCalculate</a> (double u_unsat, double u_sat, double dt, double kaw)</td></tr>
 <tr class="memdesc:ab6dea96d6e1fe992103e6fc7664205a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies anti-windup back-calculation after output saturation.  <br /></td></tr>
 <tr class="separator:ab6dea96d6e1fe992103e6fc7664205a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -148,6 +151,9 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a0be1edf175ce6d0e577102168ecabf74" id="r_a0be1edf175ce6d0e577102168ecabf74"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> = 0.0</td></tr>
 <tr class="memdesc:a0be1edf175ce6d0e577102168ecabf74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accumulated integral term.  <br /></td></tr>
 <tr class="separator:a0be1edf175ce6d0e577102168ecabf74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7be86716df20b84d6fba55daad1d9d0" id="r_ae7be86716df20b84d6fba55daad1d9d0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae7be86716df20b84d6fba55daad1d9d0">pre_i_val_</a> = 0.0</td></tr>
+<tr class="memdesc:ae7be86716df20b84d6fba55daad1d9d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Integral term before the last update.  <br /></td></tr>
+<tr class="separator:ae7be86716df20b84d6fba55daad1d9d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5297eadb28c14a42228016835baa2627" id="r_a5297eadb28c14a42228016835baa2627"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = nan(&quot;&quot;)</td></tr>
 <tr class="memdesc:a5297eadb28c14a42228016835baa2627"><td class="mdescLeft">&#160;</td><td class="mdescRight">Previously processed error, NaN before the first update.  <br /></td></tr>
 <tr class="separator:a5297eadb28c14a42228016835baa2627"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -265,13 +271,13 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00023">23</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">   23</span>                                                                           {</div>
-<div class="line"><span class="lineno">   24</span>  <span class="keywordflow">if</span> (dt &lt;= 0.0 || kaw &lt;= 0.0 || <a class="code hl_variable" href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">Ki_</a> == 0.0) <span class="keywordflow">return</span>;</div>
-<div class="line"><span class="lineno">   25</span>  <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> += (kaw / <a class="code hl_variable" href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">Ki_</a>) * (u_sat - u_unsat) * dt;</div>
-<div class="line"><span class="lineno">   26</span>}</div>
-<div class="ttc" id="aclassPID_html_a0be1edf175ce6d0e577102168ecabf74"><div class="ttname"><a href="#a0be1edf175ce6d0e577102168ecabf74">PID::i_val_</a></div><div class="ttdeci">double i_val_</div><div class="ttdoc">Accumulated integral term.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00069">PID.hpp:69</a></div></div>
-<div class="ttc" id="aclassPID_html_a1ae5b8c90aa2e4cc49b3f0bb793056df"><div class="ttname"><a href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">PID::Ki_</a></div><div class="ttdeci">double Ki_</div><div class="ttdoc">Integral gain.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00067">PID.hpp:67</a></div></div>
+<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00029">29</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">   29</span>                                                                           {</div>
+<div class="line"><span class="lineno">   30</span>  <span class="keywordflow">if</span> (dt &lt;= 0.0 || kaw &lt;= 0.0 || <a class="code hl_variable" href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">Ki_</a> == 0.0) <span class="keywordflow">return</span>;</div>
+<div class="line"><span class="lineno">   31</span>  <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> += (kaw / <a class="code hl_variable" href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">Ki_</a>) * (u_sat - u_unsat) * dt;</div>
+<div class="line"><span class="lineno">   32</span>}</div>
+<div class="ttc" id="aclassPID_html_a0be1edf175ce6d0e577102168ecabf74"><div class="ttname"><a href="#a0be1edf175ce6d0e577102168ecabf74">PID::i_val_</a></div><div class="ttdeci">double i_val_</div><div class="ttdoc">Accumulated integral term.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00074">PID.hpp:74</a></div></div>
+<div class="ttc" id="aclassPID_html_a1ae5b8c90aa2e4cc49b3f0bb793056df"><div class="ttname"><a href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">PID::Ki_</a></div><div class="ttdeci">double Ki_</div><div class="ttdoc">Integral gain.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00072">PID.hpp:72</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -304,22 +310,24 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Controller output. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00028">28</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">   28</span>                                    {</div>
-<div class="line"><span class="lineno">   29</span>  <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> += e * dt;</div>
-<div class="line"><span class="lineno">   30</span>  <span class="keywordtype">double</span> d_val = 0.0;</div>
-<div class="line"><span class="lineno">   31</span>  <span class="keywordflow">if</span> (std::isnan(<a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a>)) {</div>
-<div class="line"><span class="lineno">   32</span>    <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = e;</div>
-<div class="line"><span class="lineno">   33</span>  }</div>
-<div class="line"><span class="lineno">   34</span>  <span class="keywordflow">if</span> (dt != 0.0) d_val = (e - <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a>) / dt;</div>
-<div class="line"><span class="lineno">   35</span> </div>
-<div class="line"><span class="lineno">   36</span>  <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = e;</div>
-<div class="line"><span class="lineno">   37</span> </div>
-<div class="line"><span class="lineno">   38</span>  <span class="keywordflow">return</span> <a class="code hl_variable" href="#abb896abeb28786faf61a56db3c28ded1">Kp_</a> * e + <a class="code hl_variable" href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">Ki_</a> * <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> + <a class="code hl_variable" href="#a26118dd88f7f043ca282e53f72d45f99">Kd_</a> * d_val;</div>
-<div class="line"><span class="lineno">   39</span>}</div>
-<div class="ttc" id="aclassPID_html_a26118dd88f7f043ca282e53f72d45f99"><div class="ttname"><a href="#a26118dd88f7f043ca282e53f72d45f99">PID::Kd_</a></div><div class="ttdeci">double Kd_</div><div class="ttdoc">Derivative gain.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00068">PID.hpp:68</a></div></div>
-<div class="ttc" id="aclassPID_html_a5297eadb28c14a42228016835baa2627"><div class="ttname"><a href="#a5297eadb28c14a42228016835baa2627">PID::pre_e_</a></div><div class="ttdeci">double pre_e_</div><div class="ttdoc">Previously processed error, NaN before the first update.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00070">PID.hpp:70</a></div></div>
-<div class="ttc" id="aclassPID_html_abb896abeb28786faf61a56db3c28ded1"><div class="ttname"><a href="#abb896abeb28786faf61a56db3c28ded1">PID::Kp_</a></div><div class="ttdeci">double Kp_</div><div class="ttdoc">Proportional gain.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00066">PID.hpp:66</a></div></div>
+<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00034">34</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">   34</span>                                    {</div>
+<div class="line"><span class="lineno">   35</span>  <a class="code hl_variable" href="#ae7be86716df20b84d6fba55daad1d9d0">pre_i_val_</a> = <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a>;</div>
+<div class="line"><span class="lineno">   36</span>  <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> += e * dt;</div>
+<div class="line"><span class="lineno">   37</span>  <span class="keywordtype">double</span> d_val = 0.0;</div>
+<div class="line"><span class="lineno">   38</span>  <span class="keywordflow">if</span> (std::isnan(<a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a>)) {</div>
+<div class="line"><span class="lineno">   39</span>    <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = e;</div>
+<div class="line"><span class="lineno">   40</span>  }</div>
+<div class="line"><span class="lineno">   41</span>  <span class="keywordflow">if</span> (dt != 0.0) d_val = (e - <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a>) / dt;</div>
+<div class="line"><span class="lineno">   42</span> </div>
+<div class="line"><span class="lineno">   43</span>  <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = e;</div>
+<div class="line"><span class="lineno">   44</span> </div>
+<div class="line"><span class="lineno">   45</span>  <span class="keywordflow">return</span> <a class="code hl_variable" href="#abb896abeb28786faf61a56db3c28ded1">Kp_</a> * e + <a class="code hl_variable" href="#a1ae5b8c90aa2e4cc49b3f0bb793056df">Ki_</a> * <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> + <a class="code hl_variable" href="#a26118dd88f7f043ca282e53f72d45f99">Kd_</a> * d_val;</div>
+<div class="line"><span class="lineno">   46</span>}</div>
+<div class="ttc" id="aclassPID_html_a26118dd88f7f043ca282e53f72d45f99"><div class="ttname"><a href="#a26118dd88f7f043ca282e53f72d45f99">PID::Kd_</a></div><div class="ttdeci">double Kd_</div><div class="ttdoc">Derivative gain.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00073">PID.hpp:73</a></div></div>
+<div class="ttc" id="aclassPID_html_a5297eadb28c14a42228016835baa2627"><div class="ttname"><a href="#a5297eadb28c14a42228016835baa2627">PID::pre_e_</a></div><div class="ttdeci">double pre_e_</div><div class="ttdoc">Previously processed error, NaN before the first update.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00076">PID.hpp:76</a></div></div>
+<div class="ttc" id="aclassPID_html_abb896abeb28786faf61a56db3c28ded1"><div class="ttname"><a href="#abb896abeb28786faf61a56db3c28ded1">PID::Kp_</a></div><div class="ttdeci">double Kp_</div><div class="ttdoc">Proportional gain.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00071">PID.hpp:71</a></div></div>
+<div class="ttc" id="aclassPID_html_ae7be86716df20b84d6fba55daad1d9d0"><div class="ttname"><a href="#ae7be86716df20b84d6fba55daad1d9d0">PID::pre_i_val_</a></div><div class="ttdeci">double pre_i_val_</div><div class="ttdoc">Integral term before the last update.</div><div class="ttdef"><b>Definition</b> <a href="PID_8hpp_source.html#l00075">PID.hpp:75</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -343,8 +351,9 @@ Private Attributes</h2></td></tr>
 <p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00016">16</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
 <div class="fragment"><div class="line"><span class="lineno">   16</span>                {</div>
 <div class="line"><span class="lineno">   17</span>  <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> = 0.0;</div>
-<div class="line"><span class="lineno">   18</span>  <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = nan(<span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><span class="lineno">   19</span>}</div>
+<div class="line"><span class="lineno">   18</span>  <a class="code hl_variable" href="#ae7be86716df20b84d6fba55daad1d9d0">pre_i_val_</a> = 0.0;</div>
+<div class="line"><span class="lineno">   19</span>  <a class="code hl_variable" href="#a5297eadb28c14a42228016835baa2627">pre_e_</a> = nan(<span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><span class="lineno">   20</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -365,8 +374,33 @@ Private Attributes</h2></td></tr>
 
 <p>Clears only the accumulated integral term. </p>
 
-<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00021">21</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">   21</span>{ <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> = 0.0; }</div>
+<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00022">22</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">   22</span>                        {</div>
+<div class="line"><span class="lineno">   23</span>  <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> = 0.0;</div>
+<div class="line"><span class="lineno">   24</span>  <a class="code hl_variable" href="#ae7be86716df20b84d6fba55daad1d9d0">pre_i_val_</a> = 0.0;</div>
+<div class="line"><span class="lineno">   25</span>}</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="aa71aad4a57e7565a4aa55b1e59d72c5d" name="aa71aad4a57e7565a4aa55b1e59d72c5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa71aad4a57e7565a4aa55b1e59d72c5d">&#9670;&#160;</a></span>RestoreIntegral()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void PID::RestoreIntegral </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Restores the integral term from before the last update. </p>
+
+<p class="definition">Definition at line <a class="el" href="PID_8cpp_source.html#l00027">27</a> of file <a class="el" href="PID_8cpp_source.html">PID.cpp</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">   27</span>{ <a class="code hl_variable" href="#a0be1edf175ce6d0e577102168ecabf74">i_val_</a> = <a class="code hl_variable" href="#ae7be86716df20b84d6fba55daad1d9d0">pre_i_val_</a>; }</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -436,7 +470,7 @@ Private Attributes</h2></td></tr>
 
 <p>Accumulated integral term. </p>
 
-<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00069">69</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00074">74</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
 
 </div>
 </div>
@@ -462,7 +496,7 @@ Private Attributes</h2></td></tr>
 
 <p>Derivative gain. </p>
 
-<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00068">68</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00073">73</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
 
 </div>
 </div>
@@ -488,7 +522,7 @@ Private Attributes</h2></td></tr>
 
 <p>Integral gain. </p>
 
-<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00067">67</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00072">72</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
 
 </div>
 </div>
@@ -514,7 +548,7 @@ Private Attributes</h2></td></tr>
 
 <p>Proportional gain. </p>
 
-<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00066">66</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00071">71</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
 
 </div>
 </div>
@@ -540,7 +574,33 @@ Private Attributes</h2></td></tr>
 
 <p>Previously processed error, NaN before the first update. </p>
 
-<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00070">70</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00076">76</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ae7be86716df20b84d6fba55daad1d9d0" name="ae7be86716df20b84d6fba55daad1d9d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7be86716df20b84d6fba55daad1d9d0">&#9670;&#160;</a></span>pre_i_val_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double PID::pre_i_val_ = 0.0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Integral term before the last update. </p>
+
+<p class="definition">Definition at line <a class="el" href="PID_8hpp_source.html#l00075">75</a> of file <a class="el" href="PID_8hpp_source.html">PID.hpp</a>.</p>
 
 </div>
 </div>
