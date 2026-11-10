@@ -80,11 +80,10 @@ AckermannTrajectoryControl::AckermannTrajectoryControl() : Node("ackermann_traje
                                 "List of integral gains for the heading deviation controller (mapping to velocity_lookup)", true);
   this->declareAndLoadParameter(
       "dpsi_d", dpsi_d_, "List of derivative gains for the heading deviation controller (mapping to velocity_lookup)", true);
-  this->declareAndLoadParameter(
-      "standstill_request_acceleration_gain", standstill_request_acceleration_gain_,
-      "Gain for the deceleration request when the input trajectory signals standstill. Speed and jerk commands stay zero; "
-      "acceleration is calculated from current speed and clamped by min_longitudinal_acceleration.",
-      true, false, false, -5.0, 0.0, 0.1);
+  this->declareAndLoadParameter("standstill_request_acceleration", standstill_request_acceleration_,
+                                "Deceleration request when the input trajectory signals standstill. Speed and jerk commands stay "
+                                "zero. Value is clamped by min_longitudinal_acceleration.",
+                                true, false, false, -5.0, 0.0, 0.1);
 
   this->setup();
 }
@@ -444,18 +443,17 @@ void AckermannTrajectoryControl::VehicleCtrlCycle() {
     RCLCPP_WARN_STREAM(get_logger(), "Exceeding the expected dt since last control output! dt since last control output: "
                                          << std::fixed << std::setprecision(15) << dt << " seconds.");
   }
-  // Hold zero output (except delta) while the trajectory explicitly requests standstill.
+  // Hold zero output while the trajectory explicitly requests standstill.
   if (tf_trajectory_.standstill) {
     RCLCPP_DEBUG_STREAM(get_logger(), "Standstill.");
-    CurvatureCommand curvature_command{std::tan(delta_tgt_) / wheelbase_, 0.0};
+    CurvatureCommand curvature_command{0.0, 0.0};
     LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_, max_curvature_rate_current_,
                max_curvature_accel_, last_kappa_, last_kappa_rate_);
     const SteeringCommand steering_command = CurvatureToSteeringCommand(curvature_command);
     vhcl_ctrl_output_.drive.steering_angle = static_cast<float>(steering_command.steering_angle);
     vhcl_ctrl_output_.drive.steering_angle_velocity = 0.0;
     vhcl_ctrl_output_.drive.speed = 0.0;
-    double standstill_request_acceleration =
-        standstill_request_acceleration_gain_ * std::fabs(perception_msgs::object_access::getVelLon(cur_vehicle_state_));
+    double standstill_request_acceleration = standstill_request_acceleration_;
     standstill_request_acceleration = std::min(standstill_request_acceleration, 0.0);
     standstill_request_acceleration = std::max(standstill_request_acceleration, lon_min_acc_);
     vhcl_ctrl_output_.drive.acceleration = static_cast<float>(standstill_request_acceleration);
