@@ -418,6 +418,6 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double odom_dpsi_ = 0.0;
 
   /// Other internal state variables
-  double standstill_request_acceleration_gain_ = 0.0;
+  double standstill_request_acceleration_ = -1.0;
 
 };  // Class AckermannTrajectoryControl
