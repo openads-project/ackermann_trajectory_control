@@ -284,6 +284,7 @@ void AckermannTrajectoryControl::VehicleStateCallback(const perception_msgs::msg
 }
 
 void AckermannTrajectoryControl::TrajectoryCallback(const trajectory_planning_msgs::msg::Trajectory::ConstSharedPtr msg) {
+  if (msg->states.empty()) return;  // empty updates retain the last accepted trajectory
   std::lock_guard<std::mutex> input_lock(input_mutex_);
   latest_subscribed_trajectory_ = *msg;
   ++latest_trajectory_sequence_;
