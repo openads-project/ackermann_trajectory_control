@@ -282,6 +282,23 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   LongitudinalCommand LongitudinalControl(const double dt);
 
   /**
+   * @brief Computes the target curvature while the trajectory requests standstill: follows the trajectory's steering angle
+   * within the curvature limits, without feedback control.
+   *
+   * @param dt Control-loop step size in seconds.
+   * @return Target curvature command in inverse meters and inverse meters per second.
+   */
+  CurvatureCommand StandstillLateralControl(const double dt);
+
+  /**
+   * @brief Computes the longitudinal command while the trajectory requests standstill: zero speed and jerk with the
+   * configured standstill deceleration, clamped by the minimum longitudinal acceleration.
+   *
+   * @return Target longitudinal command in meters per second, meters per second squared, and meters per second cubed.
+   */
+  LongitudinalCommand StandstillLongitudinalControl();
+
+  /**
    * @brief Resets controller state, cached outputs, and stored input messages.
    */
   void ResetController();
