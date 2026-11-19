@@ -238,6 +238,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   /**
    * @brief Applies curvature, curvature-rate, and curvature-acceleration limits to the requested target curvature.
    *
+   * The curvature rate is additionally limited such that it can still be braked within max_curvature_accel before
+   * overshooting the target or the curvature limit.
+   *
    * @param dt Control-loop step size in seconds.
    * @param kappa_tgt Requested target curvature, updated in-place when limited.
    * @param kappa_rate Resulting target curvature rate after limiting.
@@ -246,7 +249,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    * @param max_curvature_accel Active curvature-acceleration limit.
    * @param kappa_prev Previously commanded curvature.
    * @param kappa_rate_prev Previously commanded curvature rate.
-   * @return `true` if any curvature limit became active.
+   * @param kappa_tgt_prev Previous target curvature within the curvature limit, updated in-place.
+   * @return `true` if the curvature, curvature-rate or curvature-acceleration limit became active.
    */
   bool LimitKappa(const double dt,
                   double& kappa_tgt,
@@ -255,7 +259,8 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                   const double max_curvature_rate,
                   const double max_curvature_accel,
                   const double kappa_prev,
-                  const double kappa_rate_prev);
+                  const double kappa_rate_prev,
+                  double& kappa_tgt_prev);
 
   /**
    * @brief Converts curvature-domain commands into steering-domain commands for the current vehicle geometry.
@@ -399,6 +404,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double dv_ = 0.0;
   double last_kappa_ = 0.0;
   double last_kappa_rate_ = 0.0;
+  double last_kappa_tgt_ = 0.0;
 
   /// PID controller instances for longitudinal speed, lateral error, and heading error.
   std::unique_ptr<PID> dv_pid_;
