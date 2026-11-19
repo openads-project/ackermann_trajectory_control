@@ -49,7 +49,7 @@ flowchart LR
 | `max_longitudinal_jerk` | `float` | `5.0` | Maximum allowed longitudinal jerk in m/s^3 (constraint, absolute value) |
 | `max_curvature` | `float` | `0.0` | Maximum allowed curvature (constraint, absolute value) |
 | `max_curvature_rate` | `float` | `0.0` | Maximum allowed curvature rate (constraint, absolute value) |
-| `max_curvature_acceleration` | `float` | `0.0` | Maximum allowed curvature acceleration (constraint, absolute value) |
+| `max_curvature_acceleration` | `float` | `0.0` | Maximum allowed curvature acceleration (constraint, absolute value); also limits the curvature rate such that neither the target curvature nor the curvature limit is overshot |
 | `use_speed_dependent_lateral_limits` | `bool` | `false` | Boolean indicating whether the controller uses speed-dependent curvature limits from a CSV file |
 | `lateral_limits_csv` | `string` | `ament_index_cpp::get_package_share_directory("ackermann_trajectory_control") + "/config/example-limits.csv"` | CSV file path for speed-dependent curvature limits |
 | `anti_windup_gain` | `float` | `1.0` | Anti-windup back-calculation gain |
@@ -67,7 +67,7 @@ flowchart LR
 | `dpsi_p` | `float[]` | `[0.0, 0.0]` | List of proportional gains for the heading deviation controller (mapping to velocity_lookup) |
 | `dpsi_i` | `float[]` | `[0.0, 0.0]` | List of integral gains for the heading deviation controller (mapping to velocity_lookup) |
 | `dpsi_d` | `float[]` | `[0.0, 0.0]` | List of derivative gains for the heading deviation controller (mapping to velocity_lookup) |
-| `standstill_request_acceleration_gain` | `float` | `0.0` | Gain for the deceleration request when the input trajectory signals standstill. Speed and jerk commands stay zero; acceleration is calculated from current speed and clamped by min_longitudinal_acceleration. |
+| `standstill_request_acceleration` | `float` | `-4.5` | Deceleration request when the input trajectory signals standstill. Speed and jerk commands stay zero. Value is clamped by min_longitudinal_acceleration. |
 
 ## Launch Files
 
