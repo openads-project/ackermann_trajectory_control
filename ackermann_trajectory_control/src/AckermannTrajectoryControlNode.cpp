@@ -305,6 +305,7 @@ void AckermannTrajectoryControl::ResetController() {
   y_tgt_ = 0.0;
   psi_tgt_ = 0.0;
   delta_tgt_ = 0.0;
+  delta_rate_tgt_ = 0.0;
   dpsi_ = 0.0;
   dy_ = 0.0;
   dv_ = 0.0;
@@ -541,6 +542,14 @@ bool AckermannTrajectoryControl::TrjDataProc(const rclcpp::Time& ctrl_time) {
   if (!LinearInterpolation(TIME, Y, delta_time + lat_t_lookahead_, y_tgt_)) return false;
   if (!LinearInterpolation(TIME, THETA, delta_time + lat_t_lookahead_, psi_tgt_)) return false;
   if (!LinearInterpolation(TIME, DELTA, delta_time + lat_t_lookahead_, delta_tgt_)) return false;
+  // slope of the interpolated steering angle (smooth feed-forward rate, used to brake the curvature rate before the target)
+  delta_rate_tgt_ = 0.0;
+  if (TIME.size() >= 2) {
+    const auto it = std::upper_bound(TIME.begin(), TIME.end(), delta_time + lat_t_lookahead_);
+    const size_t i = std::clamp<size_t>(static_cast<size_t>(std::distance(TIME.begin(), it)), 1, TIME.size() - 1);
+    const double dT = TIME[i] - TIME[i - 1];
+    if (dT > 0.0) delta_rate_tgt_ = (DELTA[i] - DELTA[i - 1]) / dT;
+  }
 
   if (use_odom_) {
     // CalcOdometry
@@ -747,7 +756,8 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
                                             const double max_curvature_rate,
                                             const double max_curvature_accel,
                                             const double kappa_prev,
-                                            const double kappa_rate_prev) {
+                                            const double kappa_rate_prev,
+                                            const double kappa_tgt_rate) {
   if (dt <= 0.0) {
     RCLCPP_ERROR_STREAM(get_logger(), "Non-positive dt. Skipping curvature limiting...");
     return false;
@@ -766,6 +776,26 @@ bool AckermannTrajectoryControl::LimitKappa(const double dt,
 
   kappa_rate = 0.0;
   kappa_rate = (kappa_tgt - kappa_prev) / dt;
+
+  // Limit the rate such that the curvature can still be braked with max_curvature_accel (discrete-time braking distance)
+  // before overshooting the target (approached relative to its own rate) or the stationary curvature limit. The target
+  // rate is the smooth feed-forward rate instead of a noisy numerical derivative of the target; it is zero while the target
+  // is clipped to the curvature limit. Not reported as limited: it only delays reaching the target and is no saturation
+  // for the anti-windup.
+  const double half_accel_step = 0.5 * max_curvature_accel * dt;
+  const auto braking_rate = [&](const double distance) {
+    return std::sqrt(2.0 * max_curvature_accel * std::max(distance, 0.0) + half_accel_step * half_accel_step) - half_accel_step;
+  };
+  const double kappa_err = kappa_tgt - kappa_prev;
+  const double max_approach_rate =
+      (kappa_limited ? 0.0 : kappa_tgt_rate) + std::copysign(braking_rate(std::fabs(kappa_err)), kappa_err);
+  double braked_rate = kappa_err >= 0.0 ? std::min(kappa_rate, max_approach_rate) : std::max(kappa_rate, max_approach_rate);
+  braked_rate = std::clamp(braked_rate, -braking_rate(max_curvature + kappa_prev), braking_rate(max_curvature - kappa_prev));
+  if (braked_rate != kappa_rate) {
+    kappa_rate = braked_rate;
+    kappa_tgt = kappa_prev + kappa_rate * dt;
+    RCLCPP_WARN_STREAM(get_logger(), "Curvature-rate limited to reach target without overshoot!");
+  }
 
   if (fabs(kappa_rate) > max_curvature_rate && dt > 0.0) {
     if (kappa_rate >= 0.0) {
@@ -828,8 +858,9 @@ AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::Lateral
   double kappa_tgt = kappa_pid + kappa_ff * feed_forward_gain_steering_angle_;
 
   double kappa_rate = 0.0;
-  bool kappa_is_limited = LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_,
-                                     max_curvature_accel_, last_kappa_, last_kappa_rate_);
+  bool kappa_is_limited =
+      LimitKappa(dt, kappa_tgt, kappa_rate, max_curvature_current_, max_curvature_rate_current_, max_curvature_accel_,
+                 last_kappa_, last_kappa_rate_, FeedForwardKappaRate() * feed_forward_gain_steering_angle_);
 
   if (kappa_is_limited) {
     if (use_back_calculation_) {
@@ -905,12 +936,17 @@ AckermannTrajectoryControl::LongitudinalCommand AckermannTrajectoryControl::Long
   return longitudinal_command;
 }
 
+double AckermannTrajectoryControl::FeedForwardKappaRate() const {
+  const double cos_delta = std::cos(delta_tgt_);
+  return delta_rate_tgt_ / (wheelbase_ * cos_delta * cos_delta);
+}
+
 AckermannTrajectoryControl::CurvatureCommand AckermannTrajectoryControl::StandstillLateralControl(const double dt) {
   dy_pid_->Reset();
   dpsi_pid_->Reset();
   CurvatureCommand curvature_command{std::tan(delta_tgt_) / wheelbase_, 0.0};
   LimitKappa(dt, curvature_command.kappa, curvature_command.kappa_rate, max_curvature_current_, max_curvature_rate_current_,
-             max_curvature_accel_, last_kappa_, last_kappa_rate_);
+             max_curvature_accel_, last_kappa_, last_kappa_rate_, FeedForwardKappaRate());
   last_kappa_ = curvature_command.kappa;
   last_kappa_rate_ = curvature_command.kappa_rate;
   return curvature_command;

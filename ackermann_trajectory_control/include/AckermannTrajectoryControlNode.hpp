@@ -238,6 +238,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   /**
    * @brief Applies curvature, curvature-rate, and curvature-acceleration limits to the requested target curvature.
    *
+   * The curvature rate is additionally limited such that it can still be braked within max_curvature_accel before
+   * overshooting the target (approached relative to kappa_tgt_rate) or the curvature limit.
+   *
    * @param dt Control-loop step size in seconds.
    * @param kappa_tgt Requested target curvature, updated in-place when limited.
    * @param kappa_rate Resulting target curvature rate after limiting.
@@ -246,7 +249,9 @@ class AckermannTrajectoryControl : public rclcpp::Node {
    * @param max_curvature_accel Active curvature-acceleration limit.
    * @param kappa_prev Previously commanded curvature.
    * @param kappa_rate_prev Previously commanded curvature rate.
-   * @return `true` if any curvature limit became active.
+   * @param kappa_tgt_rate Rate of the target curvature (feed-forward rate from the trajectory), ignored when the target is
+   * clipped to the curvature limit.
+   * @return `true` if the curvature, curvature-rate or curvature-acceleration limit became active.
    */
   bool LimitKappa(const double dt,
                   double& kappa_tgt,
@@ -255,7 +260,15 @@ class AckermannTrajectoryControl : public rclcpp::Node {
                   const double max_curvature_rate,
                   const double max_curvature_accel,
                   const double kappa_prev,
-                  const double kappa_rate_prev);
+                  const double kappa_rate_prev,
+                  const double kappa_tgt_rate);
+
+  /**
+   * @brief Converts the slope of the interpolated trajectory steering angle into a curvature rate.
+   *
+   * @return Feed-forward curvature rate in 1/(m*s), without feed-forward gain.
+   */
+  double FeedForwardKappaRate() const;
 
   /**
    * @brief Converts curvature-domain commands into steering-domain commands for the current vehicle geometry.
@@ -392,6 +405,7 @@ class AckermannTrajectoryControl : public rclcpp::Node {
   double y_tgt_ = 0.0;
   double psi_tgt_ = 0.0;
   double delta_tgt_ = 0.0;
+  double delta_rate_tgt_ = 0.0;
 
   /// Current control deviations and cached curvature state.
   double dpsi_ = 0.0;
